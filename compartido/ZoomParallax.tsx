@@ -14,6 +14,8 @@ interface Props {
   fotos: Foto[];
   titulo: ReactNode;
   leyenda: string;
+  /** Letra de la leyenda final; por defecto, serifa en cursiva. */
+  leyendaClase?: string;
 }
 
 // Dónde arranca cada foto alrededor de la central (la 0 va al centro, sin clases extra)
@@ -27,7 +29,7 @@ const LUGARES = [
   "[&>div]:!top-[22.5vh] [&>div]:!left-[25vw] [&>div]:!h-[15vh] [&>div]:!w-[15vw]",
 ];
 
-export default function ZoomParallax({ fotos, titulo, leyenda }: Props) {
+export default function ZoomParallax({ fotos, titulo, leyenda, leyendaClase = "font-serif italic" }: Props) {
   const contenedor = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: contenedor, offset: ["start start", "end end"] });
 
@@ -56,7 +58,7 @@ export default function ZoomParallax({ fotos, titulo, leyenda }: Props) {
 
         <motion.p
           style={{ opacity: leyendaOpacidad }}
-          className="pointer-events-none absolute inset-x-0 bottom-[14svh] z-10 px-6 text-center font-serif text-3xl text-white italic drop-shadow-[0_2px_18px_rgba(0,0,0,0.7)] md:text-5xl"
+          className={`pointer-events-none absolute inset-x-0 bottom-[14svh] z-10 px-6 text-center text-3xl text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.7)] md:text-5xl ${leyendaClase}`}
         >
           {leyenda}
         </motion.p>

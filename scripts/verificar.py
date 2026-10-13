@@ -234,7 +234,112 @@ def inicio(pg, nombre, cap):
     print(f"  {nombre}: contacto por {botones[0][0]}")
 
 
-PAGINAS = {"inicio": inicio, "cabanas": cabanas, "casa-tala": casa_tala}
+def propuesta(slug, boton, rellenar, esperados, extra=None):
+    """Arma el recorrido de una propuesta para un comercio real (propuestas/<slug>/)."""
+    def recorrer(pg, nombre, cap):
+        pg.goto(f"{BASE}propuestas/{slug}/", wait_until="networkidle")
+        pg.wait_for_timeout(900)
+        cap("00-portada")
+        # Lo que no puede faltar: que no se indexe y que diga, siempre a la vista, que no es la oficial
+        if "noindex" not in (pg.get_attribute("meta[name=robots]", "content") or ""):
+            problemas.append(f"{nombre}: falta el noindex")
+        cartel = pg.locator("aside[aria-label^='Aviso: propuesta']")
+        if not cartel.is_visible() or "No es la página oficial" not in cartel.inner_text():
+            problemas.append(f"{nombre}: no se ve el cartel de propuesta")
+        if extra:
+            extra(pg, nombre, cap)
+
+        alto = pg.evaluate("document.body.scrollHeight - innerHeight")
+        for i in range(1, 12):
+            pg.evaluate(f"window.scrollTo(0, {alto * i / 12})")
+            pg.wait_for_timeout(750)
+            cap(f"{i:02d}")
+            if not cartel.is_visible():
+                problemas.append(f"{nombre}: el cartel de propuesta se pierde al bajar")
+
+        pg.locator("form").scroll_into_view_if_needed()
+        rellenar(pg)
+        pg.get_by_role("button", name=boton).click()
+        pg.wait_for_timeout(500)
+        mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text() if pg.locator("dialog[open]").count() else ""
+        for e in esperados:
+            if e not in mensaje:
+                problemas.append(f"{nombre}: en el mensaje falta '{e}' -> {mensaje[:140]!r}")
+        if "propuesta de diseño" not in pg.locator("dialog[open]").inner_text():
+            problemas.append(f"{nombre}: la vista del mensaje no aclara que es una propuesta")
+        cap("12-mensaje")
+        pg.get_by_role("button", name="Cerrar").click()
+        ancho = pg.evaluate("[document.documentElement.scrollWidth, innerWidth]")
+        if ancho[0] > ancho[1]:
+            problemas.append(f"{nombre}: scroll horizontal ({ancho[0]} > {ancho[1]})")
+        textos_afuera(pg, nombre, ignorar=".h-\\[300vh\\], [data-libre]")
+    return recorrer
+
+
+def altimetro(pg, nombre, cap):
+    # La portada cuenta la altura mientras se baja: arriba de todo no llegó, al final marca 2100
+    leer = lambda: pg.evaluate("Number(document.querySelector('main section span.tabular-nums').textContent)")
+    antes = leer()
+    pg.evaluate("window.scrollTo(0, innerHeight * 0.9)")
+    pg.wait_for_timeout(900)
+    despues = leer()
+    cap("00b-altimetro")
+    if not (antes < 2100 and despues == 2100):
+        problemas.append(f"{nombre}: el altímetro pasó de {antes} a {despues} (esperaba menos de 2100 y después 2100)")
+
+
+def rellenar_condores(pg):
+    pg.fill("input[name=dia]", "2026-11-14")
+    pg.select_option("select[name=turno]", "13:00")
+    pg.select_option("select[name=personas]", "4")
+    pg.fill("input[name=nombre]", "Prueba")
+
+
+def rellenar_indio(pg):
+    pg.select_option("select[name=que]", "Casa de té")
+    pg.fill("input[name=dia]", "2026-11-14")
+    pg.select_option("select[name=personas]", "4")
+    pg.fill("input[name=nombre]", "Prueba")
+
+
+def rellenar_hosteria(pg):
+    pg.fill("input[name=llegada]", "2026-11-14")
+    pg.fill("input[name=salida]", "2026-11-16")
+    pg.select_option("select[name=personas]", "3")
+    pg.fill("input[name=nombre]", "Prueba")
+    pg.fill("input[name=alergias]", "Maní")
+
+
+def retiro_hosteria(pg, nombre, cap):
+    # "Consultar" en un retiro lo deja elegido en el formulario, sin fechas; después se vuelve a la estadía
+    pg.locator("#retiros a", has_text="Consultar").nth(2).click()
+    pg.wait_for_timeout(900)
+    elegido = pg.input_value("select[name=motivo]")
+    if elegido != "Música Medicina 3" or pg.locator("input[name=llegada]").count():
+        problemas.append(f"{nombre}: al consultar un retiro quedó '{elegido}' o siguen las fechas")
+    pg.get_by_role("button", name="Consultar por WhatsApp").click()
+    pg.wait_for_timeout(500)
+    mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text() if pg.locator("dialog[open]").count() else ""
+    if 'retiro "Música Medicina 3" (29 al 31 de enero de 2027)' not in mensaje:
+        problemas.append(f"{nombre}: el mensaje del retiro salió mal -> {mensaje[:140]!r}")
+    cap("00b-retiro")
+    pg.get_by_role("button", name="Cerrar").click()
+    pg.select_option("select[name=motivo]", "Una estadía")
+    pg.evaluate("window.scrollTo(0, 0)")
+    pg.wait_for_timeout(500)
+
+
+PAGINAS = {
+    "inicio": inicio,
+    "cabanas": cabanas,
+    "casa-tala": casa_tala,
+    "condores": propuesta("mirador-de-los-condores", "Reservar por WhatsApp", rellenar_condores,
+                          ["Circuito Aventura", "Día: sáb 14/11", "Turno: 13:00 h", "Personas: 4", "A nombre de: Prueba"], altimetro),
+    "indio": propuesta("cabeza-del-indio", "Reservar por WhatsApp", rellenar_indio,
+                       ["Cabeza del Indio", "Reserva: Casa de té", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
+    "hosteria": propuesta("hosteria-vegetariana", "Consultar por WhatsApp", rellenar_hosteria,
+                          ["estadía en la Hostería Vegetariana", "Llegada: sáb 14/11", "Salida: lun 16/11", "Personas: 3", "A nombre de: Prueba", "Alergias: Maní"], retiro_hosteria),
+}
 DISPOSITIVOS = {
     "movil": dict(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True),
     "pc": dict(viewport={"width": 1440, "height": 900}),

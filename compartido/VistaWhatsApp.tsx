@@ -1,5 +1,5 @@
-// En las páginas de muestra los formularios no mandan nada: abren esto, que muestra el mensaje
-// tal como le llegaría al dueño en su WhatsApp. Es lo que se le muestra al comerciante.
+// En las páginas de muestra y en las propuestas los formularios no mandan nada: abren esto, que
+// muestra el mensaje tal como le llegaría al dueño en su WhatsApp. Es lo que se le muestra al comerciante.
 import { useEffect, useRef } from "react";
 import { quieroUnaAsi } from "./contacto";
 
@@ -8,10 +8,12 @@ interface Props {
   mensaje: string | null;
   negocio: string;
   pagina: string;
+  /** "propuesta" = página armada para un comercio real; cambia el texto de abajo. */
+  tipo?: "ejemplo" | "propuesta";
   alCerrar: () => void;
 }
 
-export default function VistaWhatsApp({ mensaje, negocio, pagina, alCerrar }: Props) {
+export default function VistaWhatsApp({ mensaje, negocio, pagina, tipo = "ejemplo", alCerrar }: Props) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const link = quieroUnaAsi(pagina);
 
@@ -40,10 +42,12 @@ export default function VistaWhatsApp({ mensaje, negocio, pagina, alCerrar }: Pr
       </div>
       <div className="space-y-3 px-5 py-4">
         <p className="text-sm text-neutral-600">
-          Este sitio es de ejemplo, así que no se envió nada. En tu página, el cliente toca el botón y el mensaje te llega armado, sin que tenga que escribir.
+          {tipo === "propuesta"
+            ? "Esto es una propuesta de diseño, así que no se envió nada. En la página real, el cliente toca el botón y el mensaje llega armado al WhatsApp del negocio."
+            : "Este sitio es de ejemplo, así que no se envió nada. En tu página, el cliente toca el botón y el mensaje te llega armado, sin que tenga que escribir."}
         </p>
         <div className="flex flex-wrap gap-2">
-          {link && (
+          {link && tipo === "ejemplo" && (
             <a href={link} target="_blank" rel="noopener" className="rounded-full bg-[#25d366] px-4 py-2.5 text-sm font-semibold text-black">
               Quiero una página así
             </a>

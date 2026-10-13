@@ -1,0 +1,51 @@
+@import "tailwindcss" source(none);
+@source "./";
+@source "../../../compartido";
+
+/* Calma: papel claro, verde de monte y un ocre de sol. Serifa fina para los títulos. */
+@theme {
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --color-fondo: #f6f1e6;
+  --color-panel: #ebe5d5;
+  --color-tinta: #232b1e;
+  --color-suave: #5d6553;
+  --color-acento: #55682f;
+  --color-sol: #b9772a;
+  --color-linea: rgb(35 43 30 / 0.16);
+}
+
+html {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-acento);
+  color: var(--color-fondo);
+}
+
+.font-display {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.etiqueta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-sol);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

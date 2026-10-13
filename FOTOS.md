@@ -66,3 +66,19 @@ Las páginas de muestra usan fotos libres. Las fuentes no se suben al repo (`fot
 | pasta-2 | novila misastra | https://unsplash.com/photos/bavp8l4-GBE |
 | terraza-1 | avansear | https://unsplash.com/photos/IoGqOxDrCvg |
 | terraza-2 | MARIOLA GROBELSKA | https://unsplash.com/photos/3Vhq_qfI9q8 |
+
+## Propuestas para comercios reales (`propuestas/`)
+
+Las fotos y los datos salen de lo que cada negocio publicó en su Instagram. No son de uso libre:
+se usan solo para mostrarle al dueño cómo quedaría su página. Cada propuesta lleva el cartel fijo
+"Propuesta de diseño · No es la página oficial" y `noindex`. **Si el negocio dice que no, se borran
+la carpeta de `propuestas/` y la de `public/propuestas/`.**
+
+Se bajan con `scripts/fotos_instagram.py` (a `fotos-fuente/`, que no se sube) y se recortan en
+`scripts/fotos.py` para sacar los textos que traen encima. No se usan primeros planos de personas.
+
+| Propuesta | Fuente |
+|---|---|
+| mirador-de-los-condores | https://www.instagram.com/miradordeloscondores/ |
+| cabeza-del-indio | https://www.instagram.com/cabeza_del_indio/ y https://www.instagram.com/laberinto_tematico/ |
+| hosteria-vegetariana | https://www.instagram.com/hosteriavegetariana/ |

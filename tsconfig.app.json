@@ -22,5 +22,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["inicio", "cabanas", "casa-tala", "compartido"]
+  "include": ["inicio", "cabanas", "casa-tala", "propuestas", "compartido"]
 }

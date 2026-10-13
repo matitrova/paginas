@@ -1,0 +1,52 @@
+@import "tailwindcss" source(none);
+@source "./";
+@source "../../../compartido";
+
+/* Los colores salen de su cartel: negro y naranja. */
+@theme {
+  --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Anton", "Barlow", ui-sans-serif, sans-serif;
+  --color-fondo: #0c0f12;
+  --color-panel: #151a1f;
+  --color-tinta: #f4f1ea;
+  --color-suave: #a9a59b;
+  --color-acento: #f0532d;
+  --color-linea: rgb(255 255 255 / 0.14);
+}
+
+html {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-acento);
+  color: #fff;
+}
+
+/* Anton no tiene minúsculas con gracia: los títulos van siempre en mayúsculas */
+.font-display {
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-weight: 400;
+}
+
+.etiqueta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-acento);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

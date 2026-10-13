@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import CintaEjemplo from "../../compartido/CintaEjemplo";
 import { diaSiguiente, fecha, linda } from "../../compartido/fechas";
 import VistaWhatsApp from "../../compartido/VistaWhatsApp";
-import ZoomParallax from "./components/ZoomParallax";
+import ZoomParallax from "../../compartido/ZoomParallax";
 import { CABANAS, CREDITOS, DATOS, GALERIA, NEGOCIO, PREGUNTAS, SERVICIOS, foto } from "./textos";
 
 const PAGINA = "cabañas";
