@@ -21,5 +21,14 @@ with sync_playwright() as p:
     pg.evaluate(f"window.scrollTo(0, {t})")
     pg.wait_for_timeout(1800)
     pg.screenshot(path=str(AQUI / "trabajos.png"))
+    # Las dos páginas de muestra, para que el flyer muestre tres estilos distintos
+    pg.goto("https://matitrova.github.io/paginas/cabanas/", wait_until="networkidle")
+    pg.wait_for_timeout(1500)
+    pg.screenshot(path=str(AQUI / "cabanas.png"))
+    pg.goto("https://matitrova.github.io/paginas/casa-tala/", wait_until="networkidle")
+    if pg.evaluate("document.documentElement.dataset.modo") == "dia":
+        pg.locator("main .theme-switch").click()  # en el flyer va de noche, que contrasta con las cabañas
+    pg.wait_for_timeout(1800)
+    pg.screenshot(path=str(AQUI / "casa-tala.png"))
     nav.close()
 print("ok")
