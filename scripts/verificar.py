@@ -192,7 +192,49 @@ def casa_tala(pg, nombre, cap):
     textos_afuera(pg, nombre)
 
 
-PAGINAS = {"cabanas": cabanas, "casa-tala": casa_tala}
+def inicio(pg, nombre, cap):
+    """La página de venta. Es la única que sí tiene que aparecer en Google."""
+    pg.goto(BASE, wait_until="networkidle")
+    pg.wait_for_timeout(800)
+    cap("1-portada")
+    if pg.locator("meta[name=robots]").count():
+        problemas.append(f"{nombre}: la página de venta no tiene que llevar noindex")
+    ancho = pg.evaluate("[document.documentElement.scrollWidth, innerWidth]")
+    if ancho[0] > ancho[1]:
+        problemas.append(f"{nombre}: scroll horizontal ({ancho[0]} > {ancho[1]})")
+
+    # Cada ejemplo lleva a su página, y las de muestra existen en la misma publicación
+    enlaces = pg.evaluate("Object.fromEntries([...document.querySelectorAll('[data-ejemplo]')].map(a => [a.dataset.ejemplo, a.href]))")
+    esperados = {"autoshine": "https://autoshine.com.ar/", "cabanas": BASE + "cabanas/", "casa-tala": BASE + "casa-tala/"}
+    if enlaces != esperados:
+        problemas.append(f"{nombre}: links de ejemplos {enlaces}")
+    for carpeta in ("cabanas", "casa-tala"):
+        if not (DIST / carpeta / "index.html").is_file():
+            problemas.append(f"{nombre}: el ejemplo {carpeta} no está en dist/")
+
+    # El contacto: WhatsApp si está cargado en compartido/contacto.ts; si no, mail
+    botones = pg.evaluate("[...document.querySelectorAll('[data-contacto]')].map(a => [a.dataset.contacto, a.href.slice(0, 30)])")
+    if len(botones) < 3 or not all((c == "whatsapp" and h.startswith("https://wa.me/549")) or (c == "mail" and h.startswith("mailto:")) for c, h in botones):
+        problemas.append(f"{nombre}: botones de contacto {botones}")
+
+    alto = pg.evaluate("document.getElementById('ejemplos').offsetHeight")
+    top = pg.evaluate("document.getElementById('ejemplos').offsetTop")
+    for i, f in enumerate([0.12, 0.45, 0.8]):
+        pg.evaluate(f"window.scrollTo(0, {top + alto * f})")
+        pg.wait_for_timeout(700)
+        cap(f"2-ejemplos-{i}")
+    for sel, n in [("#incluye", "3-incluye"), ("#preguntas", "5-preguntas")]:
+        pg.evaluate(f"document.querySelector('{sel}').scrollIntoView()")
+        pg.wait_for_timeout(700)
+        cap(n)
+    pg.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    pg.wait_for_timeout(600)
+    cap("6-cierre")
+    textos_afuera(pg, nombre)
+    print(f"  {nombre}: contacto por {botones[0][0]}")
+
+
+PAGINAS = {"inicio": inicio, "cabanas": cabanas, "casa-tala": casa_tala}
 DISPOSITIVOS = {
     "movil": dict(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True),
     "pc": dict(viewport={"width": 1440, "height": 900}),

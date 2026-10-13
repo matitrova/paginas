@@ -3,22 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex" />
-    <title>Páginas de muestra · Matías Trovato</title>
-    <style>
-      /* Provisoria: la reemplaza la página de venta. Solo evita que la raíz dé error. */
-      body { margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 1.2rem; padding: 2rem; background: #04050b; color: #eeedf7; font: 18px/1.5 system-ui, sans-serif; }
-      h1 { font-size: 1.6rem; margin: 0 }
-      a { color: #a78bfa; font-weight: 600 }
-      ul { margin: 0; padding-left: 1.2rem; display: grid; gap: .5rem }
-    </style>
+    <meta name="theme-color" content="#04050b" />
+    <title>Páginas web para comercios de Merlo, San Luis · Matías Trovato</title>
+    <meta name="description" content="Páginas web a medida para comercios de Merlo: turnos y consultas a tu WhatsApp, presencia en Google y cambios incluidos. Mirá tres ejemplos." />
+    <link rel="canonical" href="https://matitrova.github.io/paginas/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://matitrova.github.io/paginas/" />
+    <meta property="og:title" content="Tu comercio, con página propia · Matías Trovato" />
+    <meta property="og:description" content="Páginas web a medida para comercios de Merlo, San Luis. Mirá tres ejemplos." />
+    <meta property="og:image" content="https://matitrova.github.io/paginas/inicio/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="es_AR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <h1>Páginas de muestra · Matías Trovato</h1>
-    <ul>
-      <li><a href="https://autoshine.com.ar">AutoShine</a> · estética vehicular (cliente real)</li>
-      <li><a href="./cabanas/">Cielo de Piedra</a> · cabañas (ejemplo)</li>
-      <li><a href="./casa-tala/">Casa Tala</a> · café de día, bar de noche (ejemplo)</li>
-    </ul>
+    <div id="root"></div>
+    <script type="module" src="./inicio/src/main.tsx"></script>
   </body>
 </html>
