@@ -1,0 +1,58 @@
+// En las páginas de muestra los formularios no mandan nada: abren esto, que muestra el mensaje
+// tal como le llegaría al dueño en su WhatsApp. Es lo que se le muestra al comerciante.
+import { useEffect, useRef } from "react";
+import { quieroUnaAsi } from "./contacto";
+
+interface Props {
+  /** El mensaje armado; null = cerrado. */
+  mensaje: string | null;
+  negocio: string;
+  pagina: string;
+  alCerrar: () => void;
+}
+
+export default function VistaWhatsApp({ mensaje, negocio, pagina, alCerrar }: Props) {
+  const dialogo = useRef<HTMLDialogElement>(null);
+  const link = quieroUnaAsi(pagina);
+
+  useEffect(() => {
+    const d = dialogo.current!;
+    if (mensaje !== null && !d.open) d.showModal();
+    if (mensaje === null && d.open) d.close();
+  }, [mensaje]);
+
+  return (
+    <dialog
+      ref={dialogo}
+      onClose={alCerrar}
+      onClick={(e) => e.target === dialogo.current && alCerrar()}
+      className="m-auto w-[min(92vw,26rem)] overflow-hidden rounded-3xl bg-white p-0 text-neutral-900 shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+    >
+      <div className="bg-[#075e54] px-5 py-4 text-white">
+        <p className="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-80">Así te llega el pedido</p>
+        <p className="mt-0.5 text-lg font-semibold">WhatsApp de {negocio}</p>
+      </div>
+      <div className="bg-[#e5ddd5] px-4 py-5">
+        <div className="relative ml-auto w-fit max-w-[88%] rounded-2xl rounded-tr-sm bg-[#dcf8c6] px-3.5 py-2.5 text-[15px] leading-snug whitespace-pre-line shadow-sm" data-mensaje>
+          {mensaje}
+          <span className="mt-1 block text-right text-[11px] text-neutral-500">ahora ✓✓</span>
+        </div>
+      </div>
+      <div className="space-y-3 px-5 py-4">
+        <p className="text-sm text-neutral-600">
+          Este sitio es de ejemplo, así que no se envió nada. En tu página, el cliente toca el botón y el mensaje te llega armado, sin que tenga que escribir.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {link && (
+            <a href={link} target="_blank" rel="noopener" className="rounded-full bg-[#25d366] px-4 py-2.5 text-sm font-semibold text-black">
+              Quiero una página así
+            </a>
+          )}
+          <button onClick={alCerrar} className="rounded-full border border-neutral-300 px-4 py-2.5 text-sm font-semibold">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </dialog>
+  );
+}

@@ -1,0 +1,49 @@
+"""Genera las fotos de cada página de muestra en public/<página>/fotos/ a partir de fotos-fuente/.
+
+Las fuentes (Unsplash y Wikimedia Commons, ver FOTOS.md) no se suben al repo. Acá se achican y se
+pasan a WebP sin metadatos.
+
+Uso:  ../Test1_Inmo/.venv/bin/python scripts/fotos.py
+"""
+from pathlib import Path
+
+from PIL import Image, ImageOps
+
+RAIZ = Path(__file__).resolve().parent.parent
+
+# página -> { nombre de salida: (archivo fuente sin .jpg, ancho máximo) }
+FOTOS = {
+    "cabanas": {
+        "portada": ("sierra-cabanas", 1920),
+        "valle": ("sierra-valle", 1600),
+        "cumbre": ("sierra-cumbre", 1600),
+        "tala": ("living-1", 1400),
+        "molle": ("living-2", 1400),
+        "chanar": ("living-4", 1400),
+        "dormitorio": ("dormitorio-1", 1000),
+        "pileta": ("pileta-1", 1920),
+        "desayuno": ("desayuno-1", 1000),
+        "cafe": ("desayuno-2", 1000),
+        "picada": ("picada", 1000),
+        "hamaca": ("hamaca-1", 1000),
+        "asado": ("asado-2", 1000),
+        "hogar": ("hogar-1", 1000),
+    },
+}
+
+
+def main() -> None:
+    for pagina, fotos in FOTOS.items():
+        destino = RAIZ / "public" / pagina / "fotos"
+        destino.mkdir(parents=True, exist_ok=True)
+        for nombre, (fuente, ancho) in fotos.items():
+            im = ImageOps.exif_transpose(Image.open(RAIZ / "fotos-fuente" / pagina / f"{fuente}.jpg")).convert("RGB")
+            im.thumbnail((ancho, ancho * 3))
+            im.save(destino / f"{nombre}.webp", "WEBP", quality=76, method=6)
+        # La vista previa al compartir el link sale de la portada
+        ImageOps.fit(Image.open(destino / "portada.webp"), (1200, 630)).save(RAIZ / "public" / pagina / "og.jpg", "JPEG", quality=82)
+        print(pagina, len(fotos), "fotos")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,6 @@
+node_modules/
+dist/
+fotos-fuente/
+flyer/salida/
+flyer/capturas/
+.DS_Store

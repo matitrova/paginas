@@ -1,0 +1,56 @@
+@import "tailwindcss" source(none);
+@source "./";
+@source "../../compartido";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+  --color-papel: #f4eee2;
+  --color-arena: #e6dcc8;
+  --color-tinta: #26231c;
+  --color-musgo: #5d5a4c;
+  --color-sierra: #3d5a40;
+  --color-sierra-claro: #6f8a5c;
+  --color-arcilla: #b5593a;
+}
+
+html {
+  background: var(--color-papel);
+  color: var(--color-tinta);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-sierra);
+  color: var(--color-papel);
+}
+
+.etiqueta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-arcilla);
+}
+
+/* La portada respira: un acercamiento muy lento a la sierra */
+.acercar {
+  animation: acercar 26s ease-out both;
+}
+
+@keyframes acercar {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .acercar { animation: none; }
+}

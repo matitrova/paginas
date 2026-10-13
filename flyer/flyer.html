@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Flyer · Páginas web para comercios de Merlo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script>
+// ====== LO ÚNICO QUE HAY QUE COMPLETAR ======
+// Vacío = el flyer muestra un recuadro "pendiente" en ese lugar.
+const DATOS = {
+  whatsapp: "",   // como se lee: "2664 123456"
+  instagram: "",  // con arroba: "@usuario"
+};
+</script>
+<style>
+  :root{
+    /* la paleta del portfolio */
+    --fondo:#04050b; --tinta:#eeedf7; --suave:#9a9ab0;
+    --acento:#a78bfa; --fuerte:#7c3aed; --cian:#22d3ee; --wa:#25d366;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0 }
+  body{
+    width:1080px; height:1920px; overflow:hidden; position:relative;
+    background:var(--fondo); color:var(--tinta);
+    font-family:"Inter",sans-serif; -webkit-font-smoothing:antialiased;
+  }
+  body.post{ height:1350px }
+
+  /* Fondo: dos luces y un cielo de estrellas, como el portfolio */
+  .fondo{ position:absolute; inset:0;
+    background:
+      radial-gradient(900px 700px at 0% 0%, rgba(124,58,237,.42), transparent 62%),
+      radial-gradient(800px 700px at 100% 62%, rgba(34,211,238,.20), transparent 60%),
+      radial-gradient(700px 500px at 20% 100%, rgba(124,58,237,.22), transparent 65%);
+  }
+  .estrellas{ position:absolute; inset:0; opacity:.75;
+    background-image:
+      radial-gradient(1.6px 1.6px at 23px 41px, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 141px 97px, #cfd3ff, transparent),
+      radial-gradient(2px 2px at 211px 19px, #fff, transparent),
+      radial-gradient(1.1px 1.1px at 77px 173px, #fff, transparent),
+      radial-gradient(1.4px 1.4px at 187px 229px, #a5f3fc, transparent),
+      radial-gradient(1px 1px at 259px 141px, #fff, transparent);
+    background-size:283px 263px;
+  }
+
+  .lienzo{ position:absolute; inset:0; display:flex; flex-direction:column; padding:190px 78px 250px }
+  body.post .lienzo{ padding:62px 70px 58px }
+
+  /* --- encabezado --- */
+  .firma{ display:flex; align-items:center; justify-content:space-between; gap:20px }
+  .nombre{ font-family:"Space Grotesk"; font-weight:700; font-size:34px; letter-spacing:.02em }
+  .lugar{ font-family:"JetBrains Mono"; font-size:21px; letter-spacing:.2em; text-transform:uppercase; color:var(--cian);
+    border:1.5px solid rgba(34,211,238,.45); border-radius:999px; padding:11px 22px }
+
+  h1{ font-family:"Space Grotesk"; font-weight:700; font-size:104px; line-height:.96; letter-spacing:-.04em; margin-top:50px; white-space:nowrap }
+  .degrade{ background:linear-gradient(100deg,#fff 0%,#ddd6fe 25%,var(--acento) 58%,var(--cian) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent; padding-bottom:.12em }
+
+  /* Historia: bajada, celulares y lista, uno abajo del otro. 4:5: texto a la izquierda, celulares a la derecha. */
+  .medio{ flex:1; min-height:0; display:grid; grid-template:"bajada" auto "vitrina" 1fr "puntos" auto / 1fr }
+  body.post .medio{ grid-template:"bajada vitrina" auto "puntos vitrina" 1fr / 1.08fr .92fr; column-gap:26px }
+
+  .bajada{ grid-area:bajada; font-size:39px; line-height:1.3; color:#c9c8dc; margin-top:26px; max-width:900px }
+  .bajada b{ color:var(--tinta); font-weight:600 }
+
+  /* --- los celulares con la página real --- */
+  .vitrina{ grid-area:vitrina; position:relative; min-height:0; margin-top:34px }
+  .telefono{ position:absolute; aspect-ratio:390/844; border-radius:44px; border:9px solid #16171f; background:#000; overflow:hidden;
+    box-shadow:0 0 0 2px #30313f, 0 40px 90px rgba(0,0,0,.65), 0 0 110px rgba(124,58,237,.38) }
+  .telefono img{ width:100%; height:100%; object-fit:cover; display:block }
+  .telefono::after{ content:""; position:absolute; top:11px; left:50%; width:30%; height:18px; transform:translateX(-50%); background:#000; border-radius:999px }
+  /* tres en abanico: el del medio derecho y adelante */
+  .t1{ height:90%; left:5%; top:7%; transform:rotate(-7deg); z-index:1 }
+  .t2{ height:100%; left:50%; top:0; transform:translateX(-50%); z-index:3 }
+  .t3{ height:90%; right:5%; top:7%; transform:rotate(7deg); z-index:1 }
+  .ejemplo{ position:absolute; z-index:5; left:50%; bottom:-14px; transform:translateX(-50%); display:flex; align-items:center; gap:14px; white-space:nowrap;
+    background:rgba(4,5,11,.92); border:1.5px solid rgba(167,139,250,.65); border-radius:999px; padding:14px 26px 14px 20px;
+    font-size:27px; font-weight:500; box-shadow:0 12px 40px rgba(0,0,0,.6) }
+  .ejemplo i{ width:13px; height:13px; border-radius:50%; background:var(--wa); box-shadow:0 0 14px var(--wa); flex:none }
+  .ejemplo b{ font-family:"JetBrains Mono"; font-weight:500; color:var(--cian) }
+
+  /* --- qué incluye --- */
+  .puntos{ grid-area:puntos; list-style:none; display:grid; gap:16px; margin-top:44px; align-content:start }
+  .puntos li{ display:flex; align-items:center; gap:20px; font-size:35px; font-weight:500; line-height:1.2 }
+  .puntos svg{ flex:none; width:40px; height:40px }
+
+  /* --- precio y contacto --- */
+  .cierre{ margin-top:34px; display:grid; grid-template-columns:1fr auto; align-items:center; gap:34px;
+    background:linear-gradient(135deg, rgba(124,58,237,.30), rgba(34,211,238,.10)); border:1.5px solid rgba(167,139,250,.5);
+    border-radius:38px; padding:32px 38px }
+  .precio small{ display:block; font-family:"JetBrains Mono"; font-size:20px; letter-spacing:.18em; text-transform:uppercase; color:var(--cian) }
+  .precio strong{ display:block; font-family:"Space Grotesk"; font-weight:700; font-size:96px; line-height:1; letter-spacing:-.03em; margin-top:8px }
+  .precio span{ display:block; font-size:30px; line-height:1.25; color:#c9c8dc; margin-top:10px; max-width:430px }
+  .precio span b{ color:var(--tinta) }
+  .contacto{ display:grid; gap:14px; justify-items:start }
+  .contacto div{ display:flex; align-items:center; gap:15px; font-family:"Space Grotesk"; font-weight:700; font-size:37px; white-space:nowrap }
+  .contacto svg{ width:46px; height:46px; flex:none }
+  .pendiente{ border:2.5px dashed #f87171; color:#fca5a5 !important; border-radius:12px; padding:4px 14px; font-size:26px !important; letter-spacing:.06em }
+
+  /* ================= formato 4:5 para el feed ================= */
+  body.post h1{ font-size:100px; margin-top:34px }
+  body.post .bajada{ font-size:31px; margin-top:26px }
+  body.post .vitrina{ margin-top:22px }
+  body.post .t1{ height:92%; left:0; top:0; transform:rotate(-5deg) }
+  body.post .t2{ height:92%; left:auto; right:0; top:7%; transform:rotate(4deg) }
+  body.post .t3{ display:none }
+  body.post .ejemplo{ bottom:-6px; font-size:22px; padding:11px 20px 11px 16px; gap:11px }
+  body.post .puntos{ margin-top:0; gap:26px; align-content:center }
+  body.post .puntos li{ font-size:31px; gap:16px }
+  body.post .puntos svg{ width:34px; height:34px }
+  body.post .cierre{ margin-top:30px; padding:24px 34px }
+  body.post .precio strong{ font-size:80px }
+  body.post .precio span{ font-size:26px; max-width:380px }
+  body.post .contacto div{ font-size:33px }
+</style>
+</head>
+<body>
+<div class="fondo"></div>
+<div class="estrellas"></div>
+
+<div class="lienzo">
+  <div class="firma">
+    <span class="nombre">Matías Trovato</span>
+    <span class="lugar">Merlo · San Luis</span>
+  </div>
+
+  <h1>Tu comercio,<br>con <span class="degrade">página propia.</span></h1>
+
+  <div class="medio">
+    <p class="bajada">A medida y <b>lista en una semana.</b> De los cambios y de que siempre ande me ocupo yo.</p>
+
+    <div class="vitrina">
+      <div class="telefono t1"><img src="capturas/auto.png" alt=""></div>
+      <div class="telefono t3"><img src="capturas/trabajos.png" alt=""></div>
+      <div class="telefono t2"><img src="capturas/servicios.png" alt=""></div>
+      <div class="ejemplo"><i></i>Hecha por mí: <b>autoshine.com.ar</b></div>
+    </div>
+
+    <ul class="puntos">
+    <li><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="rgba(34,211,238,.14)" stroke="#22d3ee" stroke-width="1.5"/><path d="M11.5 20.5l5.5 5.5 11.5-12" fill="none" stroke="#22d3ee" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Turnos y consultas directo a tu WhatsApp</li>
+    <li><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="rgba(34,211,238,.14)" stroke="#22d3ee" stroke-width="1.5"/><path d="M11.5 20.5l5.5 5.5 11.5-12" fill="none" stroke="#22d3ee" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Te encuentran en Google y en Google Maps</li>
+    <li><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="rgba(34,211,238,.14)" stroke="#22d3ee" stroke-width="1.5"/><path d="M11.5 20.5l5.5 5.5 11.5-12" fill="none" stroke="#22d3ee" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Cambios de fotos y precios incluidos</li>
+    </ul>
+  </div>
+
+  <div class="cierre">
+    <div class="precio">
+      <small>Presupuesto sin compromiso</small>
+      <strong>Escribime</strong>
+      <span>y te paso el precio <b>según lo que necesites</b></span>
+    </div>
+    <div class="contacto">
+      <div>
+        <svg viewBox="0 0 32 32" fill="#25d366"><path d="M16 3C8.8 3 3 8.7 3 15.8c0 2.5.7 4.9 2 7L3 29l6.4-2c2 1.1 4.3 1.7 6.6 1.7 7.2 0 13-5.7 13-12.8S23.2 3 16 3zm0 23.4c-2.1 0-4.1-.6-5.9-1.6l-.4-.3-3.8 1.2 1.2-3.7-.3-.4c-1.2-1.8-1.8-3.8-1.8-5.9C5 10 9.9 5.2 16 5.2S27 10 27 15.9 22.1 26.4 16 26.4zm6-7.8c-.3-.2-1.9-1-2.2-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.3-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.8 5 .8.3 1.4.5 1.9.7.8.3 1.5.2 2.1.1.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.3.2-1.5-.1-.2-.3-.3-.6-.5z"/></svg>
+        <span id="whatsapp"></span>
+      </div>
+      <div>
+        <svg viewBox="0 0 32 32" fill="none" stroke="#a78bfa" stroke-width="2.6"><rect x="4.5" y="4.5" width="23" height="23" rx="7"/><circle cx="16" cy="16" r="5.4"/><circle cx="22.6" cy="9.4" r="1.2" fill="#a78bfa" stroke="none"/></svg>
+        <span id="instagram"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const post = new URLSearchParams(location.search).get("formato") === "post";
+  document.body.classList.toggle("post", post);
+
+  const poner = (id, valor, falta) => {
+    const el = document.getElementById(id);
+    el.textContent = valor || falta;
+    el.classList.toggle("pendiente", !valor);
+  };
+  poner("whatsapp", DATOS.whatsapp, "FALTA TU WHATSAPP");
+  poner("instagram", DATOS.instagram, "FALTA TU INSTAGRAM");
+</script>
+</body>
+</html>
