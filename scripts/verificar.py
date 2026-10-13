@@ -105,7 +105,94 @@ def cabanas(pg, nombre, cap):
     textos_afuera(pg, nombre, ignorar=".h-\\[300vh\\]")
 
 
-PAGINAS = {"cabanas": cabanas}
+def casa_tala(pg, nombre, cap):
+    url = BASE + "casa-tala/"
+    estado = lambda: pg.evaluate("[document.documentElement.dataset.modo, document.querySelector('[data-estado]').dataset.estado]")
+    pestanas = lambda: pg.locator("#carta [role=tab]").all_inner_texts()
+
+    # El reloj decide el modo y el cartel de abierto. Hora de San Luis (UTC-3).
+    casos = [
+        ("2026-11-11T10:00:00-03:00", ["dia", "abierto"], "miércoles 10 h"),
+        ("2026-11-14T22:30:00-03:00", ["noche", "abierto"], "sábado 22:30"),
+        ("2026-11-09T15:00:00-03:00", ["dia", "cerrado"], "lunes 15 h (cerrado todo el día)"),
+        ("2026-11-15T01:00:00-03:00", ["noche", "abierto"], "domingo 1 h (sigue la noche del sábado)"),
+        ("2026-11-09T01:00:00-03:00", ["noche", "cerrado"], "lunes 1 h (el domingo cierra a las 0)"),
+    ]
+    # El reloj simulado de Playwright también reemplaza los temporizadores de animación del
+    # navegador (las transiciones se vuelven lentas a veces), así que va en una página aparte
+    # y el recorrido de la interfaz se hace con el reloj real.
+    ctx = pg.context.browser.new_context(locale="es-AR", timezone_id="America/Argentina/San_Luis")
+    reloj = ctx.new_page()
+    reloj.route(f"{BASE}**", servir)
+    for cuando, esperado, que in casos:
+        reloj.clock.set_fixed_time(cuando)
+        reloj.goto(url, wait_until="domcontentloaded")
+        reloj.wait_for_selector("[data-estado]")
+        dio = reloj.evaluate("[document.documentElement.dataset.modo, document.querySelector('[data-estado]').dataset.estado]")
+        if dio != esperado:
+            problemas.append(f"{nombre}: {que}: esperaba {esperado} y dio {dio}")
+    ctx.close()
+
+    # De día: carta de café. Si la prueba corre de noche, primero se pasa a día con el interruptor.
+    pg.goto(url, wait_until="networkidle")
+    if estado()[0] == "noche":
+        pg.locator("main .theme-switch").click()
+    pg.wait_for_timeout(1200)
+    cap("1-portada-dia")
+    comunes(pg, nombre)
+    if estado()[0] != "dia" or "Café" not in pestanas() or "Tragos" in pestanas():
+        problemas.append(f"{nombre}: de día quedó en {estado()[0]} con la carta {pestanas()}")
+    pg.evaluate("document.getElementById('carta').scrollIntoView()")
+    pg.wait_for_timeout(800)
+    cap("2-carta-dia")
+
+    # El interruptor cambia el tema Y la carta
+    pg.evaluate("window.scrollTo(0, 0)")
+    pg.locator("main .theme-switch").click()
+    pg.wait_for_timeout(1300)
+    cap("3-portada-noche")
+    if estado()[0] != "noche":
+        problemas.append(f"{nombre}: el interruptor no pasó a noche")
+    if "Tragos" not in pestanas() or "Café" in pestanas():
+        problemas.append(f"{nombre}: de noche la carta muestra {pestanas()}")
+    fondo = pg.evaluate("getComputedStyle(document.documentElement).backgroundColor")
+    if fondo != "rgb(20, 16, 13)":
+        problemas.append(f"{nombre}: de noche el fondo quedó {fondo}")
+    pg.evaluate("document.getElementById('carta').scrollIntoView()")
+    pg.get_by_role("tab", name="Cervezas").click()
+    pg.wait_for_timeout(900)
+    cap("4-carta-noche")
+    if "IPA" not in pg.locator("#carta").inner_text():
+        problemas.append(f"{nombre}: la pestaña Cervezas no muestra la IPA")
+
+    pg.evaluate("document.getElementById('lugar').scrollIntoView()")
+    pg.wait_for_timeout(900)
+    cap("5-lugar")
+    pg.evaluate("document.getElementById('horarios').scrollIntoView()")
+    pg.wait_for_timeout(600)
+    cap("6-horarios")
+
+    pg.evaluate("document.getElementById('reserva').scrollIntoView()")
+    pg.fill("input[name=dia]", "2026-11-14")
+    pg.select_option("select[name=personas]", "4")
+    pg.fill("input[name=nombre]", "Prueba")
+    pg.wait_for_timeout(400)
+    cap("7-reserva")
+    pg.get_by_role("button", name="Reservar por WhatsApp").click()
+    pg.wait_for_timeout(500)
+    mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text() if pg.locator("dialog[open]").count() else ""
+    for esperado in ["Día: sáb 14/11", "Hora: 21:30", "Personas: 4", "A nombre de: Prueba"]:
+        if esperado not in mensaje:
+            problemas.append(f"{nombre}: en el mensaje falta '{esperado}' -> {mensaje[:120]!r}")
+    cap("8-mensaje")
+    pg.get_by_role("button", name="Cerrar").click()
+    pg.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    pg.wait_for_timeout(500)
+    cap("9-pie")
+    textos_afuera(pg, nombre)
+
+
+PAGINAS = {"cabanas": cabanas, "casa-tala": casa_tala}
 DISPOSITIVOS = {
     "movil": dict(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True),
     "pc": dict(viewport={"width": 1440, "height": 900}),

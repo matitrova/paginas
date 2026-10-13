@@ -35,3 +35,34 @@ Las páginas de muestra usan fotos libres. Las fuentes no se suben al repo (`fot
 | asado-1 | DEBY RODRIGUEZ | https://unsplash.com/photos/B6kciNEJgN8 |
 | asado-2 | Ezequiel Garrido | https://unsplash.com/photos/k9DoE3aRPdw |
 | hogar-1 | Clay Banks | https://unsplash.com/photos/-_Rvjx9D7QY |
+
+## Casa Tala
+
+### Unsplash (licencia Unsplash: uso libre, sin atribución obligatoria)
+
+| Archivo | Autor | Original |
+|---|---|---|
+| cafe-1 | Gavin CC | https://unsplash.com/photos/0XIN93NFcN8 |
+| cafe-2 | Tim Raderschad | https://unsplash.com/photos/IKvl3PLi8pQ |
+| cafe-3 | Phước Sang | https://unsplash.com/photos/F_tgnJBIArw |
+| latte-1 | Lex Sirikiat | https://unsplash.com/photos/1tEkissU8dY |
+| latte-2 | Nathan Dumlao | https://unsplash.com/photos/gOn7dKcCWKg |
+| brunch-1 | Eiliv Aceron | https://unsplash.com/photos/uAm1CZMdPCw |
+| brunch-2 | Flipboard | https://unsplash.com/photos/hpZPl3cGOpE |
+| medialuna-1 | Kyle Hinkson | https://unsplash.com/photos/8aSR_-CHjPo |
+| medialuna-2 | Ngo Ngoc Khai Huyen | https://unsplash.com/photos/ikCfEh8ZR94 |
+| barista | Brooke Cagle | https://unsplash.com/photos/X4RJG4aNi8o |
+| bar-1 | Alexander Korte | https://unsplash.com/photos/Ue-34H7an9o |
+| bar-2 | atelierbyvineeth | https://unsplash.com/photos/ghUtZC-Ezxs |
+| bar-3 | Shawn DENG | https://unsplash.com/photos/nsgzQHsxbXE |
+| trago-1 | Milan Trninic | https://unsplash.com/photos/7c3kfbsQqFY |
+| trago-2 | Milan Trninic | https://unsplash.com/photos/R31OwFKbRdE |
+| trago-3 | Nuff | https://unsplash.com/photos/_JKy0LtToQc |
+| cerveza-1 | Jon Parry | https://unsplash.com/photos/C8eSYwQkwHw |
+| cerveza-2 | Amie Johnson | https://unsplash.com/photos/VJXLzQi5TlE |
+| picada-1 | Theme Photos | https://unsplash.com/photos/qSoh9dju8rg |
+| picada-2 | Anto Meneghini | https://unsplash.com/photos/XM6hy5te24U |
+| pasta-1 | engin akyurt | https://unsplash.com/photos/-t76lOh80xY |
+| pasta-2 | novila misastra | https://unsplash.com/photos/bavp8l4-GBE |
+| terraza-1 | avansear | https://unsplash.com/photos/IoGqOxDrCvg |
+| terraza-2 | MARIOLA GROBELSKA | https://unsplash.com/photos/3Vhq_qfI9q8 |

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Sitio de muestra con un negocio inventado: que Google no lo liste como si fuera real -->
+    <meta name="robots" content="noindex" />
+    <title>Casa Tala · Café de día, bar de noche (sitio de ejemplo)</title>
+    <meta name="description" content="Página de muestra para una cafetería, bar o restaurante. Diseño: Matías Trovato." />
+    <meta property="og:title" content="Casa Tala · Café de día, bar de noche" />
+    <meta property="og:description" content="Sitio de ejemplo para una cafetería, bar o restaurante. Diseño: Matías Trovato." />
+    <meta property="og:image" content="https://matitrova.github.io/paginas/casa-tala/og.jpg" />
+    <!-- El tema se decide antes de dibujar, para que de noche no arranque con un fogonazo claro -->
+    <script>
+      document.documentElement.dataset.modo = new Date().getHours() >= 19 || new Date().getHours() < 6 ? "noche" : "dia";
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>

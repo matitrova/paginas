@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import CintaEjemplo from "../../compartido/CintaEjemplo";
+import { diaSiguiente, fecha, linda } from "../../compartido/fechas";
 import VistaWhatsApp from "../../compartido/VistaWhatsApp";
 import ZoomParallax from "./components/ZoomParallax";
 import { CABANAS, CREDITOS, DATOS, GALERIA, NEGOCIO, PREGUNTAS, SERVICIOS, foto } from "./textos";
@@ -150,21 +151,6 @@ function Servicios() {
     </section>
   );
 }
-
-const fecha = (iso: string) => {
-  const [a, m, d] = iso.split("-").map(Number);
-  return new Date(a, m - 1, d); // fecha local: new Date("2026-10-18") la corre un día en Argentina
-};
-// "sáb 14/11": el día de la semana lo da el navegador, la fecha se arma a mano (es-AR la escribe con guiones)
-const linda = (iso: string) => {
-  const d = fecha(iso);
-  return `${d.toLocaleDateString("es-AR", { weekday: "short" })} ${d.getDate()}/${d.getMonth() + 1}`;
-};
-const diaSiguiente = (iso: string) => {
-  const d = fecha(iso);
-  d.setDate(d.getDate() + 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 
 function Fechas({ cabana, setCabana, alEnviar }: { cabana: string; setCabana: (c: string) => void; alEnviar: (mensaje: string) => void }) {
   const [llegada, setLlegada] = useState("");
