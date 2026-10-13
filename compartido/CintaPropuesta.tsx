@@ -2,6 +2,9 @@
 // momento, que la página la hizo Matías como propuesta y que no es la del negocio.
 import { contacto } from "./contacto";
 
+// Va junto a la galería y en el pie: las fotos salen de las redes del negocio, no de sus originales.
+export const NOTA_FOTOS = "Las fotos están tomadas de sus redes, por eso la calidad. Con las originales se ve mucho mejor.";
+
 export default function CintaPropuesta({ negocio }: { negocio: string }) {
   const c = contacto(`Hola Matías! Vi la propuesta de página para ${negocio}.`);
   return (

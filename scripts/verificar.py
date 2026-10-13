@@ -246,6 +246,8 @@ def propuesta(slug, boton, rellenar, esperados, extra=None):
         cartel = pg.locator("aside[aria-label^='Aviso: propuesta']")
         if not cartel.is_visible() or "No es la página oficial" not in cartel.inner_text():
             problemas.append(f"{nombre}: no se ve el cartel de propuesta")
+        if pg.locator("body").inner_text().count("tomadas de sus redes") < 2:
+            problemas.append(f"{nombre}: falta aclarar, en la galería y en el pie, que las fotos son de sus redes")
         if extra:
             extra(pg, nombre, cap)
 

@@ -1,6 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, type FormEvent } from "react";
-import CintaPropuesta from "../../../compartido/CintaPropuesta";
+import CintaPropuesta, { NOTA_FOTOS } from "../../../compartido/CintaPropuesta";
 import Etapas from "../../../compartido/Etapas";
 import { diaSiguiente, linda } from "../../../compartido/fechas";
 import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
@@ -297,7 +297,7 @@ function Pie() {
         <p className="font-display text-4xl text-fondo">Hostería Vegetariana</p>
         <p className="mt-1">{DIRECCION} · Villa de Merlo, San Luis</p>
         <p className="mt-6 max-w-2xl">
-          <b className="text-fondo">Esto es una propuesta de diseño, no la página oficial.</b> Los datos y las fotos salen de las publicaciones de @hosteriavegetariana (2025 y 2026). Si el negocio no la quiere, se da de baja.
+          <b className="text-fondo">Esto es una propuesta de diseño, no la página oficial.</b> Los datos y las fotos salen de las publicaciones de @hosteriavegetariana (2025 y 2026). {NOTA_FOTOS} Si el negocio no la quiere, se da de baja.
         </p>
       </div>
     </footer>
@@ -326,6 +326,7 @@ export default function App() {
               <h2 className="font-display mt-4 text-5xl leading-none md:text-8xl">
                 Donde la vida <i className="text-acento">encuentra su ritmo</i>
               </h2>
+              <p className="mx-auto mt-5 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
             </>
           }
           leyenda="Unos días para volver a lo esencial."

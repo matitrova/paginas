@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import CintaPropuesta from "../../../compartido/CintaPropuesta";
+import CintaPropuesta, { NOTA_FOTOS } from "../../../compartido/CintaPropuesta";
 import Etapas from "../../../compartido/Etapas";
 import { linda } from "../../../compartido/fechas";
 import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
@@ -300,7 +300,7 @@ function Pie() {
         <p className="font-display text-3xl text-fondo">Cabeza del Indio</p>
         <p className="mt-1">Camino de Pasos Malos · Villa de Merlo, San Luis</p>
         <p className="mt-6 max-w-2xl">
-          <b className="text-fondo">Esto es una propuesta de diseño, no la página oficial.</b> Los datos y las fotos salen de las publicaciones de @cabeza_del_indio y @laberinto_tematico (2026). Si el negocio no la quiere, se da de baja.
+          <b className="text-fondo">Esto es una propuesta de diseño, no la página oficial.</b> Los datos y las fotos salen de las publicaciones de @cabeza_del_indio y @laberinto_tematico (2026). {NOTA_FOTOS} Si el negocio no la quiere, se da de baja.
         </p>
       </div>
     </footer>
@@ -325,6 +325,7 @@ export default function App() {
             <>
               <p className="etiqueta">El predio</p>
               <h2 className="font-display mt-4 text-5xl leading-[1.02] md:text-7xl">Siete hectáreas de sierra</h2>
+              <p className="mx-auto mt-5 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
             </>
           }
           leyenda="Un plan que no se arma: se vive."
