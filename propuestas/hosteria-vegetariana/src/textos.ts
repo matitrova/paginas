@@ -3,8 +3,6 @@
 // Lo que no publicaron (tarifas, estadía mínima, horarios) no se inventa: la página manda a consultarlo.
 // No se usa lo que solo figuraba en su sitio de 2016 y puede haber cambiado (TV, horarios de entrada, desayuno).
 
-import type { Etapa } from "../../../compartido/Etapas";
-
 export const NEGOCIO = "Hostería Vegetariana";
 export const foto = (nombre: string) => `./fotos/${nombre}.webp`;
 
@@ -17,23 +15,27 @@ export const MAPA = "https://www.google.com/maps/search/?api=1&query=Hoster%C3%A
 
 // 100% vegana: posteo "Nuestra Misión" (11/09/2026). 6 eco-aparts y 2013: nota de Revista Un Camino (05/09/2024).
 // 3 km: su propia página de ubicación.
-export const DATOS: [string, string][] = [
-  ["100%", "cocina vegana"],
-  ["6", "eco-aparts de montaña"],
-  ["2013", "el año en que abrió"],
-  ["3 km", "de la plaza de Merlo"],
-];
+export const DATOS = ["Desde 2013", "6 eco-aparts", "100% vegana", "A 3 km de la plaza"];
 
 // Posteo "Nuestra Misión" (11/09/2026) y posteo del 21/11/2025
 export const MISION = "Somos veganos por decisión política, no por tendencia. Creemos que la empatía no debería tener fronteras de especie, y que cuidar a las personas, a los animales y a la tierra es una forma de habitar.";
 export const UNICO = "El único alojamiento vegano de Argentina";
 
-export const ETAPAS: Etapa[] = [
+// La estadía en cuatro palabras: al tocar una cambian la foto y el texto
+export interface Momento {
+  palabra: string;
+  foto: string;
+  alt: string;
+  titulo: string;
+  texto: string;
+}
+
+export const MOMENTOS: Momento[] = [
   {
     // Nota de Revista Un Camino (05/09/2024) y su página de servicios
     foto: foto("galeria"),
     alt: "Una galería de piedra con piso de laja",
-    etiqueta: "Dormir",
+    palabra: "Dormir",
     titulo: "Eco-aparts de montaña",
     texto: "Seis eco-aparts de piedra, con balcón cubierto y vista al valle y a las sierras.",
   },
@@ -41,7 +43,7 @@ export const ETAPAS: Etapa[] = [
     // Posteo "Nuestra Misión" (11/09/2026) y reel del 18/09/2026
     foto: foto("plato"),
     alt: "Un plato vegano con ensalada, cereales y verduras",
-    etiqueta: "Comer",
+    palabra: "Comer",
     titulo: "Cocina casera y vegana",
     texto: "Con huerta propia, productores locales e ingredientes orgánicos de estación. Si tenés alguna alergia, adaptamos cada preparación.",
   },
@@ -49,7 +51,7 @@ export const ETAPAS: Etapa[] = [
     // Reel del 16/07/2025 y agenda de retiros 2026/2027
     foto: foto("sala"),
     alt: "El techo de madera de la sala de práctica, con lámparas de papel",
-    etiqueta: "Practicar",
+    palabra: "Practicar",
     titulo: "Yoga, gong y cuencos",
     texto: "Una sala de madera equipada para clases de yoga, meditación y baños de gong.",
   },
@@ -57,7 +59,7 @@ export const ETAPAS: Etapa[] = [
     // Reel del 16/07/2025 y posteo de la cosecha (29/11/2025)
     foto: foto("arroyo"),
     alt: "Un arroyo entre las piedras, en el monte",
-    etiqueta: "Caminar",
+    palabra: "Caminar",
     titulo: "Parque natural y frutales",
     texto: "Senderos para caminar entre las sierras, y frutales que en noviembre dan moras, higos, duraznos, manzanas, peras y damascos.",
   },
@@ -106,15 +108,20 @@ export const MATERIALES = [
   { titulo: "Sol y viento", texto: "Paneles solares, molino eólico y termotanques solares para el agua caliente." },
 ];
 
-// La primera es la que termina a pantalla completa. Máximo 7.
-export const GALERIA = [
-  { src: foto("flores"), alt: "Un almendro en flor, con las sierras detrás" },
-  { src: foto("terraza"), alt: "La terraza blanca frente a las sierras" },
-  { src: foto("frutas"), alt: "Un cuenco con frutas de la cosecha, entre las parras" },
-  { src: foto("mural"), alt: "Un muro de piedra con un mural de colores, bajo el cielo" },
-  { src: foto("edificio"), alt: "La hostería de piedra entre los árboles, vista desde el aire" },
-  { src: foto("arroyo"), alt: "El arroyo entre las piedras" },
-  { src: foto("cuencos"), alt: "Una vela encendida sobre una mesa de madera" },
+// Las fotos van en tres columnas que suben a distinta velocidad, cada una con su leyenda
+export const COLUMNAS = [
+  [
+    { src: foto("flores"), alt: "Un almendro en flor, con las sierras detrás", leyenda: "Almendros en flor" },
+    { src: foto("mural"), alt: "Un muro de piedra con un mural de colores, bajo el cielo", leyenda: "El mural" },
+  ],
+  [
+    { src: foto("terraza"), alt: "La terraza blanca frente a las sierras", leyenda: "La terraza" },
+    { src: foto("frutas"), alt: "Un cuenco con frutas de la cosecha, entre las parras", leyenda: "La cosecha" },
+  ],
+  [
+    { src: foto("ronda"), alt: "Un grupo sentado en ronda a la sombra de un árbol", leyenda: "A la sombra" },
+    { src: foto("cuencos"), alt: "Una vela encendida sobre una mesa de madera", leyenda: "Una vela encendida" },
+  ],
 ];
 
 export const ESTADIA = "Una estadía";

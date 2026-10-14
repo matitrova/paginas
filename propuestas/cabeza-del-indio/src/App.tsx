@@ -1,10 +1,16 @@
+import { MotionConfig, motion } from "framer-motion";
 import { useState, type FormEvent } from "react";
 import CintaPropuesta, { NOTA_FOTOS } from "../../../compartido/CintaPropuesta";
-import Etapas from "../../../compartido/Etapas";
 import { linda } from "../../../compartido/fechas";
 import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
-import ZoomParallax from "../../../compartido/ZoomParallax";
-import { DATOS, ENTRADAS, ESLOGAN, ETAPAS, GALERIA, HORARIOS, INSTAGRAM, INSTAGRAM_LABERINTO, LABERINTO, MAPA, NEGOCIO, NOVEDAD, PLATOS, PREGUNTAS, REFUGIO, RESERVAS, WHATSAPP_TEXTO, foto } from "./textos";
+import { ENTRADAS, ESLOGAN, FRASE, HORARIOS, INSTAGRAM, INSTAGRAM_LABERINTO, LABERINTO, MAPA, NEGOCIO, NOVEDAD, PARADAS, PLATOS, POSTALES, PREGUNTAS, REFUGIO, RESERVAS, WHATSAPP_TEXTO, foto } from "./textos";
+
+const PAPEL = "bg-[#fffdf7]";
+const Adorno = () => (
+  <p aria-hidden className="text-xl text-acento">
+    ✦
+  </p>
+);
 
 function Encabezado() {
   return (
@@ -70,17 +76,17 @@ function Portada() {
   );
 }
 
-function Datos() {
+// En vez de números sueltos, una sola frase enorme con los datos en color.
+function Frase() {
   return (
-    <section className="border-y-2 border-tinta bg-panel">
-      <dl className="mx-auto grid max-w-6xl grid-cols-2 md:grid-cols-4">
-        {DATOS.map(([numero, texto]) => (
-          <div key={numero} className="border-linea px-5 py-8 odd:border-r md:border-r md:px-8 md:py-10 md:last:border-r-0">
-            <dt className="font-display text-4xl text-acento md:text-5xl">{numero}</dt>
-            <dd className="mt-2 text-sm leading-snug text-suave md:text-base">{texto}</dd>
-          </div>
+    <section className="mx-auto max-w-6xl px-5 py-24 md:px-10 md:py-36">
+      <p className="font-display text-[2.5rem] leading-[1.08] md:text-7xl md:leading-[1.05]">
+        {FRASE.map(([texto, destacado]) => (
+          <span key={texto} className={destacado ? "text-acento" : undefined}>
+            {texto}
+          </span>
         ))}
-      </dl>
+      </p>
     </section>
   );
 }
@@ -107,14 +113,46 @@ function Platos() {
   );
 }
 
+// El día contado por horas: una línea punteada con cuatro paradas y las fotos como postales, una a cada lado.
 function Dia() {
   return (
-    <section id="dia" className="mx-auto max-w-6xl px-5 pt-24 md:px-10 md:pt-32">
-      <p className="etiqueta">Sin apuro</p>
-      <h2 className="font-display mt-4 max-w-3xl text-5xl leading-[1.02] md:text-7xl">Un día entero acá arriba</h2>
-      <p className="mt-6 max-w-xl text-lg text-suave">No es solo un restaurante: es un lugar para recorrer, comer y quedarse.</p>
-      <div className="mt-6 md:mt-0">
-        <Etapas etapas={ETAPAS} />
+    <section id="dia" className="border-t-2 border-tinta bg-panel">
+      <div className="mx-auto max-w-6xl px-5 py-24 md:px-10 md:py-32">
+        <header className="text-center">
+          <Adorno />
+          <p className="etiqueta mt-4">Sin apuro</p>
+          <h2 className="font-display mx-auto mt-4 max-w-3xl text-5xl leading-[1.02] md:text-7xl">Un día entero acá arriba</h2>
+          <p className="mx-auto mt-6 max-w-xl text-lg text-suave">No es solo un restaurante: es un lugar para recorrer, comer y quedarse.</p>
+        </header>
+
+        <ol className="relative mt-16 md:mt-24">
+          <span aria-hidden className="absolute top-2 bottom-0 left-2.5 border-l-2 border-dashed border-tinta/35 md:left-1/2" />
+          {PARADAS.map((p, i) => (
+            <motion.li
+              key={p.titulo}
+              initial={{ opacity: 0, y: 48 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-12% 0px" }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+              className="relative grid gap-7 pb-20 pl-11 last:pb-0 md:grid-cols-2 md:items-center md:gap-28 md:pl-0"
+            >
+              <span aria-hidden className="absolute top-2 left-2.5 h-5 w-5 -translate-x-1/2 rounded-full border-4 border-panel bg-acento md:top-1/2 md:left-1/2 md:-translate-y-1/2" />
+              <div className={`min-w-0 ${i % 2 ? "md:order-2" : ""}`}>
+                <figure className={`${PAPEL} relative mx-auto max-w-sm p-2.5 shadow-[0_22px_44px_-22px_rgba(42,28,18,0.7)] ${i % 2 ? "rotate-2" : "-rotate-2"}`}>
+                  <span aria-hidden className="absolute -top-3 left-1/2 h-6 w-24 -translate-x-1/2 -rotate-3 bg-acento/30" />
+                  <img src={p.foto} alt={p.alt} loading="lazy" className="aspect-[4/5] w-full object-cover" />
+                </figure>
+              </div>
+              <div className={`min-w-0 ${i % 2 ? "md:text-right" : ""}`}>
+                <p className="font-display text-5xl leading-none text-acento md:text-8xl">{p.hora}</p>
+                <p className="etiqueta mt-4">{p.etiqueta}</p>
+                <h3 className="font-display mt-2 text-3xl leading-[1.05] md:text-5xl">{p.titulo}</h3>
+                <p className={`mt-4 max-w-md text-lg leading-relaxed text-suave ${i % 2 ? "md:ml-auto" : ""}`}>{p.texto}</p>
+                {p.dato && <p className="mt-4 inline-block rounded-full border-2 border-tinta px-4 py-1.5 text-sm font-bold">De {p.dato} h</p>}
+              </div>
+            </motion.li>
+          ))}
+        </ol>
       </div>
     </section>
   );
@@ -122,7 +160,7 @@ function Dia() {
 
 function Laberinto() {
   return (
-    <section id="laberinto" className="mt-24 bg-monte text-fondo md:mt-32">
+    <section id="laberinto" className="bg-monte text-fondo">
       <div className="mx-auto grid max-w-6xl gap-12 px-5 py-24 md:grid-cols-[1.15fr_0.85fr] md:px-10 md:py-32">
         <div>
           <p className="etiqueta !text-fondo/70">Para ir en familia</p>
@@ -184,8 +222,36 @@ function Refugio() {
   );
 }
 
+// Las fotos como polaroids desparramadas; se enderezan al pasarles por arriba o al tocarlas.
+function Postales() {
+  const giros = ["-rotate-3", "rotate-2", "-rotate-1", "rotate-3", "-rotate-2", "rotate-1", "-rotate-3"];
+  return (
+    <section className="overflow-hidden border-y-2 border-tinta bg-panel py-24 md:py-32">
+      <header className="px-5 text-center">
+        <Adorno />
+        <p className="etiqueta mt-4">El predio</p>
+        <h2 className="font-display mt-4 text-5xl leading-[1.02] md:text-7xl">Postales de la sierra</h2>
+        <p className="mx-auto mt-5 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
+      </header>
+      <ul className="mx-auto mt-14 flex max-w-6xl flex-wrap justify-center gap-x-4 gap-y-9 px-5 md:gap-x-8 md:gap-y-12 md:px-10">
+        {POSTALES.map((f, i) => (
+          <li
+            key={f.src}
+            tabIndex={0}
+            className={`${PAPEL} w-[45%] p-2 shadow-[0_18px_36px_-18px_rgba(42,28,18,0.7)] transition duration-300 outline-none hover:z-10 hover:scale-105 hover:rotate-0 focus:z-10 focus:scale-105 focus:rotate-0 md:w-[21%] md:p-3 ${giros[i]} ${i % 2 ? "mt-7" : ""}`}
+          >
+            <img src={f.src} alt={f.alt} loading="lazy" className="aspect-[4/5] w-full object-cover" />
+            <p className="font-display pt-3 pb-1.5 text-center text-sm md:text-lg">{f.leyenda}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// La reserva como una comanda: un talonario de papel donde se marca qué se reserva.
 function Reserva({ alEnviar }: { alEnviar: (mensaje: string) => void }) {
-  const campo = "mt-2 w-full rounded-lg border-2 border-linea bg-fondo px-3.5 py-3 text-tinta outline-none focus:border-acento";
+  const renglon = "mt-1 w-full border-0 border-b-2 border-dotted border-tinta/45 bg-transparent px-0 py-2 text-lg text-tinta outline-none focus:border-solid focus:border-acento";
   const rotulo = "block text-xs font-bold tracking-[0.18em] text-suave uppercase";
 
   const enviar = (e: FormEvent<HTMLFormElement>) => {
@@ -199,58 +265,66 @@ function Reserva({ alEnviar }: { alEnviar: (mensaje: string) => void }) {
   };
 
   return (
-    <section id="reserva" className="border-y-2 border-tinta bg-panel py-24 md:py-32">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 md:grid-cols-2 md:px-10">
+    <section id="reserva" className="bg-monte py-24 text-fondo md:py-32">
+      <div className="mx-auto grid max-w-6xl gap-14 px-5 md:grid-cols-[0.85fr_1.15fr] md:items-center md:px-10">
         <div>
-          <p className="etiqueta">Reservas</p>
+          <p className="etiqueta !text-fondo/70">Reservas</p>
           <h2 className="font-display mt-4 text-5xl leading-[1.02] md:text-7xl">Guardate un lugar</h2>
-          <dl className="mt-10 divide-y divide-linea border-y border-linea">
+          <dl className="mt-10 divide-y divide-fondo/20 border-y border-fondo/20">
             {HORARIOS.map((h) => (
               <div key={h.titulo} className="py-5">
                 <dt className="font-bold">{h.titulo}</dt>
-                <dd className="mt-1 text-suave">{h.texto}</dd>
+                <dd className="mt-1 text-fondo/75">{h.texto}</dd>
               </div>
             ))}
           </dl>
         </div>
 
-        <form onSubmit={enviar} className="grid content-start gap-5 rounded-2xl border-2 border-tinta bg-fondo p-6 sm:grid-cols-2 md:p-8">
-          <p className="font-display text-3xl sm:col-span-2">Reservá por WhatsApp</p>
-          <label className="sm:col-span-2">
-            <span className={rotulo}>Qué querés reservar</span>
-            <select name="que" className={campo}>
-              {RESERVAS.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className={rotulo}>Día</span>
-            <input type="date" name="dia" required className={campo} />
-          </label>
-          <label>
-            <span className={rotulo}>Personas</span>
-            <select name="personas" defaultValue="2" className={campo}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
-                <option key={n}>{n}</option>
-              ))}
-            </select>
-          </label>
-          <label className="sm:col-span-2">
-            <span className={rotulo}>A nombre de</span>
-            <input name="nombre" autoComplete="given-name" className={campo} />
-          </label>
-          <button type="submit" className="rounded-full bg-acento px-6 py-4 font-bold text-fondo transition hover:brightness-110 sm:col-span-2">
-            Reservar por WhatsApp
-          </button>
-          <p className="text-sm text-suave sm:col-span-2">
-            También por WhatsApp o teléfono al {WHATSAPP_TEXTO}, o en{" "}
-            <a href={INSTAGRAM} target="_blank" rel="noopener" className="text-tinta underline">
-              @cabeza_del_indio
-            </a>
-            .
-          </p>
-        </form>
+        <div className="rotate-1 drop-shadow-[0_26px_30px_rgba(0,0,0,0.35)]">
+          <form onSubmit={enviar} className={`comanda ${PAPEL} grid gap-6 px-6 py-10 text-tinta sm:grid-cols-2 md:px-10 md:py-12`}>
+            <div className="flex items-baseline justify-between border-b-2 border-tinta pb-4 sm:col-span-2">
+              <p className="font-display text-3xl md:text-4xl">Comanda</p>
+              <p className="text-xs font-bold tracking-[0.2em] text-suave uppercase">Cabeza del Indio</p>
+            </div>
+            <fieldset className="sm:col-span-2">
+              <legend className={rotulo}>Qué reservás</legend>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {RESERVAS.map((r, i) => (
+                  <label key={r} className="cursor-pointer">
+                    <input type="radio" name="que" value={r} defaultChecked={i === 0} className="peer sr-only" />
+                    <span className="block rounded-full border-2 border-tinta px-4 py-2 font-bold transition peer-checked:bg-tinta peer-checked:text-fondo peer-focus-visible:ring-2 peer-focus-visible:ring-acento">{r}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <label>
+              <span className={rotulo}>Día</span>
+              <input type="date" name="dia" required className={renglon} />
+            </label>
+            <label>
+              <span className={rotulo}>Personas</span>
+              <select name="personas" defaultValue="2" className={renglon}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                  <option key={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+            <label className="sm:col-span-2">
+              <span className={rotulo}>A nombre de</span>
+              <input name="nombre" autoComplete="given-name" className={renglon} />
+            </label>
+            <button type="submit" className="rounded-full bg-acento px-6 py-4 font-bold text-fondo transition hover:brightness-110 sm:col-span-2">
+              Reservar por WhatsApp
+            </button>
+            <p className="text-sm text-suave sm:col-span-2">
+              También por WhatsApp o teléfono al {WHATSAPP_TEXTO}, o en{" "}
+              <a href={INSTAGRAM} target="_blank" rel="noopener" className="text-tinta underline">
+                @cabeza_del_indio
+              </a>
+              .
+            </p>
+          </form>
+        </div>
       </div>
     </section>
   );
@@ -273,20 +347,21 @@ function Llegar() {
   );
 }
 
+// Las preguntas como una carta: centradas, a la vista y separadas por un adorno.
 function Preguntas() {
   return (
-    <section className="mx-auto max-w-3xl px-5 pb-24 md:px-10 md:pb-32">
+    <section className="mx-auto max-w-2xl px-5 pb-24 text-center md:px-10 md:pb-32">
       <p className="etiqueta">Antes de venir</p>
-      <h2 className="font-display mt-4 text-5xl leading-[1.02] md:text-6xl">Preguntas frecuentes</h2>
-      <div className="mt-10 divide-y divide-linea border-y border-linea">
+      <h2 className="font-display mt-4 text-5xl leading-[1.02] md:text-6xl">Preguntas de la casa</h2>
+      <div className="mt-12 grid gap-8">
         {PREGUNTAS.map(({ p, r }) => (
-          <details key={p} className="group py-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg font-bold">
-              {p}
-              <span className="text-2xl text-acento transition group-open:rotate-45">+</span>
-            </summary>
-            <p className="mt-3 leading-relaxed text-suave">{r}</p>
-          </details>
+          <div key={p} className="grid gap-8">
+            <Adorno />
+            <div>
+              <h3 className="font-display text-2xl leading-tight md:text-3xl">{p}</h3>
+              <p className="mt-3 text-lg leading-relaxed text-suave">{r}</p>
+            </div>
+          </div>
         ))}
       </div>
     </section>
@@ -310,27 +385,17 @@ function Pie() {
 export default function App() {
   const [mensaje, setMensaje] = useState<string | null>(null);
   return (
-    <>
+    // Con las animaciones desactivadas en el sistema, las paradas del día aparecen sin desplazarse
+    <MotionConfig reducedMotion="user">
       <CintaPropuesta negocio={NEGOCIO} />
       <Encabezado />
       <main>
         <Portada />
-        <Datos />
         <Platos />
+        <Frase />
         <Dia />
         <Laberinto />
-        <ZoomParallax
-          fotos={GALERIA}
-          titulo={
-            <>
-              <p className="etiqueta">El predio</p>
-              <h2 className="font-display mt-4 text-5xl leading-[1.02] md:text-7xl">Siete hectáreas de sierra</h2>
-              <p className="mx-auto mt-5 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
-            </>
-          }
-          leyenda="Un plan que no se arma: se vive."
-          leyendaClase="font-display"
-        />
+        <Postales />
         <Refugio />
         <Reserva alEnviar={setMensaje} />
         <Llegar />
@@ -338,6 +403,6 @@ export default function App() {
       </main>
       <Pie />
       <VistaWhatsApp mensaje={mensaje} negocio={NEGOCIO} pagina="propuesta" tipo="propuesta" alCerrar={() => setMensaje(null)} />
-    </>
+    </MotionConfig>
   );
 }

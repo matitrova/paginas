@@ -2,8 +2,6 @@
 // Todos los datos salen de lo que el negocio publicó. Las fuentes están al lado de cada bloque.
 // Lo que no publicaron (horario del restaurante, carta, valor del refugio) no se inventa: se consulta.
 
-import type { Etapa } from "../../../compartido/Etapas";
-
 export const NEGOCIO = "Mirador Cabeza del Indio";
 export const foto = (nombre: string) => `./fotos/${nombre}.webp`;
 
@@ -16,20 +14,37 @@ export const INSTAGRAM_LABERINTO = "https://www.instagram.com/laberinto_tematico
 export const MAPA = "https://www.google.com/maps/search/?api=1&query=-32.3225822,-64.9795517";
 
 // 7 hectáreas: posteo del 14/07/2026. Tres cocciones: su Facebook. Mirador 360: bio de Instagram.
-// 5 km: Google Maps da 5,3 km desde la plaza.
-export const DATOS: [string, string][] = [
-  ["7 ha", "de predio privado en la sierra"],
-  ["3 fuegos", "disco de arado, horno de barro y pozo"],
-  ["360°", "de vista desde el mirador"],
-  ["5 km", "del centro de Villa de Merlo"],
+// 5 km: Google Maps da 5,3 km desde la plaza. Cada parte dice si va destacada.
+export const FRASE: [string, boolean?][] = [
+  ["Siete hectáreas", true],
+  [" de sierra, "],
+  ["tres fuegos", true],
+  [" y un mirador de "],
+  ["360°", true],
+  [", a "],
+  ["5 km", true],
+  [" del centro."],
 ];
 
 // Los platos que nombraron en Cadena 3 (01/02/2021)
 export const PLATOS = ["Chivito al disco", "Carne al pozo", "Carne rellena al horno de barro", "Asado", "Matambre"];
 
-export const ETAPAS: Etapa[] = [
+// El día, parada por parada. No hay hora para el almuerzo porque el horario del restaurante no está publicado.
+export interface Parada {
+  hora: string;
+  foto: string;
+  alt: string;
+  etiqueta: string;
+  titulo: string;
+  texto: string;
+  /** El horario publicado, si lo hay: "10 a 19". */
+  dato?: string;
+}
+
+export const PARADAS: Parada[] = [
   {
     // Reel del 29/01/2026 (publicación de verano)
+    hora: "10 h",
     foto: foto("sendero"),
     alt: "Dos personas caminan por un sendero de piedra entre los árboles",
     etiqueta: "A la mañana",
@@ -39,6 +54,7 @@ export const ETAPAS: Etapa[] = [
   },
   {
     // Facebook del negocio y Cadena 3 (01/02/2021)
+    hora: "Mediodía",
     foto: foto("picada"),
     alt: "Una tabla con quesos, fiambres y huevos sobre una mesa de madera, al aire libre",
     etiqueta: "Al mediodía",
@@ -47,6 +63,7 @@ export const ETAPAS: Etapa[] = [
   },
   {
     // Reel del 16/04/2026
+    hora: "Sobremesa",
     foto: foto("te"),
     alt: "Una tetera de barro y cuencos con yuyos sobre una mesa de madera",
     etiqueta: "La sobremesa",
@@ -55,6 +72,7 @@ export const ETAPAS: Etapa[] = [
   },
   {
     // Reel de abril de 2026
+    hora: "16 h",
     foto: foto("higos"),
     alt: "Higos en almíbar en un cuenco de vidrio",
     etiqueta: "A la tarde",
@@ -79,15 +97,15 @@ export const ENTRADAS: [string, string][] = [
   ["Residentes", "$10.000"],
 ];
 
-// La primera es la que termina a pantalla completa. Máximo 7.
-export const GALERIA = [
-  { src: foto("camino"), alt: "La sierra y el monte desde el camino de Pasos Malos" },
-  { src: foto("bosque"), alt: "Dos personas entre los árboles del bosque nativo" },
-  { src: foto("hamaca"), alt: "Una hamaca colgada entre los árboles, sobre las piedras" },
-  { src: foto("bandera"), alt: "La bandera argentina contra el cielo" },
-  { src: foto("pileton"), alt: "Un piletón de agua verde entre las piedras" },
-  { src: foto("carpintero"), alt: "Escultura de un pájaro carpintero en el laberinto" },
-  { src: foto("te"), alt: "La tetera de barro del té digestivo" },
+// Las postales del predio, cada una con su leyenda
+export const POSTALES = [
+  { src: foto("camino"), alt: "La sierra y el monte desde el camino de Pasos Malos", leyenda: "Pasos Malos" },
+  { src: foto("bosque"), alt: "Dos personas entre los árboles del bosque nativo", leyenda: "Bosque nativo" },
+  { src: foto("hamaca"), alt: "Una hamaca colgada entre los árboles, sobre las piedras", leyenda: "La hamaca" },
+  { src: foto("bandera"), alt: "La bandera argentina contra el cielo", leyenda: "Bandera en lo alto" },
+  { src: foto("pileton"), alt: "Un piletón de agua verde entre las piedras", leyenda: "Los piletones" },
+  { src: foto("carpintero"), alt: "Escultura de un pájaro carpintero en el laberinto", leyenda: "El laberinto" },
+  { src: foto("te"), alt: "La tetera de barro del té digestivo", leyenda: "Té de yuyos" },
 ];
 
 // Posteos del 14/07/2026 y del 28/08/2026

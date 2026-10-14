@@ -34,7 +34,7 @@ def comunes(pg, nombre):
         problemas.append(f"{nombre}: falta el noindex")
     if not pg.get_by_text("Sitio de ejemplo").first.is_visible():
         problemas.append(f"{nombre}: no se ve la cinta 'Sitio de ejemplo'")
-    ancho = pg.evaluate("[document.documentElement.scrollWidth, innerWidth]")
+    ancho = [pg.evaluate("document.documentElement.scrollWidth"), pg.viewport_size["width"]]
     if ancho[0] > ancho[1]:
         problemas.append(f"{nombre}: scroll horizontal ({ancho[0]} > {ancho[1]})")
 
@@ -42,12 +42,14 @@ def comunes(pg, nombre):
 def textos_afuera(pg, nombre, ignorar="[data-libre]"):
     # Una sección con overflow-hidden recorta un título que se sale y scrollWidth no lo ve:
     # por eso se mira la caja de cada texto.
+    # El ancho es el del dispositivo y no innerWidth: emulando un celular, si algo se sale el navegador
+    # agranda innerWidth hasta que entre, y comparar contra eso daba siempre bien.
     salidos = pg.evaluate(
-        """(ignorar) => [...document.querySelectorAll('main h1, main h2, main h3, main p, main li, main a, main label, footer *')]
+        """([ignorar, ancho]) => [...document.querySelectorAll('main h1, main h2, main h3, main p, main li, main a, main label, footer *')]
         .filter(e => !e.closest(ignorar) && e.getClientRects().length && getComputedStyle(e).opacity !== '0')
-        .filter(e => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1 })
+        .filter(e => { const r = e.getBoundingClientRect(); return r.right > ancho + 1 || r.left < -1 })
         .map(e => e.tagName + ': ' + e.textContent.trim().slice(0, 40))""",
-        ignorar,
+        [ignorar, pg.viewport_size["width"]],
     )
     problemas.extend(f"{nombre}: se sale de la pantalla -> {x}" for x in salidos)
 
@@ -199,7 +201,7 @@ def inicio(pg, nombre, cap):
     cap("1-portada")
     if pg.locator("meta[name=robots]").count():
         problemas.append(f"{nombre}: la página de venta no tiene que llevar noindex")
-    ancho = pg.evaluate("[document.documentElement.scrollWidth, innerWidth]")
+    ancho = [pg.evaluate("document.documentElement.scrollWidth"), pg.viewport_size["width"]]
     if ancho[0] > ancho[1]:
         problemas.append(f"{nombre}: scroll horizontal ({ancho[0]} > {ancho[1]})")
 
@@ -271,7 +273,7 @@ def propuesta(slug, boton, rellenar, esperados, extra=None):
             problemas.append(f"{nombre}: la vista del mensaje no aclara que es una propuesta")
         cap("12-mensaje")
         pg.get_by_role("button", name="Cerrar").click()
-        ancho = pg.evaluate("[document.documentElement.scrollWidth, innerWidth]")
+        ancho = [pg.evaluate("document.documentElement.scrollWidth"), pg.viewport_size["width"]]
         if ancho[0] > ancho[1]:
             problemas.append(f"{nombre}: scroll horizontal ({ancho[0]} > {ancho[1]})")
         textos_afuera(pg, nombre, ignorar=".h-\\[300vh\\], [data-libre]")
@@ -290,15 +292,39 @@ def altimetro(pg, nombre, cap):
         problemas.append(f"{nombre}: el altímetro pasó de {antes} a {despues} (esperaba menos de 2100 y después 2100)")
 
 
+def circuito(pg, nombre, cap):
+    altimetro(pg, nombre, cap)
+    # El circuito se recorre de costado: al principio del tramo la pista está en 0 y al final corrió tres pantallas
+    borde = lambda: pg.evaluate("document.querySelector('[data-pista]').getBoundingClientRect().left")
+    tope = pg.evaluate("(() => { const t = document.querySelector('[data-pista]').closest('[data-libre]'); return [t.getBoundingClientRect().top + scrollY, t.offsetHeight] })()")
+    pg.evaluate(f"window.scrollTo(0, {tope[0]})")
+    pg.wait_for_timeout(700)
+    antes = borde()
+    cap("00c-circuito-1")
+    for i, parte in enumerate((0.34, 0.67), 2):
+        pg.evaluate(f"window.scrollTo(0, {tope[0]} + ({tope[1]} - innerHeight) * {parte})")
+        pg.wait_for_timeout(700)
+        cap(f"00c-circuito-{i}")
+    pg.evaluate(f"window.scrollTo(0, {tope[0] + tope[1]} - innerHeight)")
+    pg.wait_for_timeout(700)
+    despues, ancho = borde(), pg.evaluate("innerWidth")
+    cap("00c-circuito-4")
+    if abs(antes) > 2 or abs(despues + 3 * ancho) > 4:
+        problemas.append(f"{nombre}: el circuito no corre de costado (pista de {antes:.0f} a {despues:.0f}, esperaba 0 y {-3 * ancho})")
+    pg.evaluate("window.scrollTo(0, 0)")
+    pg.wait_for_timeout(400)
+
+
 def rellenar_condores(pg):
     pg.fill("input[name=dia]", "2026-11-14")
-    pg.select_option("select[name=turno]", "13:00")
-    pg.select_option("select[name=personas]", "4")
+    pg.locator("label", has_text="13:00").click()
+    for _ in range(2):
+        pg.get_by_role("button", name="Sumar una persona").click()
     pg.fill("input[name=nombre]", "Prueba")
 
 
 def rellenar_indio(pg):
-    pg.select_option("select[name=que]", "Casa de té")
+    pg.locator("form label", has_text="Casa de té").click()
     pg.fill("input[name=dia]", "2026-11-14")
     pg.select_option("select[name=personas]", "4")
     pg.fill("input[name=nombre]", "Prueba")
@@ -310,6 +336,24 @@ def rellenar_hosteria(pg):
     pg.select_option("select[name=personas]", "3")
     pg.fill("input[name=nombre]", "Prueba")
     pg.fill("input[name=alergias]", "Maní")
+
+
+def palabras_hosteria(pg, nombre, cap):
+    # La estadía en cuatro palabras: cada una tiene que traer su propio texto y su propia foto
+    pg.locator("#estadia").scroll_into_view_if_needed()
+    vistos = set()
+    for palabra in ["Comer", "Practicar", "Caminar", "Dormir"]:
+        pg.get_by_role("tab", name=palabra).click()
+        pg.wait_for_timeout(300)
+        vistos.add((pg.locator("[data-momento] h3").inner_text(), pg.get_attribute("#estadia img[data-activa=true]", "src")))
+        if pg.get_by_role("tab", name=palabra).get_attribute("aria-selected") != "true":
+            problemas.append(f"{nombre}: '{palabra}' no queda marcada al tocarla")
+    pg.get_by_role("tab", name="Practicar").click()
+    pg.wait_for_timeout(800)
+    cap("00a-palabras")
+    if len(vistos) != 4 or len({t for t, _ in vistos}) != 4 or len({f for _, f in vistos}) != 4:
+        problemas.append(f"{nombre}: las cuatro palabras no cambian la foto y el texto -> {sorted(vistos)}")
+    retiro_hosteria(pg, nombre, cap)
 
 
 def retiro_hosteria(pg, nombre, cap):
@@ -336,11 +380,11 @@ PAGINAS = {
     "cabanas": cabanas,
     "casa-tala": casa_tala,
     "condores": propuesta("mirador-de-los-condores", "Reservar por WhatsApp", rellenar_condores,
-                          ["Circuito Aventura", "Día: sáb 14/11", "Turno: 13:00 h", "Personas: 4", "A nombre de: Prueba"], altimetro),
+                          ["Circuito Aventura", "Día: sáb 14/11", "Turno: 13:00 h", "Personas: 4", "A nombre de: Prueba"], circuito),
     "indio": propuesta("cabeza-del-indio", "Reservar por WhatsApp", rellenar_indio,
                        ["Cabeza del Indio", "Reserva: Casa de té", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
     "hosteria": propuesta("hosteria-vegetariana", "Consultar por WhatsApp", rellenar_hosteria,
-                          ["estadía en la Hostería Vegetariana", "Llegada: sáb 14/11", "Salida: lun 16/11", "Personas: 3", "A nombre de: Prueba", "Alergias: Maní"], retiro_hosteria),
+                          ["estadía en la Hostería Vegetariana", "Llegada: sáb 14/11", "Salida: lun 16/11", "Personas: 3", "A nombre de: Prueba", "Alergias: Maní"], palabras_hosteria),
 }
 DISPOSITIVOS = {
     "movil": dict(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True),

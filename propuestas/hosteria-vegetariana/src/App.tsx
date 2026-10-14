@@ -1,11 +1,9 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, type FormEvent } from "react";
 import CintaPropuesta, { NOTA_FOTOS } from "../../../compartido/CintaPropuesta";
-import Etapas from "../../../compartido/Etapas";
 import { diaSiguiente, linda } from "../../../compartido/fechas";
 import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
-import ZoomParallax from "../../../compartido/ZoomParallax";
-import { DATOS, DIRECCION, ESTADIA, ETAPAS, GALERIA, INSTAGRAM, MAPA, MATERIALES, MISION, NEGOCIO, PREGUNTAS, RETIROS, UNICO, WHATSAPP_TEXTO, foto } from "./textos";
+import { COLUMNAS, DATOS, DIRECCION, ESTADIA, INSTAGRAM, MAPA, MATERIALES, MISION, MOMENTOS, NEGOCIO, PREGUNTAS, RETIROS, UNICO, WHATSAPP_TEXTO, foto } from "./textos";
 
 const quieto = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TODO = "inset(0% 0% 0% 0% round 0vw 0vw 0vw 0vw)";
@@ -68,41 +66,74 @@ function Portada() {
   );
 }
 
-function Datos() {
-  return (
-    <section className="border-y border-linea">
-      <dl className="mx-auto grid max-w-6xl grid-cols-2 md:grid-cols-4">
-        {DATOS.map(([numero, texto]) => (
-          <div key={numero} className="px-5 py-9 text-center md:py-12">
-            <dt className="font-display text-6xl text-acento md:text-7xl">{numero}</dt>
-            <dd className="mt-2 text-sm tracking-wide text-suave md:text-base">{texto}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-}
-
 function Mision() {
   return (
     <section className="bg-acento text-fondo">
       <div className="mx-auto max-w-4xl px-5 py-24 text-center md:px-10 md:py-36">
         <p className="etiqueta !text-fondo/75">Nuestra misión</p>
         <p className="font-display mt-8 text-3xl leading-[1.18] md:text-5xl md:leading-[1.15]">{MISION}</p>
+        <ul className="mt-12 flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs font-bold tracking-[0.2em] text-fondo/80 uppercase">
+          {DATOS.map((d, i) => (
+            <li key={d}>
+              {i > 0 && (
+                <span aria-hidden className="mr-3 text-fondo/40">
+                  ·
+                </span>
+              )}
+              {d}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
 }
 
+// La estadía en cuatro palabras: al tocar una (o pasarle por arriba) cambian la foto del arco y el texto.
 function Estadia() {
+  const [activo, setActivo] = useState(0);
+  const m = MOMENTOS[activo];
   return (
-    <section id="estadia" className="mx-auto max-w-6xl px-5 pt-24 md:px-10 md:pt-32">
+    <section id="estadia" className="mx-auto max-w-6xl px-5 py-24 md:px-10 md:py-32">
       <p className="etiqueta">La estadía</p>
-      <h2 className="font-display mt-4 max-w-3xl text-5xl leading-none md:text-8xl">
+      <h2 className="font-display mt-4 max-w-3xl text-5xl leading-none md:text-7xl">
         Unos días <i className="text-acento">para bajar un cambio</i>
       </h2>
-      <div className="mt-6 md:mt-0">
-        <Etapas etapas={ETAPAS} />
+
+      <div className="mt-12 grid gap-8 md:mt-16 md:grid-cols-[1fr_0.85fr] md:gap-x-20 md:gap-y-10">
+        <div role="tablist" aria-label="Momentos de la estadía" className="grid grid-cols-2 gap-x-6 md:col-start-1 md:row-start-1 md:block md:self-end">
+          {MOMENTOS.map((x, i) => (
+            <button
+              key={x.palabra}
+              role="tab"
+              aria-selected={i === activo}
+              onClick={() => setActivo(i)}
+              onMouseEnter={() => setActivo(i)}
+              onFocus={() => setActivo(i)}
+              className={`font-display block cursor-pointer text-left text-[2.6rem] leading-[1.12] transition-colors duration-300 md:text-8xl md:leading-[1.06] ${i === activo ? "text-acento italic" : "text-tinta/30 hover:text-tinta/60"}`}
+            >
+              {x.palabra}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative aspect-[4/5] overflow-hidden rounded-t-full md:col-start-2 md:row-span-2 md:row-start-1">
+          {MOMENTOS.map((x, i) => (
+            <img
+              key={x.foto}
+              src={x.foto}
+              alt={x.alt}
+              loading="lazy"
+              data-activa={i === activo}
+              className={`absolute inset-0 h-full w-full object-cover transition-all duration-700 ${i === activo ? "scale-100 opacity-100" : "scale-105 opacity-0"}`}
+            />
+          ))}
+        </div>
+
+        <div role="tabpanel" data-momento className="md:col-start-1 md:row-start-2 md:min-h-40">
+          <h3 className="font-display text-3xl leading-tight md:text-4xl">{m.titulo}</h3>
+          <p className="mt-3 max-w-md text-lg leading-relaxed text-suave">{m.texto}</p>
+        </div>
       </div>
     </section>
   );
@@ -110,7 +141,7 @@ function Estadia() {
 
 function Retiros({ alElegir }: { alElegir: (retiro: string) => void }) {
   return (
-    <section id="retiros" className="mt-24 bg-panel md:mt-32">
+    <section id="retiros" className="bg-panel">
       <div className="mx-auto max-w-6xl px-5 py-24 md:px-10 md:py-32">
         <p className="etiqueta">Agenda</p>
         <h2 className="font-display mt-4 text-5xl leading-none md:text-8xl">Próximos retiros</h2>
@@ -160,10 +191,50 @@ function Construccion() {
   );
 }
 
+// Las fotos en tres columnas que suben a distinta velocidad mientras se baja, como una doble página de revista.
+function Columnas() {
+  const tramo = useRef<HTMLElement>(null);
+  const [fijo] = useState(quieto);
+  const { scrollYProgress } = useScroll({ target: tramo, offset: ["start end", "end start"] });
+  const lenta = useTransform(scrollYProgress, [0, 1], [50, -50]);
+  const rapida = useTransform(scrollYProgress, [0, 1], [150, -150]);
+  const formas = ["aspect-[3/4] rounded-t-full", "aspect-[4/5] rounded-2xl"];
+
+  return (
+    <section ref={tramo} className="overflow-hidden bg-panel py-24 md:py-36">
+      <div className="mx-auto max-w-6xl px-5 md:px-10">
+        <p className="etiqueta">El lugar</p>
+        <h2 className="font-display mt-4 max-w-3xl text-5xl leading-none md:text-7xl">
+          Donde la vida <i className="text-acento">encuentra su ritmo</i>
+        </h2>
+        <p className="mt-5 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
+
+        <div className="mt-14 grid grid-cols-2 gap-4 md:mt-20 md:grid-cols-3 md:gap-8">
+          {COLUMNAS.map((columna, c) => (
+            <motion.div
+              key={c}
+              style={fijo ? undefined : { y: c === 1 ? rapida : lenta }}
+              className={`grid content-start gap-4 md:gap-8 ${c === 1 ? "pt-16" : ""} ${c === 2 ? "col-span-2 grid-cols-2 md:col-span-1 md:grid-cols-1" : ""}`}
+            >
+              {columna.map((f, i) => (
+                <figure key={f.src}>
+                  <img src={f.src} alt={f.alt} loading="lazy" className={`w-full object-cover ${formas[(i + c) % 2]}`} />
+                  <figcaption className="font-display mt-2 text-lg text-suave italic md:text-xl">{f.leyenda}</figcaption>
+                </figure>
+              ))}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// La reserva se escribe como una frase: cada hueco es un campo del formulario.
 function Reserva({ motivo, alCambiar, alEnviar }: { motivo: string; alCambiar: (motivo: string) => void; alEnviar: (mensaje: string) => void }) {
   const [llegada, setLlegada] = useState("");
-  const campo = "mt-2 w-full rounded-lg border border-linea bg-fondo px-3.5 py-3 text-tinta outline-none focus:border-acento";
-  const rotulo = "block text-xs font-bold tracking-[0.18em] text-suave uppercase";
+  // field-sizing ajusta el ancho del hueco a lo escrito; donde no existe, queda el ancho normal del campo
+  const hueco = "font-display mx-1 max-w-full border-0 border-b-2 border-acento/50 bg-transparent px-1 text-acento italic outline-none [field-sizing:content] focus:border-acento";
   const retiro = RETIROS.find((r) => r.nombre === motivo);
 
   const enviar = (e: FormEvent<HTMLFormElement>) => {
@@ -181,77 +252,63 @@ function Reserva({ motivo, alCambiar, alEnviar }: { motivo: string; alCambiar: (
   };
 
   return (
-    <section id="reserva" className="bg-panel py-24 md:py-32">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 md:grid-cols-2 md:px-10">
-        <div>
-          <p className="etiqueta">Reservas</p>
-          <h2 className="font-display mt-4 text-5xl leading-none md:text-7xl">
-            Escribinos <i className="text-acento">y vení</i>
-          </h2>
-          <p className="mt-6 max-w-md text-lg leading-relaxed text-suave">Las estadías y los retiros se reservan por WhatsApp. Contanos cuándo querés venir y te pasamos disponibilidad y tarifas.</p>
-          <img src={foto("ronda")} alt="Un grupo sentado en ronda a la sombra de un árbol" loading="lazy" className="mt-10 hidden aspect-[4/3] w-full rounded-2xl object-cover md:block" />
-        </div>
+    <section id="reserva" className="py-24 md:py-36">
+      <form onSubmit={enviar} className="mx-auto max-w-4xl px-5 md:px-10">
+        <p className="etiqueta">Reservas</p>
+        <h2 className="font-display mt-4 text-5xl leading-none md:text-7xl">
+          Escribinos <i className="text-acento">y vení</i>
+        </h2>
 
-        <form onSubmit={enviar} className="grid content-start gap-5 rounded-2xl border border-linea bg-fondo p-6 sm:grid-cols-2 md:p-8">
-          <p className="font-display text-4xl sm:col-span-2">Consultá tu fecha</p>
-          <label className="sm:col-span-2">
-            <span className={rotulo}>Quiero consultar por</span>
-            <select name="motivo" value={motivo} onChange={(e) => alCambiar(e.target.value)} className={campo}>
-              <option>{ESTADIA}</option>
-              {RETIROS.map((r) => (
-                <option key={r.nombre} value={r.nombre}>
-                  Retiro: {r.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
+        <p className="font-display mt-12 text-[1.75rem] leading-[1.9] md:text-5xl md:leading-[1.7]">
+          Quiero consultar por
+          <select name="motivo" aria-label="Qué querés consultar" value={motivo} onChange={(e) => alCambiar(e.target.value)} className={hueco}>
+            <option value={ESTADIA}>una estadía</option>
+            {RETIROS.map((r) => (
+              <option key={r.nombre} value={r.nombre}>
+                el retiro {r.nombre}
+              </option>
+            ))}
+          </select>
           {!retiro && (
             <>
-              <label>
-                <span className={rotulo}>Llegada</span>
-                <input type="date" name="llegada" required value={llegada} onChange={(e) => setLlegada(e.target.value)} className={campo} />
-              </label>
-              <label>
-                <span className={rotulo}>Salida</span>
-                <input type="date" name="salida" required min={llegada ? diaSiguiente(llegada) : undefined} className={campo} />
-              </label>
+              , del
+              <input type="date" name="llegada" aria-label="Llegada" required value={llegada} onChange={(e) => setLlegada(e.target.value)} className={hueco} />
+              al
+              <input type="date" name="salida" aria-label="Salida" required min={llegada ? diaSiguiente(llegada) : undefined} className={hueco} />
             </>
           )}
-          <label>
-            <span className={rotulo}>Personas</span>
-            <select name="personas" defaultValue="2" className={campo}>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <option key={n}>{n}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className={rotulo}>A nombre de</span>
-            <input name="nombre" autoComplete="given-name" className={campo} />
-          </label>
-          <label className="sm:col-span-2">
-            <span className={rotulo}>¿Alguna alergia alimentaria?</span>
-            <input name="alergias" placeholder="Opcional" className={campo} />
-          </label>
-          <button type="submit" className="rounded-full bg-acento px-6 py-4 font-bold text-fondo transition hover:brightness-110 sm:col-span-2">
-            Consultar por WhatsApp
-          </button>
-          <p className="text-sm text-suave sm:col-span-2">
-            También por WhatsApp al {WHATSAPP_TEXTO} o en{" "}
-            <a href={INSTAGRAM} target="_blank" rel="noopener" className="text-tinta underline">
-              @hosteriavegetariana
-            </a>
-            .
-          </p>
-        </form>
-      </div>
+          , para
+          <select name="personas" aria-label="Personas" defaultValue="2" className={hueco}>
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <option key={n}>{n}</option>
+            ))}
+          </select>
+          personas. Soy
+          <input name="nombre" aria-label="Tu nombre" placeholder="tu nombre" autoComplete="given-name" className={`${hueco} placeholder:text-acento/40`} />.
+        </p>
+        <p className="mt-8 text-lg text-suave">
+          ¿Alguna alergia alimentaria?
+          <input name="alergias" aria-label="Alergias alimentarias" placeholder="ninguna" className="mx-2 border-0 border-b-2 border-linea bg-transparent px-1 text-tinta outline-none focus:border-acento" />
+        </p>
+
+        <button type="submit" className="mt-12 rounded-full bg-acento px-8 py-4 text-lg font-bold text-fondo transition hover:brightness-110">
+          Consultar por WhatsApp
+        </button>
+        <p className="mt-5 text-sm text-suave">
+          También por WhatsApp al {WHATSAPP_TEXTO} o en{" "}
+          <a href={INSTAGRAM} target="_blank" rel="noopener" className="text-tinta underline">
+            @hosteriavegetariana
+          </a>
+          .
+        </p>
+      </form>
     </section>
   );
 }
 
 function Llegar() {
   return (
-    <section className="mx-auto grid max-w-6xl items-end gap-10 px-5 py-24 md:grid-cols-2 md:px-10 md:py-32">
+    <section className="border-t border-linea"><div className="mx-auto grid max-w-6xl items-end gap-10 px-5 py-24 md:grid-cols-2 md:px-10 md:py-32">
       <div>
         <p className="etiqueta">Cómo llegar</p>
         <h2 className="font-display mt-4 text-5xl leading-none md:text-7xl">
@@ -265,6 +322,7 @@ function Llegar() {
         <a href={MAPA} target="_blank" rel="noopener" className="mt-8 inline-block rounded-full border border-tinta px-6 py-3 font-bold transition hover:bg-tinta hover:text-fondo">
           Abrir en Google Maps
         </a>
+      </div>
       </div>
     </section>
   );
@@ -313,25 +371,11 @@ export default function App() {
       <Encabezado />
       <main>
         <Portada />
-        <Datos />
         <Mision />
         <Estadia />
         <Retiros alElegir={setMotivo} />
         <Construccion />
-        <ZoomParallax
-          fotos={GALERIA}
-          titulo={
-            <>
-              <p className="etiqueta">El lugar</p>
-              <h2 className="font-display mt-4 text-5xl leading-none md:text-8xl">
-                Donde la vida <i className="text-acento">encuentra su ritmo</i>
-              </h2>
-              <p className="mx-auto mt-5 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
-            </>
-          }
-          leyenda="Unos días para volver a lo esencial."
-          leyendaClase="font-display italic"
-        />
+        <Columnas />
         <Reserva motivo={motivo} alCambiar={setMotivo} alEnviar={setMensaje} />
         <Llegar />
         <Preguntas />

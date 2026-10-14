@@ -1,13 +1,12 @@
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, type FormEvent } from "react";
 import CintaPropuesta, { NOTA_FOTOS } from "../../../compartido/CintaPropuesta";
-import Etapas from "../../../compartido/Etapas";
 import { linda } from "../../../compartido/fechas";
 import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
-import ZoomParallax from "../../../compartido/ZoomParallax";
-import { CUANDO, DATOS, ETAPAS, GALERIA, INSTAGRAM, MAPA, NEGOCIO, PREGUNTAS, TAMBIEN, TURNOS, WHATSAPP_TEXTO, foto } from "./textos";
+import { CUANDO, DURACION, INSTAGRAM, MAPA, NEGOCIO, PREGUNTAS, TAMBIEN, TIRAS, TRAMOS, TURNOS, WHATSAPP_TEXTO, foto } from "./textos";
 
 const quieto = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const dos = (n: number) => String(n).padStart(2, "0");
 
 function Encabezado() {
   return (
@@ -53,111 +52,184 @@ function Portada() {
   );
 }
 
-function Datos() {
-  return (
-    <section className="border-y border-linea bg-panel">
-      <dl className="mx-auto grid max-w-6xl grid-cols-2 gap-px bg-linea md:grid-cols-4">
-        {DATOS.map(([numero, texto]) => (
-          <div key={numero} className="bg-panel px-5 py-8 md:px-8 md:py-10">
-            <dt className="font-display text-5xl text-acento md:text-6xl">{numero}</dt>
-            <dd className="mt-2 text-sm leading-snug text-suave md:text-base">{texto}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-}
-
+// El circuito se recorre de costado: la pantalla queda fija y los tramos pasan mientras se baja.
+// Con las animaciones desactivadas, los tramos van uno abajo del otro.
 function Circuito() {
+  const tramo = useRef<HTMLDivElement>(null);
+  const [fijo] = useState(quieto);
+  const [activo, setActivo] = useState(0);
+  const { scrollYProgress } = useScroll({ target: tramo, offset: ["start start", "end end"] });
+  const ultimo = TRAMOS.length - 1;
+  const x = useTransform(scrollYProgress, [0, 1], ["0%", `-${(ultimo * 100) / TRAMOS.length}%`]);
+  useMotionValueEvent(scrollYProgress, "change", (p) => setActivo(Math.round(p * ultimo)));
+
   return (
-    <section id="circuito" className="mx-auto max-w-6xl px-5 pt-24 md:px-10 md:pt-32">
-      <p className="etiqueta">El circuito</p>
-      <h2 className="font-display mt-4 max-w-3xl text-5xl leading-none md:text-8xl">Cuatro pruebas, dos horas</h2>
-      <p className="mt-6 max-w-xl text-lg text-suave">Está diseñado para toda la familia. ¿Estás listo para la acción?</p>
-      <div className="mt-6 md:mt-0">
-        <Etapas etapas={ETAPAS} />
+    <section id="circuito" className="pt-24 md:pt-32">
+      <div className="px-5 md:px-10">
+        <p className="etiqueta">El circuito</p>
+        <h2 className="font-display mt-4 max-w-4xl text-5xl leading-none md:text-8xl">Cuatro pruebas, {DURACION}</h2>
+        <p className="mt-6 max-w-xl text-lg text-suave">Está diseñado para toda la familia. ¿Estás listo para la acción?</p>
+      </div>
+
+      <div ref={tramo} data-libre className={fijo ? "mt-12" : "relative mt-6"} style={fijo ? undefined : { height: `${TRAMOS.length * 100}vh` }}>
+        <div className={fijo ? "" : "sticky top-0 flex h-[100svh] min-h-[620px] flex-col overflow-hidden pt-14"}>
+          {/* La línea de ruta: se completa a medida que se avanza */}
+          {!fijo && (
+            <div className="px-5 md:px-10">
+              <div className="relative h-0.5 bg-linea">
+                <motion.div style={{ scaleX: scrollYProgress }} className="absolute inset-0 origin-left bg-acento" />
+              </div>
+              <ol className="mt-3 flex justify-between text-[11px] font-bold tracking-[0.18em] uppercase md:text-xs">
+                {TRAMOS.map((t, i) => (
+                  <li key={t.etiqueta} className={`transition-colors duration-300 ${i <= activo ? "text-acento" : "text-suave/60"}`}>
+                    {dos(i + 1)}
+                    <span className="hidden sm:inline"> · {t.etiqueta}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          <motion.div data-pista style={fijo ? undefined : { x, width: `${TRAMOS.length * 100}vw` }} className={fijo ? "grid gap-16" : "flex min-h-0 flex-1"}>
+            {TRAMOS.map((t, i) => (
+              <article key={t.titulo} className={`grid items-center gap-6 px-5 md:grid-cols-2 md:gap-14 md:px-10 ${fijo ? "" : "h-full w-screen grid-rows-[minmax(0,1fr)_auto] py-6 md:grid-rows-1 md:py-10"}`}>
+                <img src={t.foto} alt={t.alt} loading="lazy" className={`w-full rounded-2xl object-cover ${fijo ? "aspect-[4/3]" : "h-full min-h-0"}`} />
+                <div className="relative">
+                  <span aria-hidden className="font-display absolute -top-[0.62em] right-0 text-[9rem] leading-none text-transparent [-webkit-text-stroke:1.5px_var(--color-linea)] md:text-[16rem]">
+                    {dos(i + 1)}
+                  </span>
+                  <p className="etiqueta relative">{t.etiqueta}</p>
+                  <h3 className="font-display relative mt-2 text-4xl leading-[1.02] md:mt-3 md:text-7xl">{t.titulo}</h3>
+                  {t.dato && <p className="font-display relative mt-2 text-6xl leading-none text-acento md:mt-4 md:text-9xl">{t.dato}</p>}
+                  <p className="relative mt-3 max-w-md text-base leading-relaxed text-suave md:mt-5 md:text-lg">{t.texto}</p>
+                </div>
+              </article>
+            ))}
+          </motion.div>
+        </div>
       </div>
     </section>
   );
 }
 
+// La reserva en cuatro pasos numerados; el turno se elige tocando un botón.
 function Reserva({ alEnviar }: { alEnviar: (mensaje: string) => void }) {
-  const campo = "mt-2 w-full rounded-lg border border-linea bg-fondo px-3.5 py-3 text-tinta outline-none focus:border-acento";
-  const rotulo = "block text-xs font-bold tracking-[0.18em] text-suave uppercase";
+  const [personas, setPersonas] = useState(2);
+  const paso = "font-display text-2xl text-acento";
+  const rotulo = "mt-1 block text-xs font-bold tracking-[0.18em] text-suave uppercase";
+  const campo = "mt-3 w-full rounded-lg border border-linea bg-fondo px-3.5 py-3 text-tinta outline-none focus:border-acento";
+  const boton = "grid h-12 w-12 place-items-center rounded-lg border border-linea text-2xl transition hover:border-acento disabled:opacity-30";
 
   const enviar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const v = (k: string) => String(f.get(k) ?? "").trim();
-    const lineas = ["Hola! Quiero reservar el Circuito Aventura.", "", `Día: ${linda(v("dia"))}`, `Turno: ${v("turno")} h`, `Personas: ${v("personas")}`];
+    const lineas = ["Hola! Quiero reservar el Circuito Aventura.", "", `Día: ${linda(v("dia"))}`, `Turno: ${v("turno")} h`, `Personas: ${personas}`];
     if (v("nombre")) lineas.push(`A nombre de: ${v("nombre")}`);
     lineas.push("", "Gracias!");
     alEnviar(lineas.join("\n"));
   };
 
   return (
-    <section id="reserva" className="bg-panel py-24 md:py-32">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 md:grid-cols-2 md:px-10">
-        <div>
-          <p className="etiqueta">Cuándo ir</p>
-          <h2 className="font-display mt-4 text-5xl leading-none md:text-7xl">Solo con reserva previa</h2>
-          <dl className="mt-10 divide-y divide-linea border-y border-linea">
+    <section id="reserva" className="border-y border-linea bg-panel py-24 md:py-32">
+      <form onSubmit={enviar} className="mx-auto max-w-6xl px-5 md:px-10">
+        <div className="grid gap-8 md:grid-cols-2 md:items-end">
+          <div>
+            <p className="etiqueta">Solo con reserva previa</p>
+            <h2 className="font-display mt-4 text-5xl leading-none md:text-8xl">Elegí tu turno</h2>
+          </div>
+          <dl className="grid gap-4 sm:grid-cols-2">
             {CUANDO.map((c) => (
-              <div key={c.titulo} className="py-5">
+              <div key={c.titulo} className="border-l-2 border-acento pl-4">
                 <dt className="font-bold">{c.titulo}</dt>
                 <dd className="mt-1 text-suave">{c.texto}</dd>
               </div>
             ))}
-            <div className="py-5">
-              <dt className="font-bold">Turnos</dt>
-              <dd className="mt-3 flex flex-wrap gap-2">
-                {TURNOS.map((t) => (
-                  <span key={t} className="font-display rounded-md border border-acento/60 px-3 py-1.5 text-2xl text-acento">
-                    {t}
-                  </span>
-                ))}
-              </dd>
-            </div>
           </dl>
         </div>
 
-        <form onSubmit={enviar} className="grid content-start gap-5 rounded-2xl border border-linea bg-fondo p-6 sm:grid-cols-2 md:p-8">
-          <p className="font-display text-3xl sm:col-span-2">Reservá tu turno</p>
+        <fieldset className="mt-14">
+          <legend>
+            <span className={paso}>01</span>
+            <span className={rotulo}>El horario</span>
+          </legend>
+          <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {TURNOS.map((t, i) => (
+              <label key={t} className="cursor-pointer">
+                <input type="radio" name="turno" value={t} defaultChecked={i === 0} className="peer sr-only" />
+                <span className="font-display block rounded-xl border border-linea bg-fondo py-6 text-center text-5xl transition peer-checked:border-acento peer-checked:bg-acento peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-white md:py-9 md:text-7xl">
+                  {t}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="mt-10 grid gap-8 md:grid-cols-3">
           <label>
-            <span className={rotulo}>Día</span>
+            <span className={paso}>02</span>
+            <span className={rotulo}>El día</span>
             <input type="date" name="dia" required className={campo} />
           </label>
+          <div>
+            <span className={paso}>03</span>
+            <span className={rotulo}>Cuántos son</span>
+            <div className="mt-3 flex items-center gap-4">
+              <button type="button" aria-label="Sacar una persona" disabled={personas <= 1} onClick={() => setPersonas(personas - 1)} className={boton}>
+                −
+              </button>
+              <output aria-live="polite" className="font-display w-12 text-center text-5xl tabular-nums">
+                {personas}
+              </output>
+              <button type="button" aria-label="Sumar una persona" disabled={personas >= 20} onClick={() => setPersonas(personas + 1)} className={boton}>
+                +
+              </button>
+            </div>
+          </div>
           <label>
-            <span className={rotulo}>Turno</span>
-            <select name="turno" className={campo}>
-              {TURNOS.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className={rotulo}>Personas</span>
-            <select name="personas" defaultValue="2" className={campo}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                <option key={n}>{n}</option>
-              ))}
-            </select>
-          </label>
-          <label>
+            <span className={paso}>04</span>
             <span className={rotulo}>A nombre de</span>
             <input name="nombre" autoComplete="given-name" className={campo} />
           </label>
-          <button type="submit" className="rounded-full bg-acento px-6 py-4 font-bold text-white transition hover:brightness-110 sm:col-span-2">
-            Reservar por WhatsApp
-          </button>
-          <p className="text-sm text-suave sm:col-span-2">
-            También por WhatsApp al {WHATSAPP_TEXTO} o en{" "}
-            <a href={INSTAGRAM} target="_blank" rel="noopener" className="text-tinta underline">
-              @miradordeloscondores
-            </a>
-            .
-          </p>
-        </form>
+        </div>
+
+        <button type="submit" className="font-display mt-12 w-full rounded-xl bg-acento px-6 py-5 text-3xl text-white transition hover:brightness-110 md:text-4xl">
+          Reservar por WhatsApp
+        </button>
+        <p className="mt-4 text-sm text-suave">
+          También por WhatsApp al {WHATSAPP_TEXTO} o en{" "}
+          <a href={INSTAGRAM} target="_blank" rel="noopener" className="text-tinta underline">
+            @miradordeloscondores
+          </a>
+          .
+        </p>
+      </form>
+    </section>
+  );
+}
+
+// Dos tiras de fotos que se cruzan: una corre hacia la izquierda y la otra hacia la derecha.
+function Fotos() {
+  const tramo = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: tramo, offset: ["start end", "end start"] });
+  const ida = useTransform(scrollYProgress, [0, 1], ["0vw", "-34vw"]);
+  const vuelta = useTransform(scrollYProgress, [0, 1], ["-34vw", "0vw"]);
+
+  return (
+    <section ref={tramo} className="overflow-hidden py-24 md:py-32">
+      <div className="px-5 md:px-10">
+        <p className="etiqueta">Desde arriba</p>
+        <h2 className="font-display mt-4 text-5xl leading-none md:text-8xl">Así se ve</h2>
+        <p className="mt-5 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
+      </div>
+      <div className="mt-12 grid gap-3 md:gap-4">
+        {TIRAS.map((tira, i) => (
+          <motion.div key={i} style={{ x: i ? vuelta : ida }} className="flex w-max gap-3 md:gap-4">
+            {tira.map((f) => (
+              <img key={f.src} src={f.src} alt={f.alt} loading="lazy" className="h-[38vh] w-[52vw] rounded-xl object-cover md:h-[46vh] md:w-[22vw]" />
+            ))}
+          </motion.div>
+        ))}
       </div>
     </section>
   );
@@ -165,7 +237,7 @@ function Reserva({ alEnviar }: { alEnviar: (mensaje: string) => void }) {
 
 function Tambien() {
   return (
-    <section className="mx-auto max-w-6xl px-5 py-24 md:px-10 md:py-32">
+    <section className="mx-auto max-w-6xl px-5 pb-24 md:px-10 md:pb-32">
       <div className="grid items-center gap-12 md:grid-cols-2">
         <img src={foto("base")} alt="La base del Circuito Aventura en la cima, vista desde el aire" loading="lazy" className="aspect-[4/5] w-full rounded-2xl object-cover" />
         <div>
@@ -204,22 +276,25 @@ function Llegar() {
   );
 }
 
+// Las preguntas como una lista de control: numeradas y siempre a la vista.
 function Preguntas() {
   return (
-    <section className="mx-auto max-w-3xl px-5 py-24 md:px-10 md:py-32">
+    <section className="mx-auto max-w-6xl px-5 py-24 md:px-10 md:py-32">
       <p className="etiqueta">Antes de subir</p>
-      <h2 className="font-display mt-4 text-5xl leading-none md:text-7xl">Preguntas frecuentes</h2>
-      <div className="mt-10 divide-y divide-linea border-y border-linea">
-        {PREGUNTAS.map(({ p, r }) => (
-          <details key={p} className="group py-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg font-bold">
-              {p}
-              <span className="text-2xl text-acento transition group-open:rotate-45">+</span>
-            </summary>
-            <p className="mt-3 leading-relaxed text-suave">{r}</p>
-          </details>
+      <h2 className="font-display mt-4 text-5xl leading-none md:text-8xl">Lo que tenés que saber</h2>
+      <ol className="mt-12 grid gap-x-14 border-t border-linea md:grid-cols-2">
+        {PREGUNTAS.map(({ p, r }, i) => (
+          <li key={p} className="grid grid-cols-[3.5rem_1fr] gap-2 border-b border-linea py-7">
+            <span aria-hidden className="font-display text-4xl leading-none text-acento">
+              {dos(i + 1)}
+            </span>
+            <div>
+              <h3 className="font-display text-2xl leading-tight md:text-3xl">{p}</h3>
+              <p className="mt-2 leading-relaxed text-suave">{r}</p>
+            </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   );
 }
@@ -246,21 +321,9 @@ export default function App() {
       <Encabezado />
       <main>
         <Portada />
-        <Datos />
         <Circuito />
-        <ZoomParallax
-          fotos={GALERIA}
-          titulo={
-            <>
-              <p className="etiqueta">Desde arriba</p>
-              <h2 className="font-display mt-4 text-5xl leading-none md:text-8xl">Así se ve</h2>
-              <p className="mx-auto mt-5 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
-            </>
-          }
-          leyenda="Todo el valle, a tus pies."
-          leyendaClase="font-display"
-        />
         <Reserva alEnviar={setMensaje} />
+        <Fotos />
         <Tambien />
         <Llegar />
         <Preguntas />

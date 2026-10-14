@@ -46,6 +46,14 @@ body {
   color: var(--color-acento);
 }
 
+/* La comanda: papel con el borde de arriba y el de abajo troquelados */
+.comanda {
+  --diente: 14px;
+  mask:
+    radial-gradient(circle at 50% 0, transparent 5px, black 5.5px) top / var(--diente) 51% repeat-x,
+    radial-gradient(circle at 50% 100%, transparent 5px, black 5.5px) bottom / var(--diente) 51% repeat-x;
+}
+
 /* El sello de la portada gira despacio sobre su centro */
 .sello-gira {
   transform-origin: 100px 100px;

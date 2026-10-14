@@ -2,8 +2,6 @@
 // Todos los datos salen de lo que el negocio publicó. Las fuentes están al lado de cada bloque.
 // Lo que no publicaron (precio, edad mínima) no se inventa: la página manda a consultarlo.
 
-import type { Etapa } from "../../../compartido/Etapas";
-
 export const NEGOCIO = "Mirador de los Cóndores";
 export const foto = (nombre: string) => `./fotos/${nombre}.webp`;
 
@@ -15,14 +13,19 @@ export const MAPA = "https://www.google.com/maps/search/?api=1&query=-32.403410,
 
 // Su descripción del circuito, repetida en los posteos del 7 y el 12/10/2026:
 // instagram.com/miradordeloscondores/p/DeM39TqCfle/
-export const DATOS: [string, string][] = [
-  ["2 h", "dura el circuito, aproximadamente"],
-  ["+1000 m", "de tirolesa, en tres tramos"],
-  ["70 m", "de altura en el puente más alto"],
-  ["15 m", "de escalada en roca"],
-];
+export const DURACION = "2\u00a0horas"; // con espacio duro, para que el título no corte entre el número y la palabra
 
-export const ETAPAS: Etapa[] = [
+export interface Tramo {
+  foto: string;
+  alt: string;
+  etiqueta: string;
+  titulo: string;
+  texto: string;
+  /** El número que se destaca en el tramo: "70 m". */
+  dato?: string;
+}
+
+export const TRAMOS: Tramo[] = [
   {
     foto: foto("tirolesa"),
     alt: "Una persona cruza el lago colgada de la tirolesa",
@@ -56,15 +59,24 @@ export const ETAPAS: Etapa[] = [
   },
 ];
 
-// La primera es la que termina a pantalla completa. Máximo 7.
-export const GALERIA = [
-  { src: foto("g-brazos"), alt: "Tres personas con los brazos en alto sobre el puente colgante" },
-  { src: foto("g-puente"), alt: "El puente colgante visto desde adentro" },
-  { src: foto("g-nubes"), alt: "Una persona sobre el puente, entre las nubes" },
-  { src: foto("g-arnes"), alt: "Una persona con arnés y casco en la tirolesa" },
-  { src: foto("g-valle"), alt: "El valle visto desde el puente" },
-  { src: foto("g-mar"), alt: "El filo de la sierra sobre un mar de nubes" },
-  { src: foto("g-cima"), alt: "Un grupo en la cima" },
+// Dos tiras de fotos que se cruzan al bajar
+export const TIRAS = [
+  [
+    { src: foto("g-brazos"), alt: "Tres personas con los brazos en alto sobre el puente colgante" },
+    { src: foto("g-nubes"), alt: "Una persona sobre el puente, entre las nubes" },
+    { src: foto("g-arnes"), alt: "Una persona con arnés y casco en la tirolesa" },
+    { src: foto("g-mar"), alt: "El filo de la sierra sobre un mar de nubes" },
+    { src: foto("tirolesa"), alt: "Una persona cruza el lago colgada de la tirolesa" },
+    { src: foto("camino"), alt: "El camino de montaña que sube al filo" },
+  ],
+  [
+    { src: foto("g-valle"), alt: "El valle visto desde el puente" },
+    { src: foto("g-puente"), alt: "El puente colgante visto desde adentro" },
+    { src: foto("g-cima"), alt: "Un grupo en la cima" },
+    { src: foto("balcones"), alt: "Un grupo camina por el filo, con el valle abajo" },
+    { src: foto("escalada"), alt: "Varias personas escalan una pared de roca" },
+    { src: foto("puentes"), alt: "Dos personas cruzan un puente colgante" },
+  ],
 ];
 
 // Mismos posteos de octubre de 2026
