@@ -14,20 +14,20 @@ export const INSTAGRAM_LABERINTO = "https://www.instagram.com/laberinto_tematico
 export const MAPA = "https://www.google.com/maps/search/?api=1&query=-32.3225822,-64.9795517";
 
 // 7 hectáreas: posteo del 14/07/2026. Tres cocciones: su Facebook. Mirador 360: bio de Instagram.
-// 5 km: Google Maps da 5,3 km desde la plaza. Cada parte dice si va destacada.
+// "Entre las Sierras de los Comechingones": posteo del 06/08/2026. Cada parte dice si va destacada.
 export const FRASE: [string, boolean?][] = [
   ["Siete hectáreas", true],
   [" de sierra, "],
   ["tres fuegos", true],
   [" y un mirador de "],
   ["360°", true],
-  [", a "],
-  ["5 km", true],
-  [" del centro."],
+  [", entre las "],
+  ["Sierras de los Comechingones", true],
+  ["."],
 ];
 
-// Los platos que nombraron en Cadena 3 (01/02/2021). Confirmar con el dueño que siguen en la carta.
-export const PLATOS = ["Chivito al disco", "Carne al pozo", "Carne rellena", "Asado", "Matambre"];
+// La cinta va con palabras de ellos: hashtags del 12/02 y el 16/04/2026, posteos del 18/07 y el 24/07/2026
+export const PLATOS = ["Cocina criolla", "Bodegón de montaña", "Mesa dulce", "Té de yuyos", "Almacén serrano"];
 
 // El día, parada por parada. No hay hora para el almuerzo porque el horario del restaurante no está publicado.
 export interface Parada {
@@ -53,13 +53,13 @@ export const PARADAS: Parada[] = [
     texto: "Un sendero por el bosque nativo que termina en piletones con agua del arroyo. En temporada, todos los días.",
   },
   {
-    // Facebook del negocio y Cadena 3 (01/02/2021)
+    // Facebook del negocio y posteo del 18/07/2026
     hora: "Mediodía",
     foto: foto("picada"),
     alt: "Una tabla con quesos, fiambres y huevos sobre una mesa de madera, al aire libre",
     etiqueta: "Al mediodía",
     titulo: "La mesa criolla",
-    texto: "Cocina criolla en tres cocciones: disco de arado, horno de barro y pozo. El chivito al disco se cocina entre tres y cuatro horas.",
+    texto: "Cocina criolla en tres cocciones: disco de arado, horno de barro y pozo. Platos abundantes y mesa dulce.",
   },
   {
     // Reel del 16/04/2026
@@ -85,7 +85,7 @@ export const PARADAS: Parada[] = [
 // Reel del 29/01/2026 de @cabeza_del_indio y lo que se ve en los reels de @laberinto_tematico
 export const LABERINTO = [
   "Sendero por el bosque nativo",
-  "Esculturas de animales autóctonos y carteles de la flora",
+  "Un recorrido diferente, en contacto con la naturaleza",
   "Piletones con agua del arroyo al final del recorrido",
 ];
 // Reel del 13/10/2026 de @laberinto_tematico
@@ -116,14 +116,14 @@ export const RESERVAS = ["Almuerzo", "Cena", "Refugio de montaña"];
 
 export const HORARIOS = [
   { titulo: "Restaurante", texto: "Almuerzos y cenas. Reservas al 2664 304222." },
-  { titulo: "Casa de té", texto: "Jueves a domingo, de 16 a 19." },
-  { titulo: "Laberinto y piletones", texto: "En temporada, todos los días de 10 a 19." },
+  { titulo: "Casa de té", texto: "Jueves a domingo, de 16 a 19 (publicado en abril de 2026)." },
+  { titulo: "Laberinto y piletones", texto: "Todos los días de 10 a 19 (publicado en enero de 2026)." },
 ];
 
 export const PREGUNTAS = [
   { p: "¿Cómo se reserva?", r: "Los almuerzos, las cenas y el refugio se reservan por WhatsApp o por teléfono al 2664 304222." },
   { p: "¿El laberinto se paga aparte?", r: "Sí, tiene su propia entrada. Los valores publicados en enero de 2026 están más arriba; confirmá el valor actual al reservar." },
   { p: "¿Se puede ir con chicos?", r: "Sí. El laberinto tiene entrada para chicos de 3 a 10 años." },
-  { p: "¿Cuándo abre la casa de té?", r: "De jueves a domingo, de 16 a 19." },
+  { p: "¿Cuándo abre la casa de té?", r: "En abril de 2026 publicaron de jueves a domingo, de 16 a 19. Confirmalo antes de ir." },
   { p: "¿Cuánto sale comer?", r: "La carta con precios no está publicada. Consultá por WhatsApp al 2664 304222." },
 ];

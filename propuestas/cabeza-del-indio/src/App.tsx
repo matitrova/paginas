@@ -58,7 +58,7 @@ function Portada() {
       <div className="absolute inset-0 bg-gradient-to-t from-tinta via-tinta/60 to-tinta/30 md:hidden" />
 
       <div className="relative flex flex-col justify-end px-5 pt-44 pb-12 text-fondo md:justify-center md:px-12 md:pt-32 md:pb-16 md:text-tinta">
-        <p className="etiqueta !text-fondo/85 md:!text-acento">Restaurante de campo · Casa de té · Laberinto</p>
+        <p className="etiqueta !text-fondo/85 md:!text-acento">Restaurante · Casa de té · Laberinto temático</p>
         <h1 className="font-display mt-5 text-[2.7rem] leading-[1.04] md:text-6xl lg:text-7xl">{ESLOGAN}</h1>
         <p className="mt-6 max-w-md text-lg leading-relaxed text-fondo/85 md:text-suave">Cocina criolla, mirador 360 y piletones naturales, en el Camino de Pasos Malos.</p>
         <div className="mt-8 flex flex-wrap gap-3">
@@ -335,7 +335,7 @@ function Llegar() {
         <h2 className="font-display mt-4 text-5xl leading-[1.02] md:text-7xl">Camino de Pasos Malos</h2>
       </div>
       <div>
-        <p className="max-w-md text-lg leading-relaxed text-suave">A unos 5 km del centro de Villa de Merlo, San Luis, subiendo por el Camino de Pasos Malos, al pie de las Sierras de los Comechingones.</p>
+        <p className="max-w-md text-lg leading-relaxed text-suave">En el Camino de Pasos Malos, Villa de Merlo, San Luis, entre las Sierras de los Comechingones.</p>
         <a href={MAPA} target="_blank" rel="noopener" className="mt-8 inline-block rounded-full border-2 border-tinta px-6 py-3 font-bold transition hover:bg-tinta hover:text-fondo">
           Abrir en Google Maps
         </a>
@@ -372,7 +372,7 @@ function Pie() {
         <p className="font-display text-3xl text-fondo">Cabeza del Indio</p>
         <p className="mt-1">Camino de Pasos Malos · Villa de Merlo, San Luis</p>
         <p className="mt-6 max-w-2xl">
-          <b className="text-fondo">Esto es una propuesta de diseño, no la página oficial.</b> Los datos y las fotos salen de las publicaciones de @cabeza_del_indio y @laberinto_tematico (2026). {NOTA_FOTOS} Si el negocio no la quiere, se da de baja.
+          <b className="text-fondo">Esto es una propuesta de diseño, no la página oficial.</b> Los datos salen de lo que publicaron @cabeza_del_indio, @laberinto_tematico y su página de Facebook; las fotos, de sus redes. {NOTA_FOTOS} Si el negocio no la quiere, se da de baja.
         </p>
       </div>
     </footer>

@@ -7,7 +7,7 @@ import { Mesa, Postal } from "./PostalesArrastrables";
 import TextoQueAparece from "./TextoQueAparece";
 import {
   ALMACEN,
-  CHIVITO,
+  COCINA,
   ENTRADAS,
   ESLOGAN,
   FICHA,
@@ -86,9 +86,9 @@ function Portada() {
       <img src={foto("portada")} alt="Un plato de carne y verduras servido en una olla de barro" fetchPriority="high" className="h-[42svh] w-full object-cover object-[50%_70%] md:order-2 md:h-[100svh] md:object-center" />
       <div aria-hidden className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-tinta/70 to-transparent md:hidden" />
 
-      <div className="relative px-5 pt-10 pb-12 text-fondo md:flex md:flex-col md:justify-center md:px-12 md:pt-32 md:pb-16 md:text-tinta">
+      <div className="relative px-5 pt-14 pb-12 text-fondo md:flex md:flex-col md:justify-center md:px-12 md:pt-32 md:pb-16 md:text-tinta">
         <Sello className="absolute -top-12 right-4 z-10 w-24 md:top-auto md:right-0 md:bottom-12 md:w-40 md:translate-x-1/2" />
-        <p className="etiqueta !text-sm !text-fondo/90 md:!text-xs md:!text-acento">Restaurante de campo · Casa de té · Laberinto</p>
+        <p className="etiqueta !text-sm !text-fondo/90 md:!text-xs md:!text-acento">Restaurante · Casa de té · Laberinto temático</p>
         <h1 className="font-display mt-4 text-[2.3rem] leading-[1.04] md:mt-5 md:text-6xl lg:text-7xl">{ESLOGAN}</h1>
         <p className="mt-5 max-w-md text-lg leading-relaxed text-fondo/85 md:mt-6 md:text-suave">Cocina criolla, mirador 360 y piletones naturales, en el Camino de Pasos Malos.</p>
         <div className="mt-7 flex flex-wrap gap-3 md:mt-8">
@@ -96,7 +96,7 @@ function Portada() {
             Reservar mesa
           </a>
           <a href="#ficha" className="rounded-full border-2 border-current px-6 py-3 font-bold transition hover:bg-tinta hover:text-fondo">
-            Horarios y cómo llegar
+            Dónde y cuándo
           </a>
         </div>
       </div>
@@ -113,7 +113,14 @@ function Ficha() {
           {FICHA.map((f) => (
             <div key={f.titulo}>
               <dt className="etiqueta">{f.titulo}</dt>
-              <dd className="mt-1 text-base leading-snug">{f.texto}</dd>
+              <dd className="mt-1 text-base leading-snug">
+                {f.texto}
+                {"tel" in f && (
+                  <a href={TELEFONO} className="mt-1 block font-bold whitespace-nowrap underline">
+                    Reservas: {TELEFONO_TEXTO}
+                  </a>
+                )}
+              </dd>
             </div>
           ))}
         </dl>
@@ -174,12 +181,11 @@ function TresFuegos() {
                 transition={{ duration: 1.2 }}
               />
             </svg>
-            <p className="etiqueta mt-3 !text-[0.65rem] md:!text-xs">{f.fuego}</p>
-            <p className="mt-1 leading-tight font-bold md:text-xl">{f.plato}</p>
+            <p className="mt-2 leading-tight font-bold md:text-xl">{f.fuego}</p>
           </div>
         ))}
       </div>
-      <p className="mt-5 border-t-2 border-dotted border-tinta/30 pt-4 text-left text-suave">{CHIVITO}</p>
+      <p className="mt-5 border-t-2 border-dotted border-tinta/30 pt-4 text-left text-suave">{COCINA}</p>
       <p className="mt-2 text-left text-sm text-suave">{ALMACEN}</p>
     </div>
   );
@@ -277,7 +283,7 @@ function Laberinto() {
               </div>
             ))}
           </dl>
-          <p className="mt-6 text-sm leading-relaxed text-suave">Valores y horario (de 10 a 19) publicados en enero de 2026, en temporada de verano. Confirmá antes de ir.</p>
+          <p className="mt-6 text-sm leading-relaxed text-suave">Valores y horario (de 10 a 19) publicados en enero de 2026. Confirmá antes de ir.</p>
           <a href={INSTAGRAM_LABERINTO} target="_blank" rel="noopener" className="mt-3 inline-flex min-h-11 items-center gap-1 font-bold underline">
             @laberinto_tematico →
           </a>
@@ -297,7 +303,7 @@ function Refugio({ alElegir }: { alElegir: (que: string) => void }) {
       </div>
       <div className="relative mt-12 flex min-h-[32rem] flex-col justify-end overflow-hidden p-6 text-fondo md:min-h-[28rem] md:justify-center md:p-14">
         <img src={foto("ventana")} alt="El monte y el valle vistos desde la ventana del refugio" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-tinta/90 via-tinta/55 to-transparent md:bg-gradient-to-r" />
+        <div className="absolute inset-0 bg-gradient-to-t from-tinta/90 via-tinta/60 to-tinta/35 md:bg-gradient-to-r md:to-transparent" />
         <div className="relative">
           <p className="etiqueta !text-fondo/80">Para quedarse</p>
           <h2 className="font-display mt-4 max-w-xl text-5xl leading-[1.02] md:text-8xl">El lujo de no hacer nada</h2>
@@ -361,12 +367,12 @@ function Reserva({ que, setQue, alEnviar }: { que: string; setQue: (que: string)
               <Guarda />
             </div>
             <fieldset className="sm:col-span-2">
-              <legend className={rotulo}>Qué reservás</legend>
+              <legend className={rotulo}>Qué reservás (una opción)</legend>
               <div className="mt-2 grid gap-1">
                 {RESERVAS.map((r) => (
                   <label key={r} className="flex cursor-pointer items-center gap-3 border-b-2 border-dotted border-tinta/30 py-2.5 text-lg font-semibold">
                     <input type="radio" name="que" value={r} checked={que === r} onChange={() => setQue(r)} className="peer sr-only" />
-                    <span className="grid h-[22px] w-[22px] shrink-0 place-items-center border-2 border-tinta peer-focus-visible:ring-2 peer-focus-visible:ring-acento peer-checked:[&>svg]:opacity-100 [&>svg]:opacity-0">
+                    <span className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full border-2 border-tinta peer-focus-visible:ring-2 peer-focus-visible:ring-acento peer-checked:[&>svg]:opacity-100 [&>svg]:opacity-0">
                       <svg viewBox="0 0 22 22" className="h-4 w-4 text-acento transition-opacity">
                         <path d="M3 11l5 5L19 4" stroke="currentColor" strokeWidth="3" fill="none" />
                       </svg>
@@ -378,7 +384,7 @@ function Reserva({ que, setQue, alEnviar }: { que: string; setQue: (que: string)
             </fieldset>
             <label>
               <span className={rotulo}>{refugio ? "Llegada" : "Día"}</span>
-              <input type="date" name="dia" required className={renglon} />
+              <input type="date" name="dia" required min={new Date().toLocaleDateString("en-CA")} className={renglon} />
             </label>
             {refugio ? (
               <label>
@@ -424,7 +430,7 @@ function Llegar() {
       <div>
         <p className="etiqueta">Cómo llegar</p>
         <h2 className="font-display mt-4 text-5xl leading-[1.02] md:text-6xl">Camino de Pasos Malos</h2>
-        <p className="mt-6 max-w-md text-lg leading-relaxed text-suave">A unos 5 km del centro de Villa de Merlo, al pie de las Sierras de los Comechingones.</p>
+        <p className="mt-6 max-w-md text-lg leading-relaxed text-suave">En el Camino de Pasos Malos, Villa de Merlo, entre las Sierras de los Comechingones.</p>
         <a href={MAPA} target="_blank" rel="noopener" className="mt-8 block w-full rounded-full bg-acento px-6 py-4 text-center font-bold text-fondo transition hover:brightness-110 md:inline-block md:w-auto">
           Cómo llegar desde donde estás
         </a>
@@ -439,12 +445,23 @@ function Preguntas({ alEnviar }: { alEnviar: (mensaje: string) => void }) {
     <section className="mx-auto max-w-2xl px-5 pb-24 text-center md:px-10 md:pb-32">
       <h2 className="font-display text-5xl leading-[1.02] md:text-6xl">Preguntas de la casa</h2>
       <div className="mt-10 grid gap-6 md:gap-8">
-        {PREGUNTAS.map(({ p, r }) => (
+        {PREGUNTAS.map(({ p, r, ...resto }) => (
           <div key={p} className="grid gap-6 md:gap-8">
             <Adorno />
             <div>
               <h3 className="text-xl leading-tight font-bold md:text-2xl">{p}</h3>
-              <p className="mt-3 text-lg leading-relaxed text-suave">{r}</p>
+              <p className="mt-3 text-lg leading-relaxed text-suave">
+                {r}
+                {"tel" in resto && (
+                  <>
+                    {" "}
+                    <a href={TELEFONO} className="font-bold whitespace-nowrap text-tinta underline">
+                      {TELEFONO_TEXTO}
+                    </a>
+                    .
+                  </>
+                )}
+              </p>
             </div>
           </div>
         ))}
@@ -470,7 +487,7 @@ function Postales() {
       <Guarda />
       <header className="px-5 pt-20 text-center md:pt-28">
         <h2 className="font-display text-5xl leading-[1.02] md:text-6xl">Postales de la sierra</h2>
-        <p className="mx-auto mt-4 max-w-md text-lg">Agarralas y movelas.</p>
+        <p className="mx-auto mt-4 max-w-md text-lg">Agarralas y movelas a los costados.</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-suave">{NOTA_FOTOS}</p>
       </header>
       <Mesa className="mx-auto mt-10 h-[30rem] max-w-3xl px-5 md:h-[34rem]">
@@ -532,7 +549,7 @@ function Pie() {
         <p className="font-display text-3xl text-fondo">Cabeza del Indio</p>
         <p className="mt-1">Camino de Pasos Malos · Villa de Merlo, San Luis</p>
         <p className="mt-6 max-w-2xl">
-          <b className="text-fondo">Esto es una propuesta de diseño, no la página oficial.</b> Los datos y las fotos salen de las publicaciones de @cabeza_del_indio y @laberinto_tematico (2026). {NOTA_FOTOS} Si el negocio no la quiere, se da de baja.
+          <b className="text-fondo">Esto es una propuesta de diseño, no la página oficial.</b> Los datos salen de lo que publicaron @cabeza_del_indio, @laberinto_tematico y su página de Facebook; las fotos, de sus redes. {NOTA_FOTOS} Si el negocio no la quiere, se da de baja.
         </p>
       </div>
     </footer>

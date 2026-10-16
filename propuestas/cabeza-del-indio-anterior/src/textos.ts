@@ -22,11 +22,11 @@ export const DATOS: [string, string][] = [
   ["7 ha", "de predio privado en la sierra"],
   ["3 fuegos", "disco de arado, horno de barro y pozo"],
   ["360°", "de vista desde el mirador"],
-  ["5 km", "del centro de Villa de Merlo"],
+  ["16 a 19", "casa de té, de jueves a domingo"],
 ];
 
-// Los platos que nombraron en Cadena 3 (01/02/2021). Confirmar con el dueño que siguen en la carta.
-export const PLATOS = ["Chivito al disco", "Carne al pozo", "Carne rellena", "Asado", "Matambre"];
+// La cinta va con palabras de ellos: hashtags del 12/02 y el 16/04/2026, posteos del 18/07 y el 24/07/2026
+export const PLATOS = ["Cocina criolla", "Bodegón de montaña", "Mesa dulce", "Té de yuyos", "Almacén serrano"];
 
 export const ETAPAS: Etapa[] = [
   {
@@ -39,12 +39,12 @@ export const ETAPAS: Etapa[] = [
     texto: "Un sendero por el bosque nativo que termina en piletones con agua del arroyo. En temporada, todos los días.",
   },
   {
-    // Facebook del negocio y Cadena 3 (01/02/2021)
+    // Facebook del negocio y posteo del 18/07/2026
     foto: foto("picada"),
     alt: "Una tabla con quesos, fiambres y huevos sobre una mesa de madera, al aire libre",
     etiqueta: "Al mediodía",
     titulo: "La mesa criolla",
-    texto: "Cocina criolla en tres cocciones: disco de arado, horno de barro y pozo. El chivito al disco se cocina entre tres y cuatro horas.",
+    texto: "Cocina criolla en tres cocciones: disco de arado, horno de barro y pozo. Platos abundantes y mesa dulce.",
   },
   {
     // Reel del 16/04/2026
@@ -68,7 +68,7 @@ export const ETAPAS: Etapa[] = [
 // Reel del 29/01/2026 de @cabeza_del_indio y lo que se ve en los reels de @laberinto_tematico
 export const LABERINTO = [
   "Sendero por el bosque nativo",
-  "Esculturas de animales autóctonos y carteles de la flora",
+  "Un recorrido diferente, en contacto con la naturaleza",
   "Piletones con agua del arroyo al final del recorrido",
 ];
 // Reel del 13/10/2026 de @laberinto_tematico
@@ -107,6 +107,6 @@ export const PREGUNTAS = [
   { p: "¿Cómo se reserva?", r: "Los almuerzos, las cenas y el refugio se reservan por WhatsApp o por teléfono al 2664 304222." },
   { p: "¿El laberinto se paga aparte?", r: "Sí, tiene su propia entrada. Los valores publicados en enero de 2026 están más arriba; confirmá el valor actual al reservar." },
   { p: "¿Se puede ir con chicos?", r: "Sí. El laberinto tiene entrada para chicos de 3 a 10 años." },
-  { p: "¿Cuándo abre la casa de té?", r: "De jueves a domingo, de 16 a 19." },
+  { p: "¿Cuándo abre la casa de té?", r: "En abril de 2026 publicaron de jueves a domingo, de 16 a 19. Confirmalo antes de ir." },
   { p: "¿Cuánto sale comer?", r: "La carta con precios no está publicada. Consultá por WhatsApp al 2664 304222." },
 ];

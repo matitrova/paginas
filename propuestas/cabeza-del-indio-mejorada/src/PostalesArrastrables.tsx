@@ -5,6 +5,8 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useRef, type ReactNode, type RefObject } from "react";
 
 const RESORTE = { stiffness: 100, damping: 20, mass: 0.5 };
+// Con drag en los dos ejes framer-motion pone touch-action: none y la mesa atrapa el scroll en el celular
+const TACTIL = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
 
 export function Postal({ limites, giro, lugar, className = "", children }: { limites: RefObject<HTMLDivElement | null>; giro: number; lugar: { left: string; top: string }; className?: string; children: ReactNode }) {
   const tarjeta = useRef<HTMLDivElement>(null);
@@ -28,7 +30,7 @@ export function Postal({ limites, giro, lugar, className = "", children }: { lim
   return (
     <motion.div
       ref={tarjeta}
-      drag
+      drag={TACTIL ? "x" : true}
       dragConstraints={limites}
       dragElastic={0.15}
       whileHover={{ scale: 1.03 }}
@@ -37,7 +39,7 @@ export function Postal({ limites, giro, lugar, className = "", children }: { lim
       onPointerLeave={soltar}
       initial={{ rotate: giro }}
       style={{ ...lugar, rotateX, rotateY, willChange: "transform" }}
-      className={`absolute cursor-grab touch-pan-y overflow-hidden bg-[#fffdf7] p-2.5 pb-0 shadow-[0_24px_48px_-20px_rgba(42,28,18,0.75)] [transform-style:preserve-3d] ${className}`}
+      className={`absolute cursor-grab overflow-hidden bg-[#fffdf7] p-2.5 pb-0 shadow-[0_24px_48px_-20px_rgba(42,28,18,0.75)] [transform-style:preserve-3d] ${className}`}
     >
       {children}
       <motion.div style={{ opacity: brillo }} className="pointer-events-none absolute inset-0 bg-white select-none" />

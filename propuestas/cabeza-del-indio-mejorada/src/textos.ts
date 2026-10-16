@@ -19,37 +19,39 @@ export const MAPA = "https://www.google.com/maps/dir/?api=1&destination=-32.3225
 // Lo de arriba de todo: dónde y cuándo, con lo publicado. Sin "abierto hoy": no hay horario del restaurante.
 // Casa de té: reel de abril de 2026. Laberinto: reel del 29/01/2026 (verano). Reservas: posteo del 16/04/2026.
 export const FICHA = [
-  { titulo: "Dónde", texto: "Camino de Pasos Malos, a 5 km del centro de Merlo." },
-  { titulo: "Restaurante", texto: "Almuerzos y cenas. Reservas al 2664 304222." },
-  { titulo: "Casa de té", texto: "Jueves a domingo, de 16 a 19." },
-  { titulo: "Laberinto y piletones", texto: "Horario publicado en enero de 2026: de 10 a 19. Entrada aparte." },
+  { titulo: "Dónde", texto: "Camino de Pasos Malos, Villa de Merlo, San Luis." },
+  { titulo: "Restaurante", texto: "Almuerzos y cenas.", tel: true },
+  { titulo: "Casa de té", texto: "Jueves a domingo, de 16 a 19 (publicado en abril de 2026)." },
+  { titulo: "Laberinto y piletones", texto: "De 10 a 19 (publicado en enero de 2026). Entrada aparte." },
 ];
 
 // 7 hectáreas: posteo del 14/07/2026. Tres cocciones: su Facebook. Mirador 360: bio de Instagram.
-// 5 km: Google Maps da 5,3 km desde la plaza. "Recorrer sin apuro": posteo propio del 12/02/2026.
+// "Entre las Sierras de los Comechingones": posteo del 06/08/2026. "Recorrer sin apuro": posteo del 12/02/2026.
+// "360°," va con la coma pegada y "Sierras de los Comechingones" sin cortar: el texto se separa por espacios.
 export const FRASE: [string, boolean?][] = [
   ["Siete hectáreas", true],
   [" de sierra, "],
   ["tres fuegos", true],
   [" y un mirador de "],
-  ["360°", true],
-  [", a "],
-  ["5 km", true],
-  [" del centro. Un lugar para recorrer "],
+  ["360°,", true],
+  [" entre las "],
+  ["Sierras de los Comechingones.", true],
+  [" Un lugar para recorrer "],
   ["sin apuro.", true],
 ];
 
-// Los platos que nombraron en Cadena 3 (01/02/2021). Confirmar con el dueño que siguen en la carta.
-export const PLATOS = ["Chivito al disco", "Carne al pozo", "Carne rellena", "Asado", "Matambre"];
+// La cinta va con palabras de ellos: hashtags del 12/02 y el 16/04/2026, posteos del 18/07 y el 24/07/2026.
+// Los platos con nombre (chivito, carne al pozo) salen de prensa de 2021: se suman si el dueño los confirma.
+export const PLATOS = ["Cocina criolla", "Bodegón de montaña", "Mesa dulce", "Té de yuyos", "Almacén serrano"];
 
-// Los tres fuegos (Facebook propio). Solo se le pone plato al fuego cuando el nombre del plato lo dice:
-// qué sale del horno de barro no está publicado por ellos.
+// Los tres fuegos: su página de Facebook. Qué plato sale de cada uno no lo publicaron.
 export const FUEGOS = [
-  { fuego: "Disco de arado", plato: "Chivito al disco", dibujo: "disco" },
-  { fuego: "Horno de barro", plato: "Consultá qué sale hoy", dibujo: "horno" },
-  { fuego: "Pozo", plato: "Carne vacuna al pozo", dibujo: "pozo" },
+  { fuego: "Disco de arado", dibujo: "disco" },
+  { fuego: "Horno de barro", dibujo: "horno" },
+  { fuego: "Pozo", dibujo: "pozo" },
 ] as const;
-export const CHIVITO = "El chivito al disco se cocina entre 3 y 4 horas.";
+// Posteo del 18/07/2026
+export const COCINA = "Cocina criolla, platos abundantes y mesa dulce.";
 // Posteo del 24/07/2026
 export const ALMACEN = "Almacén serrano con productos regionales y artesanales.";
 
@@ -75,7 +77,7 @@ export const PARADAS: Parada[] = [
     alt: "Dos personas caminan por un sendero de piedra entre los árboles",
     etiqueta: "A la mañana",
     titulo: "El laberinto y los piletones",
-    dato: "10 a 19 h · horario de verano",
+    dato: "10 a 19 h · publicado en enero de 2026",
     texto: "Un sendero por el bosque nativo que termina en piletones con agua del arroyo.",
   },
   {
@@ -104,15 +106,15 @@ export const PARADAS: Parada[] = [
     alt: "Higos en almíbar en un cuenco de vidrio",
     etiqueta: "A la tarde",
     titulo: "La casa de té",
-    dato: "16 a 19 h · jueves a domingo",
+    dato: "16 a 19 h · jueves a domingo · publicado en abril de 2026",
     texto: "Mesa compartida, algo caliente y opciones dulces.",
   },
 ];
 
-// Reel del 29/01/2026 de @cabeza_del_indio y lo que se ve en los reels de @laberinto_tematico
+// Reel del 29/01/2026 de @cabeza_del_indio y posteo del 10/08/2026
 export const LABERINTO = [
   "Sendero por el bosque nativo",
-  "Esculturas de animales autóctonos y carteles de la flora",
+  "Un recorrido diferente, en contacto con la naturaleza",
   "Piletones con agua del arroyo al final del recorrido",
 ];
 // Reel del 13/10/2026 de @laberinto_tematico: fue para el fin de semana largo; no se sabe si quedan
@@ -141,10 +143,11 @@ export const POSTALES = [
   { src: foto("carpintero"), alt: "Escultura de un pájaro carpintero en el laberinto", leyenda: "El laberinto" },
 ];
 
+// "tel" suma el número para tocar y llamar al final de la respuesta
 export const PREGUNTAS = [
-  { p: "¿Cómo se reserva?", r: "Los almuerzos, las cenas y el refugio se reservan por WhatsApp o por teléfono al 2664 304222." },
+  { p: "¿Cómo se reserva?", r: "Los almuerzos, las cenas y el refugio se reservan por WhatsApp o por teléfono al", tel: true },
   { p: "¿El laberinto se paga aparte?", r: "Sí, tiene su propia entrada. Los valores publicados en enero de 2026 están más arriba; confirmá el valor actual antes de ir." },
   { p: "¿Se puede ir con chicos?", r: "Sí. El laberinto tiene entrada para chicos de 3 a 10 años." },
-  { p: "¿Cuándo abre la casa de té?", r: "De jueves a domingo, de 16 a 19." },
-  { p: "¿Cuánto sale comer?", r: "La carta con precios no está publicada. Consultá por WhatsApp al 2664 304222." },
+  { p: "¿Cuándo abre la casa de té?", r: "En abril de 2026 publicaron de jueves a domingo, de 16 a 19. Confirmalo antes de ir." },
+  { p: "¿Cuánto sale comer?", r: "La carta con precios no está publicada. Consultá por WhatsApp al", tel: true },
 ];
