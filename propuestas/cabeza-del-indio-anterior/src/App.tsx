@@ -135,7 +135,6 @@ function Laberinto() {
             ))}
           </ul>
           <p className="mt-6 text-lg">
-            <b className="mr-2 rounded-full bg-fondo px-3 py-1 text-sm tracking-wide text-monte uppercase">Nuevo</b>
             {NOVEDAD}
           </p>
           <div className="mt-10 grid grid-cols-2 gap-4">

@@ -341,7 +341,7 @@ def rellenar_condores(pg):
 
 
 def rellenar_indio(pg):
-    pg.locator("form label", has_text="Casa de té").click()
+    pg.locator("form label", has_text="Cena").click()
     pg.fill("input[name=dia]", "2026-11-14")
     pg.select_option("select[name=personas]", "4")
     pg.fill("input[name=nombre]", "Prueba")
@@ -393,10 +393,54 @@ def retiro_hosteria(pg, nombre, cap):
 
 
 def rellenar_indio_anterior(pg):
-    pg.select_option("select[name=que]", "Casa de té")
+    pg.select_option("select[name=que]", "Cena")
     pg.fill("input[name=dia]", "2026-11-14")
     pg.select_option("select[name=personas]", "4")
     pg.fill("input[name=nombre]", "Prueba")
+
+
+def rellenar_indio_mejorada(pg):
+    pg.locator("form label", has_text="Refugio de montaña").click()
+    pg.fill("input[name=dia]", "2026-11-14")
+    pg.select_option("select[name=noches]", "2")
+    pg.select_option("select[name=personas]", "2")
+    pg.fill("input[name=nombre]", "Prueba")
+
+
+def extras_indio_mejorada(pg, nombre, cap):
+    # El texto grande se enciende palabra por palabra al bajar
+    tramo = pg.evaluate("(() => { const t = document.querySelector('[data-palabra]').closest('[data-libre]'); return [t.getBoundingClientRect().top + scrollY, t.offsetHeight] })()")
+    leer = lambda: pg.evaluate("Number(getComputedStyle(document.querySelector('[data-palabra]')).opacity)")
+    pg.evaluate(f"window.scrollTo({{top: {tramo[0]}, behavior: 'instant'}})")
+    pg.wait_for_timeout(500)
+    antes = leer()
+    pg.evaluate(f"window.scrollTo({{top: {tramo[0] + tramo[1]} - innerHeight, behavior: 'instant'}})")
+    pg.wait_for_timeout(500)
+    despues = leer()
+    cap("00a-frase")
+    if not (antes < 0.5 and despues > 0.95):
+        problemas.append(f"{nombre}: el texto no se revela al bajar ({antes:.2f} -> {despues:.2f})")
+    # En celular, la barra de Reservar aparece después de la portada y se esconde en la reserva
+    if pg.viewport_size["width"] < 768:
+        barra = lambda: pg.locator("[data-barra]").count() and pg.locator("[data-barra]").is_visible()
+        pg.evaluate("window.scrollTo({top: 0, behavior: 'instant'})"); pg.wait_for_timeout(500)
+        arriba = barra()
+        # sin desplazamiento suave: la página tiene scroll-behavior smooth y tarda en llegar
+        pg.evaluate("document.getElementById('dia').scrollIntoView({behavior: 'instant'})"); pg.wait_for_timeout(900)
+        en_el_dia = barra()
+        cap("00b-barra")
+        pg.evaluate("document.getElementById('reserva').scrollIntoView({behavior: 'instant'})"); pg.wait_for_timeout(900)
+        en_reserva = barra()
+        if arriba or not en_el_dia or en_reserva:
+            problemas.append(f"{nombre}: la barra de abajo no aparece donde debe (portada {arriba}, día {en_el_dia}, reserva {en_reserva})")
+    # "Consultar fechas" del refugio deja el refugio elegido en la comanda
+    pg.locator("a", has_text="Consultar fechas").click()
+    pg.wait_for_timeout(900)
+    if not pg.locator("input[name=que][value='Refugio de montaña']").is_checked() or not pg.locator("select[name=noches]").count():
+        problemas.append(f"{nombre}: 'Consultar fechas' no deja el refugio elegido")
+    pg.locator("form label", has_text="Almuerzo").click()
+    pg.evaluate("window.scrollTo(0, 0)")
+    pg.wait_for_timeout(400)
 
 
 PAGINAS = {
@@ -406,9 +450,11 @@ PAGINAS = {
     "condores": propuesta("mirador-de-los-condores", "Reservar por WhatsApp", rellenar_condores,
                           ["Circuito Aventura", "Día: sáb 14/11", "Turno: 13:00 h", "Personas: 4", "A nombre de: Prueba"], circuito),
     "indio": propuesta("cabeza-del-indio", "Reservar por WhatsApp", rellenar_indio,
-                       ["Cabeza del Indio", "Reserva: Casa de té", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
+                       ["Cabeza del Indio", "Reserva: Cena", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
     "indio-anterior": propuesta("cabeza-del-indio-anterior", "Reservar por WhatsApp", rellenar_indio_anterior,
-                                ["Cabeza del Indio", "Reserva: Casa de té", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
+                                ["Cabeza del Indio", "Reserva: Cena", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
+    "indio-mejorada": propuesta("cabeza-del-indio-mejorada", "Reservar por WhatsApp", rellenar_indio_mejorada,
+                                ["Cabeza del Indio", "Reserva: Refugio de montaña", "Llegada: sáb 14/11 · Noches: 2", "Personas: 2", "A nombre de: Prueba"], extras_indio_mejorada),
     "hosteria": propuesta("hosteria-vegetariana", "Consultar por WhatsApp", rellenar_hosteria,
                           ["estadía en la Hostería Vegetariana", "Llegada: sáb 14/11", "Salida: lun 16/11", "Personas: 3", "A nombre de: Prueba", "Alergias: Maní"], palabras_hosteria),
 }

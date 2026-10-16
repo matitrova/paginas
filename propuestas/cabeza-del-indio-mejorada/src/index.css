@@ -1,0 +1,90 @@
+@import "tailwindcss" source(none);
+@source "./";
+@source "../../../compartido";
+
+/* Cocina criolla: papel crema, terracota del barro y verde de monte. Letras de cartel de pulpería. */
+@theme {
+  --font-sans: "Bitter", ui-serif, Georgia, serif;
+  --font-display: "Alfa Slab One", "Bitter", ui-serif, serif;
+  --color-fondo: #f2e8d5;
+  --color-panel: #e7d9be;
+  --color-tinta: #2a1c12;
+  --color-suave: #6b5a4a;
+  --color-acento: #a8401f;
+  --color-monte: #3f5a3a;
+  --color-linea: rgb(42 28 18 / 0.18);
+}
+
+html {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-acento);
+  color: var(--color-fondo);
+}
+
+.font-display {
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+.etiqueta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-acento);
+}
+
+/* El grano del papel, apenas: que el crema no parezca un color plano de pantalla */
+:root {
+  --grano: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.06'/%3E%3C/svg%3E");
+}
+html { background-image: var(--grano); }
+.grano { background-image: var(--grano); }
+
+/* La guarda: una franja de rombos, como la de un poncho, para cortar entre secciones */
+.guarda {
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='14'%3E%3Cpath d='M0 7 7 0 14 7 7 14ZM14 7 21 0 28 7 21 14Z' fill='%23a8401f'/%3E%3Cpath d='M5 7 7 5 9 7 7 9ZM19 7 21 5 23 7 21 9Z' fill='%23f2e8d5'/%3E%3C/svg%3E") repeat-x;
+}
+
+/* La comanda: papel con el borde de arriba y el de abajo troquelados */
+.comanda {
+  --diente: 14px;
+  mask:
+    radial-gradient(circle at 50% 0, transparent 5px, black 5.5px) top / var(--diente) 51% repeat-x,
+    radial-gradient(circle at 50% 100%, transparent 5px, black 5.5px) bottom / var(--diente) 51% repeat-x;
+}
+
+/* El sello de la portada gira despacio sobre su centro */
+.sello-gira {
+  transform-origin: 100px 100px;
+  animation: gira 48s linear infinite;
+}
+@keyframes gira {
+  to { transform: rotate(360deg); }
+}
+
+/* La cinta de platos: el contenido va duplicado, así que correr la mitad la deja igual que al empezar */
+.cinta-platos {
+  animation: corre 32s linear infinite;
+}
+@keyframes corre {
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .sello-gira, .cinta-platos { animation: none; }
+}

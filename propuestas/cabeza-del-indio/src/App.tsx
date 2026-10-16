@@ -172,10 +172,7 @@ function Laberinto() {
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-lg">
-            <b className="mr-2 rounded-full bg-fondo px-3 py-1 text-sm tracking-wide text-monte uppercase">Nuevo</b>
-            {NOVEDAD}
-          </p>
+          <p className="mt-6 text-lg">{NOVEDAD}</p>
           <div className="mt-10 grid grid-cols-2 gap-4">
             <img src={foto("carpintero")} alt="Escultura de un pájaro carpintero con un cartel de madera" loading="lazy" className="aspect-[4/5] w-full rounded-2xl object-cover" />
             <img src={foto("tirolesa")} alt="Un chico cruza en tirolesa entre los árboles" loading="lazy" className="mt-8 aspect-[4/5] w-full rounded-2xl object-cover" />

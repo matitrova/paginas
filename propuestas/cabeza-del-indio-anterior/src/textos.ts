@@ -25,8 +25,8 @@ export const DATOS: [string, string][] = [
   ["5 km", "del centro de Villa de Merlo"],
 ];
 
-// Los platos que nombraron en Cadena 3 (01/02/2021)
-export const PLATOS = ["Chivito al disco", "Carne al pozo", "Carne rellena al horno de barro", "Asado", "Matambre"];
+// Los platos que nombraron en Cadena 3 (01/02/2021). Confirmar con el dueño que siguen en la carta.
+export const PLATOS = ["Chivito al disco", "Carne al pozo", "Carne rellena", "Asado", "Matambre"];
 
 export const ETAPAS: Etapa[] = [
   {
@@ -72,7 +72,7 @@ export const LABERINTO = [
   "Piletones con agua del arroyo al final del recorrido",
 ];
 // Reel del 13/10/2026 de @laberinto_tematico
-export const NOVEDAD = "Juegos con cuerda: tirolesa, puentes colgantes y red para trepar.";
+export const NOVEDAD = "Juegos con cuerda: tirolesa, puentes colgantes y red para trepar (fin de semana largo de octubre de 2026).";
 // "Valores 2026", reel del 29/01/2026
 export const ENTRADAS: [string, string][] = [
   ["Mayores", "$15.000"],
@@ -94,19 +94,19 @@ export const GALERIA = [
 // Posteos del 14/07/2026 y del 28/08/2026
 export const REFUGIO = "Un refugio de montaña dentro del predio, pensado para dos personas.";
 
-// Lo que ellos reservan: almuerzos, cenas, casa de té y refugio (posteo del 14/07/2026)
-export const RESERVAS = ["Almuerzo", "Cena", "Casa de té", "Refugio de montaña"];
+// Lo que se reserva por WhatsApp o teléfono: almuerzos, cenas y refugio (posteos del 14/07 y el 16/04/2026)
+export const RESERVAS = ["Almuerzo", "Cena", "Refugio de montaña"];
 
 export const HORARIOS = [
-  { titulo: "Restaurante", texto: "Almuerzos y cenas, con reserva." },
+  { titulo: "Restaurante", texto: "Almuerzos y cenas. Reservas al 2664 304222." },
   { titulo: "Casa de té", texto: "Jueves a domingo, de 16 a 19." },
   { titulo: "Laberinto y piletones", texto: "En temporada, todos los días de 10 a 19." },
 ];
 
 export const PREGUNTAS = [
-  { p: "¿Hay que reservar?", r: "Sí. Los almuerzos, las cenas y el refugio se reservan por WhatsApp o por teléfono. Si venís por el chivito al disco, avisanos al reservar." },
+  { p: "¿Cómo se reserva?", r: "Los almuerzos, las cenas y el refugio se reservan por WhatsApp o por teléfono al 2664 304222." },
   { p: "¿El laberinto se paga aparte?", r: "Sí, tiene su propia entrada. Los valores publicados en enero de 2026 están más arriba; confirmá el valor actual al reservar." },
-  { p: "¿Se puede ir con chicos?", r: "Sí. El laberinto tiene entrada para chicos de 3 a 10 años y juegos con cuerda: tirolesa, puentes colgantes y red para trepar." },
+  { p: "¿Se puede ir con chicos?", r: "Sí. El laberinto tiene entrada para chicos de 3 a 10 años." },
   { p: "¿Cuándo abre la casa de té?", r: "De jueves a domingo, de 16 a 19." },
-  { p: "¿Cuánto sale comer?", r: "Te pasamos la carta y los valores actualizados por WhatsApp." },
+  { p: "¿Cuánto sale comer?", r: "La carta con precios no está publicada. Consultá por WhatsApp al 2664 304222." },
 ];
