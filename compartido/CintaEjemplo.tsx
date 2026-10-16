@@ -9,6 +9,9 @@ export default function CintaEjemplo({ pagina }: { pagina: string }) {
       aria-label="Aviso: sitio de ejemplo"
       className="fixed bottom-3 left-1/2 z-50 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-3 rounded-full bg-black/80 py-1.5 pr-1.5 pl-4 text-xs whitespace-nowrap text-white shadow-lg backdrop-blur"
     >
+      <a href="../" className="font-semibold underline-offset-2 hover:underline">
+        ← Todas
+      </a>
       <span>
         <b className="font-semibold">Sitio de ejemplo</b> · Diseño: Matías Trovato
       </span>

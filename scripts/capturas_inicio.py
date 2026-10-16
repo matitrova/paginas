@@ -1,5 +1,5 @@
-"""Capturas de las tres páginas en línea para la sección "Ejemplos" de la página de venta.
-Salen a public/inicio/ en WebP: <sitio>-pc (1200 px) y <sitio>-movil (600 px).
+"""Capturas de celular de cada página en línea, para las tarjetas de la página de inicio.
+Salen a public/inicio/<sitio>-movil.webp (600 px). Después arma og.jpg desde dist/.
 
 Uso:  ../Test1_Inmo/.venv/bin/python scripts/capturas_inicio.py
 """
@@ -39,11 +39,23 @@ def casa_tala(pg, movil):
     pg.wait_for_timeout(1800)
 
 
-SITIOS = {"autoshine": autoshine, "cabanas": cabanas, "casa-tala": casa_tala}
+def propuesta(slug):
+    def ir(pg, movil):
+        pg.goto(MUESTRAS + f"propuestas/{slug}/", wait_until="networkidle")
+        pg.wait_for_timeout(1500)
+    return ir
+
+
+SITIOS = {
+    "autoshine": autoshine,
+    "cabanas": cabanas,
+    "casa-tala": casa_tala,
+    **{slug: propuesta(slug) for slug in ("mirador-de-los-condores", "cabeza-del-indio", "hosteria-vegetariana")},
+}
 
 with sync_playwright() as p:
     nav = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
-    for movil in (False, True):
+    for movil in (True,):  # las tarjetas solo usan la captura de celular
         ctx = nav.new_context(
             viewport={"width": 390, "height": 844} if movil else {"width": 1440, "height": 900},
             device_scale_factor=2 if movil else 1, is_mobile=movil, has_touch=movil,
@@ -70,7 +82,6 @@ with sync_playwright() as p:
 
         pg.route("http://muestras.test/**", servir)
         pg.goto("http://muestras.test/", wait_until="networkidle")
-        pg.add_style_tag(content="header { display: none !important } main > section:first-child { padding-top: 3rem !important }")
         pg.wait_for_timeout(600)
         Image.open(io.BytesIO(pg.screenshot())).convert("RGB").save(DESTINO / "og.jpg", "JPEG", quality=85)
     nav.close()

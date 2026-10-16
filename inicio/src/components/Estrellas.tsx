@@ -37,12 +37,12 @@ export default function Estrellas() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     const alScrollear = () => {
-      impulso = Math.min(impulso + Math.abs(window.scrollY - ultimoY) * 0.0006, 0.06);
+      impulso = Math.min(impulso + Math.abs(window.scrollY - ultimoY) * 0.0006, 0.02);
       ultimoY = window.scrollY;
     };
     // La portada bloquea el scroll mientras se abre: la rueda igual acelera.
     const alGirar = (e: WheelEvent) => {
-      impulso = Math.min(impulso + Math.abs(e.deltaY) * 0.00004, 0.06);
+      impulso = Math.min(impulso + Math.abs(e.deltaY) * 0.00004, 0.02);
     };
 
     const dibujar = () => {

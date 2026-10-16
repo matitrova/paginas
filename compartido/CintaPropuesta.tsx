@@ -12,6 +12,10 @@ export default function CintaPropuesta({ negocio }: { negocio: string }) {
       aria-label="Aviso: propuesta de diseño, no es la página oficial"
       className="fixed inset-x-0 top-0 z-[60] flex h-8 items-center justify-center gap-2.5 bg-black px-3 text-[10.5px] leading-tight whitespace-nowrap text-white sm:text-xs"
     >
+      <a href="../../" className="font-semibold underline-offset-2 hover:underline">
+        ← <span className="hidden sm:inline">Ver todas</span>
+        <span className="sm:hidden">Todas</span>
+      </a>
       {/* En celular va la versión corta, para que entre en un renglón y no tape el encabezado */}
       <span>
         <b className="font-semibold">Propuesta de diseño</b>

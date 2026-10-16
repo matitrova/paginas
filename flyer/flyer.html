@@ -8,11 +8,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script>
 // ====== LO ÚNICO QUE HAY QUE COMPLETAR ======
-// Con los dos vacíos, el flyer invita a escribir por mensaje privado y muestra la página.
+// Cada renglón de contacto aparece solo si tiene dato. "Mensaje privado" va siempre: el flyer es para Facebook.
 const DATOS = {
-  whatsapp: "",   // como se lee: "2664 123456"
+  whatsapp: "2656 445537",   // como se lee
   instagram: "",  // con arroba: "@usuario"
-  web: "matitrova.github.io/paginas",
+  email: "matitrova13@gmail.com",
+  web: "",        // sin dirección propia todavía: la de github.io confunde a la gente
 };
 </script>
 <style>
@@ -100,6 +101,8 @@ const DATOS = {
   .contacto div{ display:flex; align-items:center; gap:15px; font-family:"Space Grotesk"; font-weight:700; font-size:37px; white-space:nowrap }
   .contacto svg{ width:46px; height:46px; flex:none }
   .contacto div[hidden]{ display:none }
+  .contacto .email{ font-size:28px }
+  body.post .contacto .email{ font-size:26px }
   .contacto .web{ font-family:"JetBrains Mono"; font-weight:500; font-size:22px; letter-spacing:-.02em; color:#c9c8dc }
 
   /* ================= formato 4:5 para el feed ================= */
@@ -161,13 +164,17 @@ const DATOS = {
         <svg viewBox="0 0 32 32" fill="none" stroke="#22d3ee" stroke-width="2.6" stroke-linejoin="round"><path d="M16 4.5C9.1 4.5 3.5 9.4 3.5 15.4c0 3.3 1.7 6.3 4.4 8.3l-.9 4.8 5.2-2.7c1.2.3 2.5.5 3.8.5 6.9 0 12.5-4.9 12.5-10.9S22.9 4.5 16 4.5z"/><path d="M9.8 18.2l4.2-4.4 3.6 3 4.6-4.2" stroke-linecap="round"/></svg>
         <span>Mensaje privado</span>
       </div>
-      <div data-si="privado" class="web">
+      <div data-si="web" class="web">
         <svg viewBox="0 0 32 32" fill="none" stroke="#a78bfa" stroke-width="2.4"><circle cx="16" cy="16" r="11.5"/><path d="M4.5 16h23M16 4.5c3.6 3.2 5.4 7 5.4 11.5s-1.8 8.3-5.4 11.5c-3.6-3.2-5.4-7-5.4-11.5S12.4 7.7 16 4.5z"/></svg>
         <span id="web"></span>
       </div>
       <div data-si="whatsapp">
         <svg viewBox="0 0 32 32" fill="#25d366"><path d="M16 3C8.8 3 3 8.7 3 15.8c0 2.5.7 4.9 2 7L3 29l6.4-2c2 1.1 4.3 1.7 6.6 1.7 7.2 0 13-5.7 13-12.8S23.2 3 16 3zm0 23.4c-2.1 0-4.1-.6-5.9-1.6l-.4-.3-3.8 1.2 1.2-3.7-.3-.4c-1.2-1.8-1.8-3.8-1.8-5.9C5 10 9.9 5.2 16 5.2S27 10 27 15.9 22.1 26.4 16 26.4zm6-7.8c-.3-.2-1.9-1-2.2-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.3-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.8 5 .8.3 1.4.5 1.9.7.8.3 1.5.2 2.1.1.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.3.2-1.5-.1-.2-.3-.3-.6-.5z"/></svg>
         <span id="whatsapp"></span>
+      </div>
+      <div data-si="email" class="email">
+        <svg viewBox="0 0 32 32" fill="none" stroke="#22d3ee" stroke-width="2.4" stroke-linejoin="round"><rect x="4" y="7" width="24" height="18" rx="3.5"/><path d="M5 9l11 8.5L27 9" stroke-linecap="round"/></svg>
+        <span id="email"></span>
       </div>
       <div data-si="instagram">
         <svg viewBox="0 0 32 32" fill="none" stroke="#a78bfa" stroke-width="2.6"><rect x="4.5" y="4.5" width="23" height="23" rx="7"/><circle cx="16" cy="16" r="5.4"/><circle cx="22.6" cy="9.4" r="1.2" fill="#a78bfa" stroke="none"/></svg>
@@ -182,9 +189,10 @@ const DATOS = {
   document.body.classList.toggle("post", post);
 
   // Cada renglón de contacto aparece solo si tiene con qué; sin WhatsApp ni Instagram, va el mensaje privado
-  const hay = { whatsapp: DATOS.whatsapp, instagram: DATOS.instagram, privado: !DATOS.whatsapp && !DATOS.instagram };
+  // Cada renglón de contacto aparece solo si tiene dato
+  const hay = { privado: true, whatsapp: DATOS.whatsapp, instagram: DATOS.instagram, email: DATOS.email, web: DATOS.web };
   document.querySelectorAll("[data-si]").forEach((el) => (el.hidden = !hay[el.dataset.si]));
-  for (const id of ["whatsapp", "instagram", "web"]) document.getElementById(id).textContent = DATOS[id];
+  for (const id of ["whatsapp", "instagram", "email", "web"]) document.getElementById(id).textContent = DATOS[id];
 </script>
 </body>
 </html>

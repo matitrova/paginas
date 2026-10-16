@@ -195,45 +195,56 @@ def casa_tala(pg, nombre, cap):
 
 
 def inicio(pg, nombre, cap):
-    """La página de venta. Es la única que sí tiene que aparecer en Google."""
+    """La página de inicio, tipo Linktree. Es la única que sí tiene que aparecer en Google."""
     pg.goto(BASE, wait_until="networkidle")
     pg.wait_for_timeout(800)
-    cap("1-portada")
+    cap("1-arriba")
     if pg.locator("meta[name=robots]").count():
-        problemas.append(f"{nombre}: la página de venta no tiene que llevar noindex")
+        problemas.append(f"{nombre}: la página de inicio no tiene que llevar noindex")
     ancho = [pg.evaluate("document.documentElement.scrollWidth"), pg.viewport_size["width"]]
     if ancho[0] > ancho[1]:
         problemas.append(f"{nombre}: scroll horizontal ({ancho[0]} > {ancho[1]})")
 
-    # Cada ejemplo lleva a su página, y las de muestra existen en la misma publicación
-    enlaces = pg.evaluate("Object.fromEntries([...document.querySelectorAll('[data-ejemplo]')].map(a => [a.dataset.ejemplo, a.href]))")
-    esperados = {"autoshine": "https://autoshine.com.ar/", "cabanas": BASE + "cabanas/", "casa-tala": BASE + "casa-tala/"}
-    if enlaces != esperados:
-        problemas.append(f"{nombre}: links de ejemplos {enlaces}")
-    for carpeta in ("cabanas", "casa-tala"):
-        if not (DIST / carpeta / "index.html").is_file():
-            problemas.append(f"{nombre}: el ejemplo {carpeta} no está en dist/")
+    # Cada tarjeta lleva a su página, dice qué es, y ninguna propuesta o ejemplo pasa por cliente
+    tarjetas = pg.evaluate("""[...document.querySelectorAll('[data-trabajo]')].map(a => ({
+        id: a.dataset.trabajo, tipo: a.dataset.tipo, href: a.href, texto: a.innerText,
+        foto: a.querySelector('img') && a.querySelector('img').complete && a.querySelector('img').naturalWidth > 0 }))""")
+    propuestas = ("mirador-de-los-condores", "cabeza-del-indio", "hosteria-vegetariana")
+    esperado = {"autoshine": ("cliente", "https://autoshine.com.ar/"), "cabanas": ("ejemplo", BASE + "cabanas/"), "casa-tala": ("ejemplo", BASE + "casa-tala/"),
+                **{p: ("propuesta", BASE + f"propuestas/{p}/") for p in propuestas}}
+    vistos = {t["id"]: (t["tipo"], t["href"]) for t in tarjetas}
+    if vistos != esperado:
+        problemas.append(f"{nombre}: tarjetas {vistos}")
+    for t in tarjetas:
+        aviso = {"cliente": "Cliente", "ejemplo": "Fotos de internet", "propuesta": "No la encargaron"}[t["tipo"]]
+        if aviso not in t["texto"]:
+            problemas.append(f"{nombre}: la tarjeta {t['id']} no dice '{aviso}'")
+        if t["tipo"] != "cliente" and "Cliente\n" in t["texto"]:
+            problemas.append(f"{nombre}: la tarjeta {t['id']} parece de un cliente")
+        if t["href"].startswith(BASE) and not (DIST / t["href"][len(BASE):] / "index.html").is_file():
+            problemas.append(f"{nombre}: {t['id']} apunta a una página que no está en dist/")
+    for seccion, frase in [("#propuestas", "No las encargaron"), ("#ejemplos", "no existen")]:
+        if frase not in pg.locator(seccion).inner_text():
+            problemas.append(f"{nombre}: falta la aclaración de {seccion}")
 
-    # El contacto: WhatsApp si está cargado en compartido/contacto.ts; si no, mail
-    botones = pg.evaluate("[...document.querySelectorAll('[data-contacto]')].map(a => [a.dataset.contacto, a.href.slice(0, 30)])")
-    if len(botones) < 3 or not all((c == "whatsapp" and h.startswith("https://wa.me/549")) or (c == "mail" and h.startswith("mailto:")) for c, h in botones):
+    # El contacto: WhatsApp de Matías con el mensaje armado, y el mail
+    botones = pg.evaluate("[...document.querySelectorAll('[data-contacto]')].map(a => [a.dataset.contacto, a.href])")
+    wsp = [h for c, h in botones if c == "whatsapp"]
+    if len(wsp) < 2 or not all(h.startswith("https://wa.me/5492656445537?text=") for h in wsp) or not any(c == "mail" and h.startswith("mailto:matitrova13@gmail.com") for c, h in botones):
         problemas.append(f"{nombre}: botones de contacto {botones}")
 
-    alto = pg.evaluate("document.getElementById('ejemplos').offsetHeight")
-    top = pg.evaluate("document.getElementById('ejemplos').offsetTop")
-    for i, f in enumerate([0.12, 0.45, 0.8]):
-        pg.evaluate(f"window.scrollTo(0, {top + alto * f})")
-        pg.wait_for_timeout(700)
-        cap(f"2-ejemplos-{i}")
-    for sel, n in [("#incluye", "3-incluye"), ("#preguntas", "5-preguntas")]:
+    for sel, n in [("#ejemplos", "2-ejemplos"), ("#propuestas", "3-propuestas")]:
         pg.evaluate(f"document.querySelector('{sel}').scrollIntoView()")
         pg.wait_for_timeout(700)
         cap(n)
     pg.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-    pg.wait_for_timeout(600)
-    cap("6-cierre")
+    pg.wait_for_timeout(700)
+    cap("4-cierre")
+    sin_foto = [t["id"] for t in pg.evaluate("""[...document.querySelectorAll('[data-trabajo]')].map(a => ({id: a.dataset.trabajo, ok: a.querySelector('img').naturalWidth > 0}))""") if not t["ok"]]
+    if sin_foto:
+        problemas.append(f"{nombre}: tarjetas sin captura {sin_foto}")
     textos_afuera(pg, nombre)
-    print(f"  {nombre}: contacto por {botones[0][0]}")
+    print(f"  {nombre}: {len(tarjetas)} tarjetas, contacto por WhatsApp y mail")
 
 
 def propuesta(slug, boton, rellenar, esperados, extra=None):
@@ -248,6 +259,12 @@ def propuesta(slug, boton, rellenar, esperados, extra=None):
         cartel = pg.locator("aside[aria-label^='Aviso: propuesta']")
         if not cartel.is_visible() or "No es la página oficial" not in cartel.inner_text():
             problemas.append(f"{nombre}: no se ve el cartel de propuesta")
+        # El cartel va en un renglón: si no entra, se corta "No es la página oficial" o el botón
+        entra = pg.evaluate("(() => { const a = document.querySelector('aside[aria-label^=\"Aviso: propuesta\"]'); return [...a.children].every(c => c.getBoundingClientRect().right <= innerWidth && c.getBoundingClientRect().left >= 0) && a.scrollWidth <= a.clientWidth + 1 })()")
+        if not entra:
+            problemas.append(f"{nombre}: el cartel de propuesta no entra en la pantalla")
+        if pg.locator("aside[aria-label^='Aviso: propuesta'] a[href='../../']").count() != 1:
+            problemas.append(f"{nombre}: el cartel no tiene el link para volver a todas las páginas")
         if pg.locator("body").inner_text().count("tomadas de sus redes") < 2:
             problemas.append(f"{nombre}: falta aclarar, en la galería y en el pie, que las fotos son de sus redes")
         if extra:
@@ -375,6 +392,13 @@ def retiro_hosteria(pg, nombre, cap):
     pg.wait_for_timeout(500)
 
 
+def rellenar_indio_anterior(pg):
+    pg.select_option("select[name=que]", "Casa de té")
+    pg.fill("input[name=dia]", "2026-11-14")
+    pg.select_option("select[name=personas]", "4")
+    pg.fill("input[name=nombre]", "Prueba")
+
+
 PAGINAS = {
     "inicio": inicio,
     "cabanas": cabanas,
@@ -383,6 +407,8 @@ PAGINAS = {
                           ["Circuito Aventura", "Día: sáb 14/11", "Turno: 13:00 h", "Personas: 4", "A nombre de: Prueba"], circuito),
     "indio": propuesta("cabeza-del-indio", "Reservar por WhatsApp", rellenar_indio,
                        ["Cabeza del Indio", "Reserva: Casa de té", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
+    "indio-anterior": propuesta("cabeza-del-indio-anterior", "Reservar por WhatsApp", rellenar_indio_anterior,
+                                ["Cabeza del Indio", "Reserva: Casa de té", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
     "hosteria": propuesta("hosteria-vegetariana", "Consultar por WhatsApp", rellenar_hosteria,
                           ["estadía en la Hostería Vegetariana", "Llegada: sáb 14/11", "Salida: lun 16/11", "Personas: 3", "A nombre de: Prueba", "Alergias: Maní"], palabras_hosteria),
 }
