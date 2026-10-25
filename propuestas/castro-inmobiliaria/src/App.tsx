@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import CintaPropuesta from "../../../compartido/CintaPropuesta";
 import { contacto } from "../../../compartido/contacto";
-import { CAIDA, CARTERA, CONTACTO, DOMINIO, DONDE, INCLUYE, NEGOCIO, NOTA_FOTOS, PANTALLA, TELEFONO, TERRENOS } from "./textos";
+import { CAIDA, CARTERA, CONTACTO, DOMINIO, DONDE, foto, INCLUYE, NEGOCIO, NOTA_FOTOS, PANTALLA, PUBLICACIONES, TELEFONO, TERRENOS } from "./textos";
 
 const aparece = {
   initial: { opacity: 0, y: 14 },
@@ -94,6 +94,54 @@ function Diagnostico() {
           </p>
         </motion.div>
       </div>
+    </section>
+  );
+}
+
+/** Sus propias fotos, detras de la pantalla de error. Son el argumento:
+ *  el trabajo esta hecho y cargado, y hoy no se ve. */
+function Detras() {
+  return (
+    <section className="mx-auto max-w-5xl px-5 py-16 sm:py-20">
+      <motion.div {...aparece} className="mx-auto max-w-2xl">
+        <h2 className="font-display text-[1.7rem] leading-tight font-medium text-balance sm:text-4xl">
+          Detr&aacute;s de esa pantalla est&aacute; todo esto.
+        </h2>
+        <p className="mt-6 text-[17px] leading-relaxed text-tinta/85">
+          {CARTERA.total} propiedades cargadas, con sus fotos, sus medidas y sus precios. El trabajo
+          est&aacute; hecho. Estas son ocho.
+        </p>
+      </motion.div>
+
+      <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {PUBLICACIONES.map((pub, i) => (
+          <motion.figure
+            key={pub.n}
+            {...aparece}
+            transition={{ ...aparece.transition, delay: Math.min(i, 7) * 0.05 }}
+            className="overflow-hidden rounded-lg border border-linea bg-papel-hondo"
+          >
+            <img
+              src={foto(pub.n)}
+              alt={`${pub.titulo} en ${pub.donde}`}
+              width={900}
+              height={900}
+              loading="lazy"
+              decoding="async"
+              className="aspect-square w-full max-w-full object-cover"
+            />
+            <figcaption className="px-3 py-2.5">
+              <p className="text-[13px] leading-snug font-medium">{pub.titulo}</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-suave">{pub.donde}</p>
+            </figcaption>
+          </motion.figure>
+        ))}
+      </div>
+
+      <motion.p {...aparece} className="mx-auto mt-10 max-w-2xl text-[17px] leading-relaxed text-tinta/85">
+        Ninguna de estas se puede ver desde el {CAIDA.vencio}. No porque falte cargarlas: porque la puerta
+        de entrada est&aacute; cerrada.
+      </motion.p>
     </section>
   );
 }
@@ -235,6 +283,7 @@ export default function App() {
       <CintaPropuesta negocio={NEGOCIO} />
       <Carta />
       <Diagnostico />
+      <Detras />
       <Ahora />
       <Terrenos />
       <Cierre />

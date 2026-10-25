@@ -36,10 +36,25 @@ export const CARTERA = { total: 24, casas: 20, locales: 1, terrenos: 2 };
 // Los dos terrenos que publican, con el nombre tal cual lo escriben ellos.
 export const TERRENOS = ["Terreno 500 m² — Santa Rosa del Conlara", "Terreno en Punta Norte, Villa de Merlo"];
 
-// Sus fotos salen de static.tokkobroker.com, que bloquea la descarga directa.
-// Por eso esta propuesta no las usa: se muestra la estructura, no el contenido.
+// Las fotos son las suyas, bajadas de su propio sitio el 25/10/2026 (están
+// alojadas en static.tokkobroker.com). Se achicaron y se pasaron a WebP; no se
+// retocó ninguna. Son las que ellos mismos eligieron para cada publicación.
 export const NOTA_FOTOS =
-  "Esta propuesta no usa fotos de sus propiedades: el servidor donde están alojadas no permite bajarlas. Con las originales, cada publicación se ve como corresponde.";
+  "Las fotos son las de sus propias publicaciones, tal como las muestra su sitio, con el precio y los metros que ellos mismos cargaron. Acá están achicadas para que la página abra rápido en el celular.";
+
+export const foto = (n: number) => `./fotos/prop${n}.webp`;
+
+/** Sus publicaciones, con el título tal cual lo escriben ellos. */
+export const PUBLICACIONES = [
+  { n: 1, titulo: "Casa en venta", donde: "Solares del Valle, Villa de Merlo" },
+  { n: 2, titulo: "Casa en venta", donde: "Barranca Colorada, Villa de Merlo" },
+  { n: 3, titulo: "Casa en venta", donde: "La Arbolada, Villa de Merlo" },
+  { n: 4, titulo: "Casa PH en venta", donde: "Carpintería" },
+  { n: 5, titulo: "Casa en venta", donde: "Rincón del Este, Villa de Merlo" },
+  { n: 6, titulo: "Casa en venta", donde: "La Sebastiana, Merlo" },
+  { n: 7, titulo: "Local en venta", donde: "Rotonda Chumamaya, Villa de Merlo" },
+  { n: 8, titulo: "Terreno 500 m²", donde: "Santa Rosa del Conlara" },
+];
 
 export const INCLUYE = [
   {
