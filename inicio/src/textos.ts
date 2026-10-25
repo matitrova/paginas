@@ -97,3 +97,19 @@ export const SECCIONES: Seccion[] = [
     ],
   },
 ];
+
+// Lo que trae cada página y cómo se trabaja: los textos de la página de venta anterior
+export const INCLUYE = [
+  { titulo: "Pensada para el celular", texto: "Casi todos van a entrar desde el teléfono. Se diseña primero para eso." },
+  { titulo: "Consultas a tu WhatsApp", texto: "Turnos, reservas o pedidos te llegan armados, sin que el cliente tenga que escribir." },
+  { titulo: "Te encuentran en Google", texto: "Página propia y ficha en Google Maps, para el que todavía no te conoce." },
+  { titulo: "Tu dominio, a tu nombre", texto: "tunegocio.com.ar queda registrado a tu nombre. Es tuyo." },
+  { titulo: "Cambios incluidos", texto: "Cambió un precio, un horario o una foto: me escribís y lo actualizo." },
+  { titulo: "Hecha a medida", texto: "No es una plantilla. Se arma con tus fotos, tus colores y lo que necesita tu negocio." },
+];
+
+export const PASOS = [
+  { titulo: "Me contás", texto: "Me pasás tus fotos, tu Instagram y qué querés que haga la página." },
+  { titulo: "Te la muestro", texto: "En pocos días la ves andando en tu celular y la ajustamos juntos." },
+  { titulo: "Queda en línea", texto: "En alrededor de una semana, con tu dominio. Después me ocupo de que siga funcionando." },
+];
