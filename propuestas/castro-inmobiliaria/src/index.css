@@ -1,0 +1,33 @@
+@import "tailwindcss" source(none);
+@source "./";
+@source "../../../compartido";
+
+/* Papel, tinta y el verde de la sierra. Clara a propósito: las otras propuestas
+   son oscuras, y una carta se lee sobre papel. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Newsreader", ui-serif, Georgia, serif;
+  --color-papel: #f7f4ee;
+  --color-papel-hondo: #efeae0;
+  --color-tinta: #1d1b17;
+  --color-suave: #6b655b;
+  --color-sierra: #2f5d46;
+  --color-alarma: #b23b2e;
+  --color-linea: rgb(29 27 23 / 0.12);
+}
+
+html {
+  background: var(--color-papel);
+  color: var(--color-tinta);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
