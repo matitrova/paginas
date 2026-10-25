@@ -1,7 +1,8 @@
 """Recorre las páginas de muestra ya compiladas (dist/) en celular y compu, sin servidor:
 Playwright sirve los archivos desde el disco. Saca capturas y termina con error si algo no anda.
 
-Uso:  npm run build && ../Test1_Inmo/.venv/bin/python scripts/verificar.py /carpeta/capturas [página]
+Uso:  npm run build && ../Test1_Inmo/.venv/bin/python scripts/verificar.py [carpeta-de-capturas] [página]
+      (la carpeta va primero; la página, por ejemplo "castro", es el segundo argumento)
 """
 import mimetypes
 import sys
@@ -11,7 +12,9 @@ from urllib.parse import unquote, urlparse
 from playwright.sync_api import sync_playwright
 
 DIST = Path(__file__).resolve().parent.parent / "dist"
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
+# Sin carpeta, las capturas van a capturas/ (ignorada en git), nunca sueltas en la raíz del repo
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "capturas")
+OUT.mkdir(parents=True, exist_ok=True)
 SOLO = sys.argv[2] if len(sys.argv) > 2 else None
 BASE = "http://muestras.test/"
 problemas: list[str] = []
