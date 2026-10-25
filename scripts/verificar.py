@@ -223,7 +223,7 @@ def inicio(pg, nombre, cap):
             problemas.append(f"{nombre}: la tarjeta {t['id']} parece de un cliente")
         if t["href"].startswith(BASE) and not (DIST / t["href"][len(BASE):] / "index.html").is_file():
             problemas.append(f"{nombre}: {t['id']} apunta a una página que no está en dist/")
-    for seccion, frase in [("#propuestas", "No las encargaron"), ("#ejemplos", "no existen")]:
+    for seccion, frase in [("#propuestas", "No las encargaron"), ("#ejemplos", "no existen"), ("#incluye", "Consultas a tu WhatsApp"), ("#pasos", "Me contás")]:
         if frase not in pg.locator(seccion).inner_text():
             problemas.append(f"{nombre}: falta la aclaración de {seccion}")
 
@@ -233,13 +233,13 @@ def inicio(pg, nombre, cap):
     if len(wsp) < 2 or not all(h.startswith("https://wa.me/5492656445537?text=") for h in wsp) or not any(c == "mail" and h.startswith("mailto:matitrova13@gmail.com") for c, h in botones):
         problemas.append(f"{nombre}: botones de contacto {botones}")
 
-    for sel, n in [("#ejemplos", "2-ejemplos"), ("#propuestas", "3-propuestas")]:
+    for sel, n in [("#ejemplos", "2-ejemplos"), ("#propuestas", "3-propuestas"), ("#incluye", "4-incluye"), ("#pasos", "5-pasos")]:
         pg.evaluate(f"document.querySelector('{sel}').scrollIntoView()")
         pg.wait_for_timeout(700)
         cap(n)
     pg.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     pg.wait_for_timeout(700)
-    cap("4-cierre")
+    cap("6-cierre")
     sin_foto = [t["id"] for t in pg.evaluate("""[...document.querySelectorAll('[data-trabajo]')].map(a => ({id: a.dataset.trabajo, ok: a.querySelector('img').naturalWidth > 0}))""") if not t["ok"]]
     if sin_foto:
         problemas.append(f"{nombre}: tarjetas sin captura {sin_foto}")
@@ -443,6 +443,39 @@ def extras_indio_mejorada(pg, nombre, cap):
     pg.wait_for_timeout(400)
 
 
+def castro(pg, nombre, cap):
+    """Castro Inmobiliaria no entra en propuesta(): no tiene formulario —el contacto es un
+    link directo— y sus fotos salen de su propio sitio, no de sus redes."""
+    pg.goto(f"{BASE}propuestas/castro-inmobiliaria/", wait_until="networkidle")
+    pg.wait_for_timeout(900)
+    cap("00-portada")
+    if "noindex" not in (pg.get_attribute("meta[name=robots]", "content") or ""):
+        problemas.append(f"{nombre}: falta el noindex")
+    cartel = pg.locator("aside[aria-label^='Aviso: propuesta']")
+    if not cartel.is_visible() or "No es la página oficial" not in cartel.inner_text():
+        problemas.append(f"{nombre}: no se ve el cartel de propuesta")
+    # El gancho es el certificado vencido: sin la fecha, la propuesta no dice nada
+    if "22 de octubre de 2026" not in pg.locator("body").inner_text():
+        problemas.append(f"{nombre}: no aparece la fecha en que se les venció el certificado")
+
+    alto = pg.evaluate("document.body.scrollHeight - innerHeight")
+    for i in range(1, 12):
+        pg.evaluate(f"window.scrollTo(0, {alto * i / 12})")
+        pg.wait_for_timeout(750)
+        cap(f"{i:02d}")
+        if not cartel.is_visible():
+            problemas.append(f"{nombre}: el cartel de propuesta se pierde al bajar")
+
+    # Las ocho fotos tienen que haber pintado: un src roto deja la tarjeta en alto 0 y no se nota
+    pg.wait_for_timeout(1200)
+    fotos = pg.evaluate("[...document.querySelectorAll('figure img')].map(i => [i.getAttribute('src'), i.naturalWidth, Math.round(i.getBoundingClientRect().height)])")
+    if len(fotos) != 8:
+        problemas.append(f"{nombre}: esperaba las 8 fotos de sus propiedades y hay {len(fotos)}")
+    for src, natural, dibujado in fotos:
+        if not natural or dibujado < 60:
+            problemas.append(f"{nombre}: la foto {src} no se dibujó (natural {natural}, alto {dibujado})")
+
+
 PAGINAS = {
     "inicio": inicio,
     "cabanas": cabanas,
@@ -455,6 +488,7 @@ PAGINAS = {
                                 ["Cabeza del Indio", "Reserva: Cena", "Día: sáb 14/11", "Personas: 4", "A nombre de: Prueba"]),
     "indio-mejorada": propuesta("cabeza-del-indio-mejorada", "Reservar por WhatsApp", rellenar_indio_mejorada,
                                 ["Cabeza del Indio", "Reserva: Refugio de montaña", "Llegada: sáb 14/11 · Noches: 2", "Personas: 2", "A nombre de: Prueba"], extras_indio_mejorada),
+    "castro": castro,
     "hosteria": propuesta("hosteria-vegetariana", "Consultar por WhatsApp", rellenar_hosteria,
                           ["estadía en la Hostería Vegetariana", "Llegada: sáb 14/11", "Salida: lun 16/11", "Personas: 3", "A nombre de: Prueba", "Alergias: Maní"], palabras_hosteria),
 }
