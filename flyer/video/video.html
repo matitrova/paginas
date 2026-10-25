@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Video · Páginas web para comercios de Merlo</title>
+<title>Video · Páginas web para comercios y emprendedores</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -58,7 +58,7 @@
 <body>
 <div class="fondo"></div>
 <div class="estrellas"></div>
-<div class="firma"><b>Matías Trovato</b><span>MERLO · SAN LUIS</span></div>
+<div class="firma"><b>Matías Trovato</b><span>PÁGINAS WEB</span></div>
 
 <div class="capa portada" id="portada">
   <h1>Tu comercio, <span class="degrade">con página propia.</span></h1>
@@ -93,13 +93,15 @@
 <script>
 // La línea de tiempo entera sale de pintar(t): un cuadro por llamada, sin animaciones sueltas,
 // así cada cuadro del video es exacto y se puede rehacer igual.
+// Cada toma dura lo que grabó grabar.py (1,5 s quieta + 4 tramos de 2 s = 285 cuadros) menos el arranque que se salta
+const CUADROS = 285, SALTA = 0.6, ESCENA = CUADROS / 30 - SALTA, INICIO = 2.6;
 const ESCENAS = [
-  { toma: "autoshine", desde: 2.6, hasta: 7.0, chip: "cliente", chipTexto: "Cliente · autoshine.com.ar", frase: "Los turnos le llegan directo al WhatsApp." },
-  { toma: "cabanas", desde: 7.0, hasta: 11.2, chip: "ejemplo", chipTexto: "Página de ejemplo", frase: "Consultas de fechas sin pagar comisión." },
-  { toma: "casa-tala", desde: 11.2, hasta: 15.4, chip: "ejemplo", chipTexto: "Página de ejemplo", frase: "La carta en el celular, de día y de noche." },
-];
-const CUADROS = { "autoshine": 198, "cabanas": 198, "casa-tala": 198 };
-const DURACION = 19;
+  { toma: "autoshine", chip: "cliente", chipTexto: "Cliente · autoshine.com.ar", frase: "Los turnos le llegan directo al WhatsApp." },
+  { toma: "cabanas", chip: "ejemplo", chipTexto: "Página de ejemplo", frase: "Consultas de fechas sin pagar comisión." },
+  { toma: "casa-tala", chip: "ejemplo", chipTexto: "Página de ejemplo", frase: "La carta en el celular, de día y de noche." },
+].map((e, i) => ({ ...e, desde: INICIO + i * ESCENA, hasta: INICIO + (i + 1) * ESCENA }));
+const FIN = ESCENAS[ESCENAS.length - 1].hasta;
+const DURACION = FIN + 3.6;
 const suave = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 const tramo = (t, a, b) => suave((t - a) / (b - a));
 
@@ -111,10 +113,10 @@ async function pintar(t) {
   $("portada").style.transform = `translateY(${(1 - tramo(t, 0, 0.6)) * 40 - portadaSale * 120}px)`;
 
   // Escenas: el celular sube, cambian la frase y la toma, y al final baja para el cierre
-  const entra = tramo(t, 2.2, 2.9), sale = tramo(t, 15.1, 15.7);
+  const entra = tramo(t, 2.2, 2.9), sale = tramo(t, FIN - 0.3, FIN + 0.3);
   $("escenas").style.opacity = String(entra * (1 - sale));
   $("celular").style.transform = `translateY(${(1 - entra) * 700 + sale * 300}px)`;
-  const actual = ESCENAS.find((e) => t >= e.desde && t < e.hasta) || (t < 7 ? ESCENAS[0] : ESCENAS[2]);
+  const actual = ESCENAS.find((e) => t >= e.desde && t < e.hasta) || (t < INICIO ? ESCENAS[0] : ESCENAS[ESCENAS.length - 1]);
   $("chip").className = "chip " + actual.chip;
   $("chip").textContent = actual.chipTexto;
   $("frase").textContent = actual.frase;
@@ -129,9 +131,9 @@ async function pintar(t) {
     const visible = e === actual;
     img.style.opacity = visible ? "1" : "0";
     if (visible) {
-      // Cada toma arranca quieta en la portada (1,2 s grabados) y sigue con el scroll
-      const segundo = 1.2 + (t - e.desde) * 1.15;
-      const n = Math.max(1, Math.min(CUADROS[e.toma], Math.round(segundo * 30)));
+      // A velocidad real: arranca casi al final de la portada quieta y sigue con los tramos
+      const segundo = SALTA + (t - e.desde);
+      const n = Math.max(1, Math.min(CUADROS, Math.round(segundo * 30)));
       const src = `cuadros/${e.toma}/${String(n).padStart(4, "0")}.jpg`;
       if (!img.src.endsWith(src)) {
         img.src = src;
@@ -141,7 +143,7 @@ async function pintar(t) {
   }
 
   // Cierre con el contacto
-  const cierre = tramo(t, 15.5, 16.2);
+  const cierre = tramo(t, FIN + 0.1, FIN + 0.8);
   $("cierre").style.opacity = String(cierre);
   $("cierre").style.transform = `translateY(${(1 - cierre) * 50}px)`;
 

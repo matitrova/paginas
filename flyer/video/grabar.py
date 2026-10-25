@@ -1,12 +1,14 @@
 """Saca los cuadros del scroll de cada página en un celular, para el video de Facebook.
 Una captura nítida por cuadro (390x844 a doble resolución) mientras la página baja con la rueda,
 como un dedo: así también se abre la portada de AutoShine, que no se mueve con un scroll común.
+Baja de a tramos y se queda quieta entre uno y otro, para que se alcance a ver cada parte.
 (La grabación de video de Playwright dejaba la página en un cuarto del cuadro, con el resto gris.)
 Salen a flyer/video/cuadros/<sitio>/0001.jpg, 0002.jpg...
 
-Uso:  ../Test1_Inmo/.venv/bin/python flyer/video/grabar.py
+Uso:  ../Test1_Inmo/.venv/bin/python flyer/video/grabar.py [sitio...]   (sin sitios, graba todos)
 """
 import shutil
+import sys
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -14,17 +16,21 @@ from playwright.sync_api import sync_playwright
 AQUI = Path(__file__).resolve().parent
 CUADROS = AQUI / "cuadros"
 FPS = 30
-QUIETO = 1.2  # segundos de portada quieta al empezar cada toma
-BAJANDO = 5.4  # segundos de scroll
+QUIETO = 1.5  # segundos de portada quieta al empezar cada toma
+BAJA = 0.9  # segundos que tarda cada tramo
+PARA = 1.1  # segundos quieta después de cada tramo
+# Cuántas pantallas baja cada tramo. Todos con 4 tramos: video.html cuenta con que las tomas duren lo mismo.
+# La portada de AutoShine se come unas 2,6 pantallas de rueda antes de dejar bajar: el primer tramo la abre entera.
 SITIOS = {
-    "autoshine": ("https://autoshine.com.ar/", 3.0),
-    "cabanas": ("https://matitrova.github.io/paginas/cabanas/", 3.4),
-    "casa-tala": ("https://matitrova.github.io/paginas/casa-tala/", 3.4),
+    "autoshine": ("https://autoshine.com.ar/", [2.7, 0.75, 0.75, 0.75]),
+    "cabanas": ("https://matitrova.github.io/paginas/cabanas/", [0.85] * 4),
+    "casa-tala": ("https://matitrova.github.io/paginas/casa-tala/", [0.85] * 4),
 }
 
 with sync_playwright() as p:
     nav = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
-    for nombre, (url, pantallas) in SITIOS.items():
+    for nombre in sys.argv[1:] or SITIOS:
+        url, tramos = SITIOS[nombre]
         carpeta = CUADROS / nombre
         shutil.rmtree(carpeta, ignore_errors=True)
         carpeta.mkdir(parents=True)
@@ -41,17 +47,22 @@ with sync_playwright() as p:
         pg.screenshot(path=str(primera), type="jpeg", quality=90)
         for n in range(2, quieto + 1):
             shutil.copy(primera, carpeta / f"{n:04d}.jpg")
-        # La rueda avanza con una curva suave: arranca y frena despacio
-        pasos = int(BAJANDO * FPS)
-        total = 844 * pantallas
-        hecho = 0.0
-        for k in range(1, pasos + 1):
-            x = k / pasos
-            meta = total * (2 * x * x if x < 0.5 else 1 - (-2 * x + 2) ** 2 / 2)
-            pg.mouse.wheel(0, meta - hecho)
-            hecho = meta
-            pg.wait_for_timeout(35)
-            pg.screenshot(path=str(carpeta / f"{quieto + k:04d}.jpg"), type="jpeg", quality=90)
-        print(nombre, quieto + pasos, "cuadros")
+        # Cada tramo arranca y frena despacio, y después se queda quieto
+        n = quieto
+        for pantallas in tramos:
+            pasos, hecho = int(BAJA * FPS), 0.0
+            for k in range(1, pasos + 1):
+                x = k / pasos
+                meta = 844 * pantallas * (2 * x * x if x < 0.5 else 1 - (-2 * x + 2) ** 2 / 2)
+                pg.mouse.wheel(0, meta - hecho)
+                hecho = meta
+                pg.wait_for_timeout(35)
+                n += 1
+                pg.screenshot(path=str(carpeta / f"{n:04d}.jpg"), type="jpeg", quality=90)
+            for _ in range(int(PARA * FPS)):
+                pg.wait_for_timeout(35)
+                n += 1
+                pg.screenshot(path=str(carpeta / f"{n:04d}.jpg"), type="jpeg", quality=90)
+        print(nombre, n, "cuadros")
         ctx.close()
     nav.close()
