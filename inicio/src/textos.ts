@@ -67,11 +67,11 @@ export const SECCIONES: Seccion[] = [
   },
   {
     id: "propuestas",
-    titulo: "Propuestas para negocios de Merlo",
+    titulo: "Propuestas para negocios reales",
     tipo: "propuesta",
     etiqueta: "Propuesta",
     detalle: "No la encargaron · Fotos de sus redes",
-    nota: "Las armé para mostrar cómo podría ser la página de negocios de acá. No las encargaron ni son sus páginas oficiales, y las fotos están sacadas de sus redes.",
+    nota: "Las armé para mostrar cómo podría ser la página de negocios reales de Merlo. No las encargaron ni son sus páginas oficiales, y las fotos están sacadas de sus redes.",
     trabajos: [
       {
         id: "mirador-de-los-condores",

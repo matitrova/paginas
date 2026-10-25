@@ -139,7 +139,7 @@ export default function App() {
         </p>
         <h1 className="font-display mt-5 text-4xl font-bold md:text-5xl">Matías Trovato</h1>
         <p className="mt-2 text-lg text-suave">
-          Páginas web para comercios de <span className="font-semibold text-acento">Merlo, San Luis</span>
+          Páginas web para <span className="font-semibold text-acento">comercios y emprendedores</span>
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-tinta/85 md:text-base">Te hago la página de tu negocio, con tus fotos y un botón para que te escriban por WhatsApp.</p>
         <Contacto />
@@ -161,7 +161,7 @@ export default function App() {
         </a>
       </section>
 
-      <footer className="mt-10 text-center text-xs text-suave">Matías Trovato · Merlo, San Luis</footer>
+      <footer className="mt-10 text-center text-xs text-suave">Matías Trovato · Páginas web</footer>
     </main>
   );
 }
