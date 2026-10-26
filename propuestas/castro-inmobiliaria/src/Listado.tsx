@@ -167,6 +167,8 @@ export default function Listado() {
     };
   }, [mapaAbierto, esCompu]);
   const [f, setF] = useState<Filtros>(filtrosDeLaDireccion);
+  // En el celular los desplegables van detrás de "Filtros": si no, la primera pantalla eran solo filtros y ninguna propiedad
+  const [verFiltros, setVerFiltros] = useState(false);
   // Cuántas se ven también queda en la dirección: al volver de una ficha, el navegador encuentra la tarjeta donde estaba
   const [cuantas, setCuantas] = useState(() => Math.max(TANDA, Number(new URLSearchParams(location.search).get("n")) || 0));
 
@@ -200,6 +202,7 @@ export default function Listado() {
   const conCasas = !f.tipo || ["Casa", "Departamento", "Hotel"].includes(f.tipo);
   const conTerreno = f.tipo === "Terreno" || f.tipo === "Campo";
   const hayFiltros = CLAVES.some((k) => k !== "op" && k !== "orden" && f[k]);
+  const desplegables = [f.zona, f.precio, f.dorm, f.sup].filter(Boolean).length;
 
   return (
     <section className="mx-auto max-w-6xl px-5 pt-8 sm:px-6">
@@ -212,18 +215,23 @@ export default function Listado() {
           type="search"
           value={f.q}
           onChange={(e) => cambiar({ q: e.target.value })}
-          placeholder="Buscar por código (CHO…), zona o palabra"
+          placeholder={esCompu ? "Buscar por código (CHO…), zona o palabra" : "Código, zona o palabra"}
           data-buscar
-          className="h-12 w-full rounded-xl border border-linea bg-white px-4 text-[16px]"
+          className="h-12 w-full rounded-xl border border-linea bg-white px-4 text-[16px] placeholder:text-suave"
         />
       </form>
 
-      <div className="mt-4 flex gap-2" role="group" aria-label="Operación">
-        {["venta", "alquiler"].map((o) => (
-          <button key={o} onClick={() => cambiar({ op: o === "venta" ? "" : o })} aria-pressed={op === o} className="rounded-full border border-linea px-5 py-2.5 text-[15px] font-semibold capitalize aria-pressed:border-tinta aria-pressed:bg-tinta aria-pressed:text-white">
-            {o === "venta" ? "Comprar" : "Alquilar"}
-          </button>
-        ))}
+      <div className="mt-4 flex gap-2">
+        <div className="flex gap-2" role="group" aria-label="Operación">
+          {["venta", "alquiler"].map((o) => (
+            <button key={o} onClick={() => cambiar({ op: o === "venta" ? "" : o })} aria-pressed={op === o} className="rounded-full border border-linea px-5 py-2.5 text-[15px] font-semibold capitalize aria-pressed:border-tinta aria-pressed:bg-tinta aria-pressed:text-white">
+              {o === "venta" ? "Comprar" : "Alquilar"}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setVerFiltros(!verFiltros)} aria-expanded={verFiltros} aria-controls="filtros" data-ver-filtros className="ml-auto rounded-full border border-linea bg-white px-4 py-2.5 text-[15px] font-semibold aria-expanded:border-tinta md:hidden">
+          Filtros{desplegables > 0 && ` · ${desplegables}`}
+        </button>
       </div>
 
       <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Tipo de propiedad">
@@ -237,7 +245,7 @@ export default function Listado() {
         ))}
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div id="filtros" className={`mt-4 ${verFiltros ? "grid" : "hidden"} grid-cols-2 gap-3 md:grid md:grid-cols-4`}>
         <Selector nombre="zona" etiqueta="Zona" valor={f.zona} alCambiar={(zona) => cambiar({ zona })} opciones={[{ valor: "", texto: "Todas las zonas" }, ...zonas.map(([z, n]) => ({ valor: z, texto: `${z} (${n})` }))]} />
         <Selector nombre="precio" etiqueta="Precio" valor={f.precio} alCambiar={(precio) => cambiar({ precio })} opciones={[{ valor: "", texto: "Cualquier precio" }, ...(op === "venta" ? PRECIOS : PRECIOS_ALQUILER)]} />
         {conCasas && !conTerreno && (
@@ -297,22 +305,32 @@ export default function Listado() {
           </div>
         )}
       </div>
-      {!esCompu && !mapaAbierto && lista.length > 0 && (
+      {!esCompu && lista.length > 0 && (
         <button onClick={() => abrirMapa(true)} data-abrir-mapa className="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-full bg-tinta px-5 py-3 font-semibold text-white shadow-[0_12px_30px_-10px_rgb(0_0_0/0.5)]">
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" /></svg>
           Mapa
         </button>
       )}
+      {/* La ventana nativa del navegador: deja inerte lo de atrás, cierra con Escape y devuelve el foco al botón "Mapa".
+          Se abre al montarse (también llegando con ?mapa=1), antes de que el mapa mida su lugar */}
       {!esCompu && mapaAbierto && (
-        <div className="fixed inset-x-0 top-8 bottom-0 z-50 flex flex-col bg-fondo" role="dialog" aria-label="Mapa de las propiedades" data-panel-mapa>
-          <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <dialog
+          ref={(d) => {
+            if (d && !d.open) d.showModal();
+          }}
+          onClose={() => abrirMapa(false)}
+          aria-label="Mapa de las propiedades"
+          data-panel-mapa
+          className="fixed inset-x-0 top-8 bottom-0 m-0 flex h-auto max-h-none w-full max-w-none flex-col border-0 bg-fondo p-0 text-tinta backdrop:bg-transparent"
+        >
+          <form method="dialog" className="flex items-center justify-between gap-3 px-4 py-3">
             <p className="text-[15px]"><b>{lista.length}</b> {lista.length === 1 ? "propiedad" : "propiedades"}</p>
-            <button onClick={() => abrirMapa(false)} className="rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] font-semibold" data-cerrar-mapa>
+            <button className="rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] font-semibold" data-cerrar-mapa>
               Ver la lista
             </button>
-          </div>
+          </form>
           <MapaGeneral props={lista} op={op} className="min-h-0 flex-1 rounded-none" arrastrable />
-        </div>
+        </dialog>
       )}
       {consulta.vista}
       {lista.some(esTerreno) && f.orden === "m2" && <p className="mt-6 text-[13px] text-suave">Las que no publican superficie van al final.</p>}

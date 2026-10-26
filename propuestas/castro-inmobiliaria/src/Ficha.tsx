@@ -140,6 +140,9 @@ const ATAJOS = [
   { id: "descripcion", texto: "Descripción" },
 ];
 
+// Guardar y Compartir: el mismo botón secundario
+const SECUNDARIO = "flex items-center gap-2 rounded-full border border-linea bg-white px-4 py-2.5 text-[14.5px] font-semibold hover:bg-hondo";
+
 // Lo que queda debajo del encabezado fijo (y de la barra de la ficha en la compu) al saltar a una sección
 const DEBAJO_DE_LAS_BARRAS = "scroll-mt-28 md:scroll-mt-44";
 
@@ -149,6 +152,16 @@ export default function Ficha({ id }: { id: string }) {
   const [fallo, setFallo] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const consulta = useConsulta();
+  // La barra fija de la compu aparece recién cuando el precio grande sale de la pantalla: si no, el precio se veía dos
+  // veces al abrir la ficha. Los 96 px de arriba son la cinta y el encabezado, que lo tapan antes de que salga.
+  const precioGrande = useRef<HTMLParagraphElement>(null);
+  const [conBarra, setConBarra] = useState(false);
+  useEffect(() => {
+    if (!precioGrande.current) return;
+    const io = new IntersectionObserver(([e]) => setConBarra(!e.isIntersecting), { rootMargin: "-96px 0px 0px 0px" });
+    io.observe(precioGrande.current);
+    return () => io.disconnect();
+  }, [p]);
 
   useEffect(() => {
     if (p) {
@@ -185,28 +198,31 @@ export default function Ficha({ id }: { id: string }) {
 
   return (
     <article className="pb-28 md:pb-0">
-      {/* En la compu, una barra fija con el precio, los atajos y la consulta (en el celular, la barra de abajo) */}
-      <div className="sticky top-24 z-30 hidden border-b border-linea bg-fondo/95 backdrop-blur md:block" data-barra-ficha>
-        {/* Con venta y alquiler, un precio debajo del otro; si igual no entran (tablet), se recortan y no empujan los botones */}
-        <div className="mx-auto flex max-w-4xl items-center gap-4 px-6 py-2.5">
-          <p className={`min-w-0 font-semibold tracking-tight ${precios.length > 1 ? "text-[14.5px] leading-tight" : "text-[17px]"}`}>
-            {precios.map((x) => (
-              <span key={x} className="block truncate" title={x}>{x}</span>
-            ))}
-          </p>
-          <nav aria-label="Ir a" className="flex shrink-0 gap-0.5 text-[14.5px]">
-            {atajos.map((a) => (
-              <a key={a.id} href={`#${a.id}`} className="rounded-full px-3 py-1.5 whitespace-nowrap text-tinta/80 hover:bg-hondo">{a.texto}</a>
-            ))}
-          </nav>
-          {/* En la tablet no entra la palabra: va el ícono */}
-          <a href={tel} aria-label="Llamar" className="ml-auto flex shrink-0 items-center rounded-full border border-linea px-2.5 py-2 text-[14.5px] font-semibold whitespace-nowrap hover:bg-hondo lg:px-4">
-            <svg viewBox="0 0 24 24" className="h-5 w-5 lg:hidden" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
-            <span className="hidden lg:inline">Llamar</span>
-          </a>
-          <button onClick={() => consulta.abrir(mensaje)} data-consultar className="shrink-0 rounded-full bg-[#25d366] px-5 py-2 text-[14.5px] font-semibold whitespace-nowrap text-black hover:brightness-95">
-            <span className="hidden lg:inline">Consultar por </span>WhatsApp
-          </button>
+      {/* En la compu, una barra fija con el precio, los atajos y la consulta (en el celular, la barra de abajo). Va dentro de
+          una caja pegajosa de alto 0: aparece encima de la página sin correrla */}
+      <div className="sticky top-24 z-30 hidden h-0 md:block">
+        <div className={`border-b border-linea bg-fondo/95 backdrop-blur transition duration-200 ${conBarra ? "" : "invisible -translate-y-2 opacity-0"}`} data-barra-ficha>
+          {/* Con venta y alquiler, un precio debajo del otro; si igual no entran (tablet), se recortan y no empujan los botones */}
+          <div className="mx-auto flex max-w-4xl items-center gap-4 px-6 py-2.5">
+            <p className={`min-w-0 font-semibold tracking-tight ${precios.length > 1 ? "text-[14.5px] leading-tight" : "text-[17px]"}`}>
+              {precios.map((x) => (
+                <span key={x} className="block truncate" title={x}>{x}</span>
+              ))}
+            </p>
+            <nav aria-label="Ir a" className="flex shrink-0 gap-0.5 text-[14.5px]">
+              {atajos.map((a) => (
+                <a key={a.id} href={`#${a.id}`} className="rounded-full px-3 py-1.5 whitespace-nowrap text-tinta/80 hover:bg-hondo">{a.texto}</a>
+              ))}
+            </nav>
+            {/* En la tablet no entra la palabra: va el ícono */}
+            <a href={tel} aria-label="Llamar" className="ml-auto flex shrink-0 items-center rounded-full border border-linea px-2.5 py-2 text-[14.5px] font-semibold whitespace-nowrap hover:bg-hondo lg:px-4">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 lg:hidden" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
+              <span className="hidden lg:inline">Llamar</span>
+            </a>
+            <button onClick={() => consulta.abrir(mensaje)} data-consultar className="shrink-0 rounded-full bg-[#25d366] px-5 py-2 text-[14.5px] font-semibold whitespace-nowrap text-black hover:brightness-95">
+              <span className="hidden lg:inline">Consultar por </span>WhatsApp
+            </button>
+          </div>
         </div>
       </div>
 
@@ -226,11 +242,16 @@ export default function Ficha({ id }: { id: string }) {
           <Galeria p={p} fotos={ficha?.fotos ?? null} />
         </div>
         <div className="px-5 sm:px-0">
+          {/* En la compu, la consulta va al lado del precio: la barra fija aparece cuando el precio sale de la pantalla, así
+              que siempre hay una a la vista (en el celular está la barra de abajo) */}
           <div className="mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <p className="text-[28px] font-semibold tracking-tight" data-precio-ficha>{precios.join(" · ")}</p>
+            <p ref={precioGrande} className="text-[28px] font-semibold tracking-tight" data-precio-ficha>{precios.join(" · ")}</p>
             <p className="text-[13.5px] text-suave">{p.operacion.map((o) => (o === "venta" ? "Venta" : "Alquiler")).join(" y ")} · Cód. {p.codigo}</p>
+            <button onClick={() => consulta.abrir(mensaje)} data-consultar-arriba className="ml-auto hidden self-center rounded-full bg-[#25d366] px-5 py-2.5 text-[14.5px] font-semibold text-black hover:brightness-95 md:block">
+              Consultar por WhatsApp
+            </button>
           </div>
-          <h1 className="mt-2 text-[22px] leading-snug font-medium text-balance sm:text-[26px]">{p.titulo}</h1>
+          <h1 className="font-display mt-2 text-[25px] leading-tight font-normal text-balance sm:text-[30px]">{p.titulo}</h1>
           {fallo && (
             <p className="mt-3 rounded-xl bg-hondo px-4 py-3 text-[14.5px]">
               No se pudo cargar el detalle de esta propiedad.{" "}
@@ -241,13 +262,16 @@ export default function Ficha({ id }: { id: string }) {
           <div className="mt-3">
             <Etiquetas p={p} max={4} />
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px]">
-            <span className="flex items-center gap-2 font-semibold">
-              <BotonGuardar id={p.id} className="border border-linea" /> Guardar
-            </span>
-            <button onClick={compartir} className="font-semibold text-naranja-osc">{copiado ? "Link copiado" : "Compartir"}</button>
-            <a href={mail} data-mail className="text-tinta/75 underline underline-offset-4 hover:text-tinta">Prefiero que me escriban por mail</a>
+          <div className="mt-5 flex flex-wrap items-center gap-2.5">
+            <BotonGuardar id={p.id} texto="Guardar" className={SECUNDARIO} />
+            <button onClick={compartir} className={SECUNDARIO}>
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>
+              {copiado ? "Link copiado" : "Compartir"}
+            </button>
           </div>
+          <p className="mt-3 text-[14px]">
+            <a href={mail} data-mail className="text-tinta/75 underline underline-offset-4 hover:text-tinta">Prefiero que me escriban por mail</a>
+          </p>
 
           <dl id="datos" className={`mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3 ${DEBAJO_DE_LAS_BARRAS}`}>
             <Dato etiqueta="Terreno" valor={superficie(p.terreno)} />

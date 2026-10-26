@@ -12,7 +12,9 @@ const nuevas = [...venta].sort((a, b) => b.alta.localeCompare(a.alta));
 const ULTIMAS = nuevas.slice(0, 6);
 const FORMA = nuevas.filter((p) => p.mini && !ULTIMAS.includes(p)).slice(0, 6);
 const TIPOS_VENTA = contar(venta, (p) => p.tipo);
-const ZONAS = contar(venta, (p) => p.zona).slice(0, 12);
+// Hasta 12, sin partir un empate: si la 13 tiene tantas como la 12, quedan afuera todas las que tienen esa cantidad
+const TODAS_LAS_ZONAS = contar(venta, (p) => p.zona);
+const ZONAS = TODAS_LAS_ZONAS.filter(([, n]) => n > (TODAS_LAS_ZONAS[12]?.[1] ?? 0));
 
 /** "15 de octubre", y con el año si no es el de hoy. */
 function fecha(alta: string) {
@@ -122,8 +124,9 @@ export default function Portada() {
             </span>
           </h1>
           <Buscador />
-          {/* Su eslogan, chico y entre comillas: es de ellos */}
-          <p className="font-display mt-5 text-[15px] text-arena/75 italic">“{SITIO.inicio.titular.replace(/\s*\n\s*/g, " ")}”</p>
+          {/* Su eslogan, chico y entre comillas: es de ellos. En el celular deja libre el lugar del WhatsApp flotante, que si
+              no lo tapaba mientras carga la letra (la de reemplazo es más ancha) */}
+          <p className="font-display mt-5 text-[15px] text-arena/75 italic max-sm:mr-36" data-eslogan>“{SITIO.inicio.titular.replace(/\s*\n\s*/g, " ")}”</p>
         </div>
         <div className="relative order-first lg:order-none">
           <img
@@ -143,8 +146,8 @@ export default function Portada() {
 
       <section className="mx-auto mt-14 max-w-6xl px-5 sm:px-6" data-ultimas>
         {/* El link arriba, como en "Terrenos con su forma real": abajo del carrusel quedaba lejos de la tarjeta a la vista
-            cuando otra del renglón es más alta */}
-        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+            cuando otra del renglón es más alta. Debajo del título y no a la derecha: ahí lo tapaba el WhatsApp flotante */}
+        <div className="flex flex-col items-start gap-3">
           <Titulo chico={T.ultimasChico}>{T.ultimas}</Titulo>
           <VerTodas href={ir({ ver: "propiedades" })}>{T.verUltimas}</VerTodas>
         </div>
@@ -153,7 +156,7 @@ export default function Portada() {
 
       <section className="textura mt-16 bg-piedra py-14" data-con-forma>
         <div className="mx-auto max-w-6xl px-5 sm:px-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-col items-start gap-4">
             <div className="max-w-xl">
               <Titulo chico={T.formaChico}>{T.forma}</Titulo>
               <p className="mt-3 text-[16px] leading-relaxed">{T.formaTexto}</p>
@@ -169,7 +172,7 @@ export default function Portada() {
 
       {/* Todas sobre la foto calzada; Leaflet y los datos del mapa se bajan recién al llegar acá */}
       <section className="mx-auto mt-16 max-w-6xl px-5 sm:px-6" id="mapa" data-mapa-portada>
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col items-start gap-4">
           <div className="max-w-xl">
             <Titulo chico={T.mapaChico}>{T.mapa}</Titulo>
             <p className="mt-3 text-[16px] leading-relaxed">{T.mapaTexto}</p>
