@@ -86,7 +86,7 @@ export function crearMapa(L: L, el: HTMLElement, { zmax, ...opciones }: Leaflet.
 /** Deja la foto calzada y la mantiene así en cada zoom y movimiento. calceDe dice el calce que corresponde (en la
  *  ficha, el de su celda; en el mapa general, el de la celda del centro). ?calce=0 lo apaga, para compararlo.
  *  Se engancha DESPUÉS de fijar centro y zoom (b71b306): antes, Leaflet tira "Set map center and zoom first" y el
- *  calce no se aplica nunca. El corrimiento aplicado en píxeles (data-calce) y el zoom y la latitud con que se calculó (data-vista) quedan en
+ *  calce no se aplica nunca. El corrimiento aplicado en píxeles (data-calce) y el zoom y el centro con que se calculó (data-vista) quedan en
  *  el pane, para los chequeos. */
 export function seguirElCalce(mapa: Leaflet.Map, calceDe: () => [number, number] | null) {
   const apagado = new URLSearchParams(location.search).get("calce") === "0";
@@ -94,11 +94,12 @@ export function seguirElCalce(mapa: Leaflet.Map, calceDe: () => [number, number]
     const pane = mapa.getPane(PANE_FOTO);
     if (!pane) return;
     const calce = apagado ? null : calceDe();
-    const [lat, zoom] = [mapa.getCenter().lat, mapa.getZoom()];
+    const { lat, lng } = mapa.getCenter();
+    const zoom = mapa.getZoom();
     const { x, y } = calce ? corrimientoEnPixeles(calce, lat, zoom) : { x: 0, y: 0 };
     pane.style.transform = x || y ? `translate3d(${x}px, ${y}px, 0)` : "";
     pane.dataset.calce = `${x},${y}`;
-    pane.dataset.vista = `${zoom},${lat}`;
+    pane.dataset.vista = `${zoom},${lat},${lng}`;
   };
   mapa.on("zoomend moveend", mover);
   mover();

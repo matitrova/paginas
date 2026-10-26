@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { ir, linkPropiedad, MapaUrbanizaciones, Tarjeta, Titulo, useConsulta, useGuardadas } from "./componentes";
+import { ir, linkPropiedad, Tarjeta, Titulo, useConsulta, useGuardadas } from "./componentes";
+import MapaGeneral, { MapaUrbanizaciones } from "./MapaGeneral";
 import { MARTILLEROS, porId, precio, PROPIEDADES, SITIO, TELEFONO, URBANIZACIONES } from "./datos";
 import { CONTACTO, NOSOTROS, URBANIZACIONES_TXT, VENDER } from "./textos";
 import { Descripcion, nombreLindo } from "./Ficha";
 
 const disponibles = (ids: string[]) => ids.map((id) => porId.get(id)).filter((p) => p !== undefined);
+// Cuántas propiedades publicadas tiene cada urbanización (fijo: sale del índice)
+const CANTIDADES = Object.fromEntries(URBANIZACIONES.map((u) => [u.id, disponibles(u.propiedades).length]));
 
 export function Urbanizaciones() {
   useEffect(() => {
@@ -21,7 +24,7 @@ export function Urbanizaciones() {
         <span data-dato="urbanizaciones_con">{conPropiedades}</span> {URBANIZACIONES_TXT.conPropiedades}
       </p>
       <div className="mt-7">
-        <MapaUrbanizaciones />
+        <MapaUrbanizaciones cantidades={CANTIDADES} />
       </div>
       <div className="mt-10 grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
         {lista.map((u) => {
@@ -85,13 +88,7 @@ export function Urbanizacion({ id }: { id: string }) {
           {u.lat && (
             <>
               <h2 className="font-display mt-10 text-2xl">Ubicación</h2>
-              <iframe
-                title={`Ubicación de ${nombreLindo(u.nombre)}`}
-                src={`https://maps.google.com/maps?q=${u.lat},${u.lng}&z=14&output=embed`}
-                loading="lazy"
-                className="mt-3 h-64 w-full rounded-2xl border border-linea"
-                data-mapa-embebido
-              />
+              <MapaGeneral props={props} lugarVacio={{ lat: Number(u.lat), lng: Number(u.lng), texto: "Ubicación de la urbanización" }} className="mt-3 h-80" />
             </>
           )}
         </div>

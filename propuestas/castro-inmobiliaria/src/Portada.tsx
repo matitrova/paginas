@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ir, Tarjeta, Titulo } from "./componentes";
+import MapaGeneral from "./MapaGeneral";
 import { contar, MARTILLEROS, PROPIEDADES, SITIO, TIPOS, type Propiedad } from "./datos";
 import { PORTADA as T, VENDER } from "./textos";
 
@@ -166,7 +167,17 @@ export default function Portada() {
         </div>
       </section>
 
-      {/* Actualización 11: acá va el mapa de todas las propiedades, que se carga recién al llegar a esta parte. */}
+      {/* Todas sobre la foto calzada; Leaflet y los datos del mapa se bajan recién al llegar acá */}
+      <section className="mx-auto mt-16 max-w-6xl px-5 sm:px-6" id="mapa" data-mapa-portada>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-xl">
+            <Titulo chico={T.mapaChico}>{T.mapa}</Titulo>
+            <p className="mt-3 text-[16px] leading-relaxed">{T.mapaTexto}</p>
+          </div>
+          <VerTodas href={ir({ ver: "propiedades", mapa: 1 })}>{T.mapaBoton}</VerTodas>
+        </div>
+        <MapaGeneral props={venta} op="venta" className="mt-6 h-[62vh] min-h-[380px]" />
+      </section>
 
       <section className="mx-auto mt-16 max-w-6xl px-5 sm:px-6">
         <Titulo chico={T.zonasChico}>{T.zonas}</Titulo>

@@ -195,3 +195,23 @@ body {
 .zona-tooltip {
   font: 600 13px/1.2 var(--font-sans);
 }
+.marca-mapa .logo-urbanizacion.compacto {
+  position: absolute;
+  padding: 3px;
+}
+.marca-mapa .logo-urbanizacion.compacto img {
+  width: 36px;
+  height: 36px;
+}
+.marca-mapa .logo-urbanizacion.compacto b {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: #40251c;
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+}

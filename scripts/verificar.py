@@ -556,6 +556,8 @@ def castro(pg, nombre, cap):
 
     raiz = f"{BASE}propuestas/castro-inmobiliaria/"
     indice = json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/indice.json").read_text())
+    pedidos_castro = []
+    pg.on("request", lambda r: pedidos_castro.append(r.url))
     venta = [x for x in indice if "venta" in x["operacion"]]
     roto = re.compile(r"\b0 m²|\b\d+(\.\d+)? ?HA\b|NaN|undefined|null|Sin datos|\b0 (dorm|baño)")
 
@@ -868,13 +870,37 @@ def castro(pg, nombre, cap):
     cap("05-urbanizaciones")
     if pg.locator("[data-urbanizacion]").count() != 22:
         problemas.append(f"{nombre}: hay {pg.locator('[data-urbanizacion]').count()} urbanizaciones y son 22")
-    pines = pg.locator("[data-mapa-urbanizaciones] [data-pin]").evaluate_all("es => es.map(e => e.getAttribute('href'))")
-    if len(pines) != 22 or any(not h.startswith("?u=") for h in pines):
-        problemas.append(f"{nombre}: el mapa de urbanizaciones tiene {len(pines)} logos o alguno no lleva a su página")
+    # El mapa satelital de las urbanizaciones (en lugar de su mapa dibujado) se baja al llegar a él
     pg.locator("[data-mapa-urbanizaciones]").scroll_into_view_if_needed()
+    try:
+        pg.wait_for_selector("[data-mapa-urbanizaciones][data-mapa-listo] [data-cantidad]", timeout=20000)
+    except Exception:
+        problemas.append(f"{nombre}: el mapa de urbanizaciones no terminó de cargar")
     pg.wait_for_timeout(1500)
-    if not pg.evaluate("[...document.querySelectorAll('[data-mapa-urbanizaciones] img')].every(i => i.naturalWidth > 0)"):
-        problemas.append(f"{nombre}: alguna imagen del mapa de urbanizaciones no se dibujó")
+    pines = pg.locator("[data-mapa-urbanizaciones] [data-pin]").evaluate_all("es => es.map(e => e.getAttribute('href'))")
+    alcanzables = pg.evaluate("[...document.querySelectorAll('[data-mapa-urbanizaciones] [data-cantidad]')].reduce((s, e) => s + +e.dataset.cantidad, 0)")
+    if alcanzables != 22 or not pines or any(not h.startswith("?u=") for h in pines):
+        problemas.append(f"{nombre}: el mapa de urbanizaciones llega a {alcanzables} de 22 ({len(pines)} logos) o algún logo no lleva a su página")
+    if not pg.evaluate("[...document.querySelectorAll('[data-mapa-urbanizaciones] [data-pin] img')].every(i => i.naturalWidth > 0)"):
+        problemas.append(f"{nombre}: algún logo del mapa de urbanizaciones no se dibujó")
+    # Las dos que publican el mismo punto (61814 y 61958) se tienen que poder tocar las dos: en el centro de cada logo
+    # tiene que estar ese logo y no el otro
+    tapadas = pg.evaluate("""() => [...document.querySelectorAll('[data-mapa-urbanizaciones] [data-pin]')].filter(a => {
+        const r = a.getBoundingClientRect(); const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return r.width && e && !a.contains(e) && e.closest('[data-pin]') && e.closest('[data-pin]') !== a }).map(a => a.dataset.pin)""")
+    if tapadas:
+        problemas.append(f"{nombre}: en el mapa de urbanizaciones hay logos tapados por otro: {tapadas}")
+    # Polo Logístico (61814) y Sauzalito (61958) publican el mismo punto: acercando hasta el fondo, su burbuja las lista
+    for _ in range(8):
+        dos = pg.evaluate("""() => { const b = [...document.querySelectorAll('[data-mapa-urbanizaciones] .burbuja')].find(e => /Polo|Sauzalito/i.test(e.closest('[title]')?.title || ''));
+            if (!b) return 'sin burbuja'; b.click(); return [...document.querySelectorAll('[data-tarjetas-mapa] [data-pin]')].map(a => a.dataset.pin).sort().join(',') }""")
+        pg.wait_for_timeout(900)
+        if dos not in ("", "sin burbuja") and "," in dos:
+            break
+    if dos != "61814,61958":
+        problemas.append(f"{nombre}: las dos urbanizaciones del mismo punto no se pueden elegir desde el mapa ({dos})")
+    if any("mapa-merlo" in u or "/pin-" in u for u in pedidos_castro):
+        problemas.append(f"{nombre}: se sigue pidiendo la imagen de su mapa dibujado")
     ids = {x["id"] for x in indice}
     for u in [x for x in sitio["urbanizaciones"] if x["id"] in ("29734", "61954")]:
         ir(f"?u={u['id']}")
@@ -970,7 +996,7 @@ def castro_mapa(pg, nombre, cap):
         return
     con = medir()
     cap("mapa-terreno")
-    zoom, lat = (float(x) for x in con["vista"].split(","))
+    zoom, lat = (float(x) for x in con["vista"].split(",")[:2])
     # El zoom y la latitud que dice el pane no se creen así nomás: el ancho del lote en pantalla tiene que dar ese zoom
     lngs, lats = [x for x, _ in m["lote"]], [y for _, y in m["lote"]]
     ancho = (max(lngs) - min(lngs)) / 360 * 256 * 2**zoom
@@ -1172,6 +1198,119 @@ def castro_mapa(pg, nombre, cap):
             if ancho == 1024:
                 cap("barra-1024")
         pg.set_viewport_size({"width": 1440, "height": 900})
+    castro_general(pg, nombre, cap)
+
+
+def castro_general(pg, nombre, cap):
+    """El mapa de todas las propiedades (Actualización 11): en el listado, con los mismos filtros; en la portada, sin
+    bajar Leaflet hasta llegar a él. La suma de las marcas (una burbuja cuenta todas las que junta) tiene que dar la
+    cantidad de resultados, y el calce de la foto tiene que ser el de la celda del centro."""
+    import json
+    import math
+
+    raiz = f"{BASE}propuestas/castro-inmobiliaria/"
+    datos = json.loads((DIST / "propuestas/castro-inmobiliaria/mapa.json").read_text())
+    movil = pg.viewport_size["width"] < 1024
+    pedidos = []
+    pg.on("request", lambda r: pedidos.append(r.url))
+
+    def listo(donde):
+        try:
+            pg.wait_for_selector("[data-mapa-general][data-mapa-listo]", timeout=20000)
+            pg.wait_for_timeout(700)
+            return True
+        except Exception:
+            problemas.append(f"{nombre}: el mapa general no terminó de cargar en {donde}")
+            return False
+
+    def suma():
+        return pg.evaluate("[...document.querySelectorAll('[data-mapa-general] [data-cantidad]')].reduce((s, e) => s + +e.dataset.cantidad, 0)")
+
+    def resultados():
+        return int(pg.locator("[data-resultados]").get_attribute("data-resultados"))
+
+    # Portada: no se baja Leaflet hasta llegar al mapa
+    pedidos.clear()
+    pg.goto(raiz, wait_until="networkidle")
+    pg.wait_for_timeout(500)
+    if any("leaflet" in u for u in pedidos):
+        problemas.append(f"{nombre}: la portada baja Leaflet antes de llegar al mapa")
+    pg.locator("[data-mapa-portada]").scroll_into_view_if_needed()
+    if listo("la portada"):
+        venta = sum(1 for x in json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/indice.json").read_text()) if "venta" in x["operacion"])
+        if suma() != venta:
+            problemas.append(f"{nombre}: el mapa de la portada suma {suma()} marcas y hay {venta} en venta")
+        cap("10-mapa-portada")
+
+    # Listado: el mapa muestra lo mismo que la lista, y cambia con los filtros
+    pg.goto(raiz + "?ver=propiedades", wait_until="networkidle")
+    if movil:
+        pg.locator("[data-abrir-mapa]").click()
+        if "mapa=1" not in pg.url:
+            problemas.append(f"{nombre}: abrir el mapa no queda en la dirección ({pg.url})")
+    if not listo("el listado"):
+        return
+    total = resultados()
+    if suma() != total:
+        problemas.append(f"{nombre}: el mapa del listado suma {suma()} marcas y la lista tiene {total}")
+    cap("11-mapa-listado")
+    # El calce es el de la celda del centro del mapa, en el zoom actual (la foto se corre; las marcas no)
+    pane = pg.locator("[data-mapa-general] [data-vista]").first
+    zoom, lat, lng = (float(x) for x in pane.get_attribute("data-vista").split(","))
+    este, norte = datos["calces"].get(f"c{math.floor(lat / 0.02)}_{math.floor(lng / 0.02)}", (0, 0))
+    mpp = 156543.03392 * math.cos(math.radians(lat)) / 2 ** zoom
+    if pane.get_attribute("data-calce") != f"{round(este / mpp)},{round(-norte / mpp)}":
+        problemas.append(f"{nombre}: la foto del mapa general se corre {pane.get_attribute('data-calce')} y en esa celda y zoom tocaba {round(este / mpp)},{round(-norte / mpp)}")
+    # Con un filtro, el mapa cambia (en la compu; en el celular el panel tapa los filtros)
+    if not movil:
+        pg.locator("[data-filtro-tipo='Terreno']").click()
+        pg.wait_for_timeout(1200)
+        if suma() != resultados() or resultados() == total:
+            problemas.append(f"{nombre}: al filtrar terrenos el mapa suma {suma()} y la lista tiene {resultados()}")
+        # Pasar el mouse por una tarjeta resalta su marca
+        primera = pg.locator("[data-tarjeta]").first
+        ident = primera.get_attribute("data-tarjeta")
+        primera.hover()
+        pg.wait_for_timeout(300)
+        activa = pg.evaluate("() => [...document.querySelectorAll('[data-mapa-general] .activa')].map(e => e.dataset.pinProp)")
+        if not any(ident in (a or "").split() for a in activa):
+            problemas.append(f"{nombre}: pasar el mouse por la tarjeta {ident} no resalta su marca en el mapa ({activa})")
+        pg.mouse.move(5, 5)
+    # Tocar una burbuja acerca; de cerca aparecen los lotes y las pastillas; tocar una pastilla abre su tarjeta
+    for _ in range(4):
+        if pg.locator("[data-mapa-general] .pildora").count():
+            break
+        burbuja = pg.locator("[data-mapa-general] .burbuja").first
+        burbuja.evaluate("e => e.click()")
+        pg.wait_for_timeout(900)
+    pastilla = pg.locator("[data-mapa-general] .pildora").first
+    if not pastilla.count():
+        problemas.append(f"{nombre}: acercando el mapa general nunca aparecen los precios")
+        return
+    ident = pastilla.get_attribute("data-pin-prop")
+    pastilla.evaluate("e => e.click()")
+    pg.wait_for_timeout(500)
+    link = pg.locator(f"[data-tarjetas-mapa] [data-tarjeta-mapa='{ident}']")
+    if not link.count():
+        problemas.append(f"{nombre}: tocar la pastilla de {ident} no abre su tarjeta")
+        return
+    cap("12-mapa-tarjeta")
+    link.click()
+    pg.wait_for_load_state("networkidle")
+    if f"p={ident}" not in pg.url:
+        problemas.append(f"{nombre}: la tarjeta del mapa no lleva a la ficha {ident} ({pg.url})")
+    # De cerca, los lotes dibujados son los de mapa.json
+    pg.goto(raiz + "?ver=propiedades&tipo=Terreno" + ("&mapa=1" if movil else ""), wait_until="networkidle")
+    if listo("los terrenos"):
+        # Se toca la burbuja más grande hasta llegar al zoom en que se dibujan los lotes (15)
+        for _ in range(6):
+            if float(pg.get_attribute("[data-mapa-general]", "data-zoom") or 0) >= 15:
+                break
+            pg.evaluate("""() => { const b = [...document.querySelectorAll('[data-mapa-general] .burbuja')].sort((a, b) => b.dataset.cantidad - a.dataset.cantidad)[0]; b && b.click() }""")
+            pg.wait_for_timeout(1000)
+        if pg.locator("[data-mapa-general] path.lote").count() == 0:
+            problemas.append(f"{nombre}: acercando el mapa de terrenos no aparece ningún lote dibujado")
+        cap("13-mapa-lotes")
 
 
 PAGINAS = {

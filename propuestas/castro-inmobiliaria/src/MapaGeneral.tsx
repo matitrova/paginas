@@ -80,6 +80,14 @@ function precioCorto(p: Propiedad, op?: string) {
 const marca = (L: L, latlng: Leaflet.LatLngExpression, html: string, titulo: string) =>
   L.marker(latlng, { keyboard: false, title: titulo, riseOnHover: true, icon: L.divIcon({ className: "marca-mapa", iconSize: [0, 0], html }) });
 
+/** Acerca a esos puntos; si el encuadre no acercaría (pasa con el mapa angosto del celular), acerca dos niveles ahí. */
+function acercar(mapa: Leaflet.Map, limites: Leaflet.LatLngBounds, padding: number) {
+  const z = mapa.getZoom();
+  const destino = Math.min(mapa.getBoundsZoom(limites, false, [padding * 2, padding * 2] as unknown as Leaflet.Point), ZOOM_MAXIMO);
+  if (destino > z) mapa.fitBounds(limites, { padding: [padding, padding], maxZoom: ZOOM_MAXIMO });
+  else mapa.setView(limites.getCenter(), Math.min(z + 2, ZOOM_MAXIMO));
+}
+
 const escapar = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /** La tarjeta que se abre al tocar una marca: foto, título y precio de cada una (hasta 6), con link a la ficha. */
@@ -208,7 +216,7 @@ export default function MapaGeneral({ props, op, resaltada, lugarVacio, classNam
         const centro = limites.getCenter();
         const m = marca(L, centro, html, `${lista.length} propiedades`)
           // Si están todas en el mismo punto no hay zoom que las separe: se abre la lista
-          .on("click", () => (mismoPunto || mapa.getZoom() >= ZOOM_MAXIMO ? abrir(lista, centro) : mapa.fitBounds(limites, { padding: [60, 60], maxZoom: ZOOM_MAXIMO })))
+          .on("click", () => (mismoPunto || mapa.getZoom() >= ZOOM_MAXIMO ? abrir(lista, centro) : acercar(mapa, limites, 60)))
           .addTo(marcasCapa);
         const el = m.getElement()?.querySelector<HTMLElement>(".burbuja");
         if (el) for (const x of lista) marcas.current.set(x.id, el);
@@ -248,7 +256,9 @@ export default function MapaGeneral({ props, op, resaltada, lugarVacio, classNam
   }, [base, clave, op, vLat, vLng, vTexto]);
 
   useEffect(() => {
-    for (const [id, el] of marcas.current) el.classList.toggle("activa", id === resaltada);
+    // Una burbuja junta varias propiedades: se prende la marca de la resaltada y se apagan todas las demás
+    const activa = marcas.current.get(resaltada ?? "");
+    for (const el of new Set(marcas.current.values())) el.classList.toggle("activa", el === activa);
     marcas.current.get(resaltada ?? "")?.closest(".leaflet-marker-icon")?.classList.add("arriba");
     return () => {
       marcas.current.get(resaltada ?? "")?.closest(".leaflet-marker-icon")?.classList.remove("arriba");
@@ -262,8 +272,9 @@ export default function MapaGeneral({ props, op, resaltada, lugarVacio, classNam
   );
 }
 
-/** Las urbanizaciones sobre la foto satelital, cada una con su logo y cuántas propiedades tiene publicadas.
- *  Reemplaza al mapa dibujado de su sitio. Dos que publican el mismo punto se separan un poco para tocar las dos. */
+/** Las urbanizaciones sobre la foto satelital, cada una con su logo, su nombre y cuántas propiedades tiene publicadas.
+ *  Reemplaza al mapa dibujado de su sitio. Un logo con nombre se dibuja solo si tiene lugar: si se pisa con otro, se
+ *  juntan en una burbuja con la cantidad, que al tocarla acerca (o, si están en el mismo punto, las lista). */
 export function MapaUrbanizaciones({ cantidades, className = "h-[64vh]" }: { cantidades: Record<string, number>; className?: string }) {
   const caja = useRef<HTMLDivElement>(null);
   const tactil = matchMedia("(pointer: coarse)").matches;
@@ -273,20 +284,81 @@ export function MapaUrbanizaciones({ cantidades, className = "h-[64vh]" }: { can
     if (!base) return;
     const { L, mapa } = base;
     const capa = L.layerGroup().addTo(mapa);
-    const vistos = new Map<string, number>();
-    const con = URBANIZACIONES.filter((u) => Number.isFinite(Number(u.lat)) && Number(u.lat));
-    for (const u of con) {
-      const clave = `${u.lat},${u.lng}`;
-      const repetido = vistos.get(clave) ?? 0;
-      vistos.set(clave, repetido + 1);
-      const n = cantidades[u.id] ?? 0;
-      const logo = u.fotos[0] ? `<img src="${escapar(u.fotos[0])}" alt="" loading="lazy">` : "";
-      // El segundo que cae en el mismo punto se corre 46 px a la derecha
-      const html = `<a href="${ir({ u: u.id })}" class="logo-urbanizacion" data-pin="${u.id}" style="--corrido:${repetido * 46}px">${logo}<span>${escapar(nombreLindo(u.nombre))}${n ? ` · ${n}` : ""}</span></a>`;
-      marca(L, [Number(u.lat), Number(u.lng)], html, nombreLindo(u.nombre)).addTo(capa);
-    }
-    mapa.fitBounds(L.latLngBounds(con.map((u) => [Number(u.lat), Number(u.lng)])), { padding: [50, 50], maxZoom: 15, animate: false });
+    // Las que tienen propiedades primero: si dos se pisan, la que se ve con su nombre es la que más tiene
+    const urbs = URBANIZACIONES.filter((u) => Number(u.lat) && Number(u.lng))
+      .map((u) => ({ u, lat: Number(u.lat), lng: Number(u.lng), nombre: nombreLindo(u.nombre), n: cantidades[u.id] ?? 0 }))
+      .sort((a, b) => b.n - a.n);
+    type Urb = (typeof urbs)[number];
+    // En un mapa angosto (el celular) va solo el logo con la cantidad; con nombre no entraría casi ninguno
+    const compacto = (caja.current?.clientWidth ?? 1000) < 640;
+    const ancho = (x: Urb, chico: boolean) => (chico ? 46 : 48 + (x.nombre.length + (x.n ? 4 : 0)) * 7.4); // en px aproximados
+
+    const lista = (grupo: Urb[]) => {
+      const div = document.createElement("div");
+      div.className = "tarjetas-mapa";
+      div.dataset.tarjetasMapa = "";
+      for (const x of grupo) {
+        const a = document.createElement("a");
+        a.href = ir({ u: x.u.id });
+        a.dataset.pin = x.u.id;
+        a.dataset.cantidad = "1";
+        const t = document.createElement("span");
+        t.textContent = x.nombre;
+        const b = document.createElement("b");
+        b.textContent = x.n ? `${x.n} ${x.n === 1 ? "propiedad" : "propiedades"}` : "Sin propiedades publicadas hoy";
+        t.append(b);
+        a.append(t);
+        div.append(a);
+      }
+      return div;
+    };
+
+    const dibujar = () => {
+      capa.clearLayers();
+      const puestos: { px: Leaflet.Point; w: number; chico: boolean; grupo: Urb[] }[] = [];
+      for (const x of urbs) {
+        const px = mapa.project([x.lat, x.lng]);
+        // Se pisan si las cajas (centradas en su punto, 40 px de alto) se tocan. Si con nombre no entra, se prueba
+        // solo el logo; si tampoco, se junta con la que pisa.
+        const choca = (w: number) => puestos.find((p) => Math.abs(p.px.x - px.x) < (p.grupo.length > 1 ? 30 : p.w / 2) + w / 2 && Math.abs(p.px.y - px.y) < 42);
+        const chico = compacto || !!choca(ancho(x, false));
+        const otra = choca(ancho(x, chico));
+        if (otra) otra.grupo.push(x);
+        else puestos.push({ px, w: ancho(x, chico), chico, grupo: [x] });
+      }
+      for (const { grupo, chico } of puestos) {
+        const x = grupo[0];
+        if (grupo.length === 1) {
+          const logo = x.u.fotos[0] ? `<img src="${escapar(x.u.fotos[0])}" alt="">` : "";
+          const texto = chico ? `<span class="sr-only">${escapar(x.nombre)}</span>${x.n ? `<b>${x.n}</b>` : ""}` : `<span>${escapar(x.nombre)}${x.n ? ` · ${x.n}` : ""}</span>`;
+          const html = `<a href="${ir({ u: x.u.id })}" class="logo-urbanizacion${chico ? " compacto" : ""}" data-pin="${x.u.id}" data-cantidad="1">${logo}${texto}</a>`;
+          marca(L, [x.lat, x.lng], html, x.nombre).addTo(capa);
+          continue;
+        }
+        const limites = L.latLngBounds(grupo.map((g) => [g.lat, g.lng]));
+        const mismoPunto = grupo.every((g) => g.lat === x.lat && g.lng === x.lng);
+        const html = `<button type="button" class="burbuja" data-cantidad="${grupo.length}">${grupo.length} urbanizaciones</button>`;
+        marca(L, [x.lat, x.lng], html, grupo.map((g) => g.nombre).join(", "))
+          .on("click", () =>
+            mismoPunto || mapa.getZoom() >= ZOOM_MAXIMO
+              ? L.popup({ maxWidth: 280, minWidth: 220, className: "popup-mapa" }).setLatLng([x.lat, x.lng]).setContent(lista(grupo)).openOn(mapa)
+              : acercar(mapa, limites, 70),
+          )
+          .addTo(capa);
+      }
+      caja.current?.setAttribute("data-zoom", String(mapa.getZoom()));
+    };
+    mapa.on("zoomend", dibujar);
+    // Se encuadra el grupo de Merlo (las que están a menos de 4 km del punto del medio): La Pituca, El Solar y La
+    // Eloisa, lejos del resto, alejaban tanto el mapa que en el celular todo quedaba en una burbuja. Se ven al alejar.
+    const medio = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
+    const centro = L.latLng(medio(urbs.map((x) => x.lat)), medio(urbs.map((x) => x.lng)));
+    const cerca = urbs.filter((x) => centro.distanceTo([x.lat, x.lng]) < 4000);
+    mapa.fitBounds(L.latLngBounds((cerca.length ? cerca : urbs).map((x) => [x.lat, x.lng])), { padding: [40, 40], maxZoom: 15, animate: false });
+    dibujar();
     return () => {
+      mapa.off("zoomend", dibujar);
+      mapa.closePopup();
       capa.remove();
     };
   }, [base, cantidades]);

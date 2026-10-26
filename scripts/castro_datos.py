@@ -297,7 +297,6 @@ assert superficie("600.00M2") == 600 and superficie("0.00M2") is None and superf
 assert antiguedad("0 años") is None and antiguedad("-1 años") is None and antiguedad("7 años") == "7 años"
 
 propiedades = json.load(open(FUENTE / "propiedades.json"))
-PINES = json.load(open(FUENTE / "pines.json"))
 # Las zonas salen del título de cada aviso, escritas de varias formas: se agrupan y se muestra la grafía que más usan.
 # Es solo para el filtro y la tarjeta; los títulos quedan tal cual los publican.
 _grafias = {}
@@ -472,8 +471,6 @@ sitio = {
     "vender": inst["vender"],
     "pie": inst["pie"],
     "contacto": {k: inst[k] for k in ("direccion", "telefono", "whatsapp", "email", "redes", "corredor_y_matricula", "colegio", "oficina_lat", "oficina_lng", "razon_social", "cuit", "afip_data_fiscal")},
-    # Su mapa ilustrado de Merlo con los 22 loteos, tal cual lo tienen en su portada (pines en % del ancho y del alto)
-    "mapa": {"fondo": "fotos/mapa-merlo.webp", "pines": [{**pin, "img": f"fotos/pin-{i + 1:02d}.webp"} for i, pin in enumerate(PINES)]},
 }
 # Tres errores de tipeo de sus textos, corregidos: el resto va tal cual lo escribieron
 _texto = json.dumps(sitio, ensure_ascii=False, indent=1)
@@ -481,13 +478,6 @@ for mal, bien in {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu p
     assert mal in _texto, mal
     _texto = _texto.replace(mal, bien)
 (SRC / "sitio.json").write_text(_texto)
-
-# El mapa ilustrado y sus pines
-foto(FUENTE / "fotos/sitio/mapfondo.jpg", PUB / "fotos" / "mapa-merlo.webp", 1600, 70)
-for i, pin in enumerate(PINES):
-    destino = PUB / "fotos" / f"pin-{i + 1:02d}.webp"
-    if not destino.exists():
-        Image.open(FUENTE / "fotos/sitio/pines" / pin["img"].rsplit("/", 1)[-1]).convert("RGBA").resize((180, 180), Image.LANCZOS).save(destino, "WEBP", quality=85)
 
 # Una página chica por propiedad, solo para que al compartir el link por WhatsApp se vea su foto, título y precio:
 # GitHub Pages sirve archivos fijos y la ficha se arma en el navegador, que WhatsApp no ejecuta. Redirige a ?p=ID.

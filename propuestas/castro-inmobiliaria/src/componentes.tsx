@@ -303,33 +303,6 @@ export function WhatsAppFlotante({ mensaje }: { mensaje: () => string }) {
   );
 }
 
-/** Su mapa ilustrado de Merlo con los 22 loteos, tal cual lo tienen en su portada. En el celular ellos lo ocultan;
- *  acá se desliza de costado para que los logos se vean y se puedan tocar. */
-export function MapaUrbanizaciones() {
-  const { fondo, pines } = SITIO.mapa;
-  return (
-    <div className="sin-barra -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0" data-libre>
-      <div className="relative min-w-[820px] overflow-hidden rounded-3xl border border-linea bg-white" data-mapa-urbanizaciones>
-        <img src={fondo} alt="Mapa de Villa de Merlo con las urbanizaciones que comercializa Castro" loading="lazy" className="block w-full" />
-        {pines.map((pin) => (
-          <a
-            key={pin.id}
-            href={ir({ u: pin.id })}
-            title={pin.nombre}
-            data-pin={pin.id}
-            className="absolute w-[8.3%] -translate-x-1/2 -translate-y-1/2 transition hover:-translate-y-[58%]"
-            style={{ top: `${pin.top}%`, left: `${pin.left}%` }}
-          >
-            <img src={pin.img} alt={pin.nombre} loading="lazy" className="w-full drop-shadow" />
-          </a>
-        ))}
-      </div>
-      <p className="mt-2 text-[13px] text-suave sm:hidden">Deslizá el mapa para ver todas.</p>
-    </div>
-  );
-}
-
-/** El título de una sección; con h1, el de la pantalla (cada pantalla tiene uno solo). */
 export function Titulo({ chico, children, h1 = false }: { chico?: string; children: React.ReactNode; h1?: boolean }) {
   const H = h1 ? "h1" : "h2";
   return (
