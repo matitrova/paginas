@@ -1,0 +1,741 @@
+{
+ "urbanizaciones": [
+  {
+   "id": "4008",
+   "nombre": "SOLARES",
+   "acceso": "Acceso: Av. José A. Mercau y Av. Eva Duarte | Villa de Merlo",
+   "localidad": "Villa de Merlo",
+   "descripcion": "SOLARES: Tu nuevo hogar en Villa de Merlo\n\nUbicación ideal y fácil acceso\nSolares se encuentra en el extremo sur de Villa de Merlo, a solo 5 minutos del centro histórico. Con rápidas y cómodas vías asfaltadas, como la Av. José A. Mercau y la Av. Eva Duarte, vas a tener toda la comodidad urbana a tu alcance, sin perder el contacto con la naturaleza.\n\nUn entorno natural único\nLa urbanización se desarrolla en un entorno natural incomparable, con vistas panorámicas a las Sierras de los Comechingones y al Valle del Conlara. Este paisaje exclusivo te permitirá disfrutar de un hogar rodeado de belleza y serenidad.\n\nCalidad constructiva y diseño armónico\nLas viviendas de Solares se destacan por su alta calidad constructiva, pensadas para integrarse armónicamente con el entorno. Vas a disfrutar de un espacio confortable, estético y duradero que resalta la belleza del lugar.\n\nLotes amplios para una vida plena\nLos lotes, que van desde los 1000 m², ofrecen amplios espacios rodeados de arboleda y fauna autóctona. Este entorno no solo favorece la preservación de la naturaleza, sino que también brinda áreas recreativas para toda la familia, incluidos tus hijos y mascotas.\n\nTu espacio para disfrutar al máximo\nImaginate poder disfrutar de picnics en tu propio jardín, pasar tiempo al aire libre con tu familia, o simplemente relajarte rodeado de naturaleza. En Solares, la calidad de vida que siempre buscaste está al alcance de tu mano.\n\n¿Por qué elegir Solares?\n- Ubicación privilegiada: A solo minutos del centro de Villa de Merlo, con acceso rápido a importantes avenidas.\n- Vistas espectaculares: Disfrutá de paisajes panorámicos de las Sierras y el Valle.\n- Lotes amplios: Desde 1000 m², con espacios ideales para la recreación y privacidad.\n- Alta calidad de vida: Viviendas que combinan diseño, confort y armonía con la naturaleza.\n\nHaz tu inversión hoy mismo\nSolares es el lugar ideal para quienes buscan un equilibrio perfecto entre comodidad, naturaleza y tranquilidad. Vení y descubrí todo lo que Villa de Merlo y Solares tienen para ofrecerte. ¡Tu nuevo hogar te espera!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público",
+    "Celular"
+   ],
+   "lat": -32.3674793759,
+   "lng": -64.9993452171,
+   "fotos": [
+    "fotos/u-4008-1.webp",
+    "fotos/u-4008-2.webp"
+   ],
+   "propiedades": [
+    "1386772",
+    "7105446",
+    "7105471"
+   ]
+  },
+  {
+   "id": "4060",
+   "nombre": "SACRAMENTO",
+   "acceso": "Acceso: Cta. La Granadilla y Cta. del Cerro | Cerro de Oro",
+   "localidad": "Cerro de Oro",
+   "descripcion": "SACRAMENTO: El lugar donde la naturaleza y la tranquilidad se encuentran\n\nUbicación estratégica y acceso rápido\nSacramento está ubicado en el extremo sur de Villa de Merlo, a solo 10 minutos del centro histórico. Con acceso fácil y rápido a través de rutas principales como la Av. José Mercau, Ruta 1, Cta. La Granadilla y Cta. del Cerro, vas a disfrutar de la cercanía al centro en un entorno natural y tranquilo.\n\nUn paisaje incomparable\nLa urbanización se desarrolla en un marco natural único, con vistas panorámicas impresionantes a las Sierras de los Comechingones y al Valle del Conlara. Vivir en Sacramento es vivir rodeado de belleza, calma y un paisaje inigualable.\n\nLotes amplios pensados para tu confort\nLos lotes, que van desde los 1500 m², están rodeados de arboleda autóctona y fauna local, promoviendo la preservación del entorno natural. Estos espacios te ofrecen la posibilidad de disfrutar de la naturaleza y brindar a tu familia y mascotas áreas recreativas para el disfrute diario.\n\nDisfrutá tu tiempo libre al máximo\nImagínate pasar una tarde de asado con amigos y familia en tu propio jardín, disfrutando del aire libre y rodeado de naturaleza. En Sacramento, tendrás el lugar perfecto para relajarte y compartir momentos inolvidables.\n\n¿Por qué elegir Sacramento?\n- Ubicación conveniente: A solo minutos del centro de Villa de Merlo, con acceso rápido.\n- Vistas panorámicas: Paisajes espectaculares de las Sierras y al Valle.\n- Lotes amplios: Desde 1500 m², ideales para disfrutar de privacidad y recreación.\n- Entorno natural privilegiado: Arboleda autóctona y fauna local que te permiten estar en armonía con la naturaleza.\n\nHaz tu inversión hoy mismo\nSacramento es el lugar perfecto para quienes buscan equilibrio entre la paz de la naturaleza y la comodidad de vivir cerca del centro. No te pierdas la oportunidad de ser parte de este desarrollo único en Villa de Merlo. ¡Tu nuevo hogar te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3822187294,
+   "lng": -65.0027568126,
+   "fotos": [
+    "fotos/u-4060-1.webp",
+    "fotos/u-4060-2.webp"
+   ],
+   "propiedades": [
+    "246223",
+    "247261",
+    "7325708"
+   ]
+  },
+  {
+   "id": "4791",
+   "nombre": "EL SOLAR",
+   "acceso": "Acceso: Av. Los Mandarinos | Carpinteria",
+   "localidad": "Carpinteria",
+   "descripcion": "EL SOLAR: Un lugar único para tu vida en la naturaleza\n\nUbicación privilegiada y acceso sencillo\nEl Solar se encuentra en la pintoresca localidad de Carpintería, a solo 8 km de la Villa de Merlo. Gracias a su fácil acceso por la Av. Los Mandarinos, en pocos minutos estarás en el centro, pero disfrutarás de la calma y serenidad que solo un entorno natural puede ofrecer.\n\nVistas que te van a enamorar\nLa urbanización está rodeada de una belleza natural única, con impresionantes vistas panorámicas de las Sierras de los Comechingones. Vivir aquí es tener la oportunidad de desconectar y reconectar con la naturaleza, mejorando tu calidad de vida en un paisaje que invita al descanso y la paz interior.\n\nLotes amplios pensados para tu confort\nLos lotes, que van desde los 1000 m², están rodeados de arboleda autóctona y fauna local, favoreciendo la conservación del entorno natural. Además, El Solar cuenta con un portal de ingreso que le da distinción, haciendo que tu hogar sea aún más especial.\n\nDisfrutá tu tiempo libre al máximo\nImaginate disfrutar las tardes de verano en la pileta con amigos y familia en tu propio jardín, rodeado de naturaleza y aire libre. En El Solar, tendrás el espacio perfecto para relajarte, compartir momentos inolvidables y aprovechar al máximo tu tiempo libre. Aquí, cada día es una invitación a vivir plenamente.\n\n¿Por qué elegir El Solar?\n- Ubicación estratégica: A solo minutos del centro de Carpintería, con acceso directo a la Villa de Merlo por Ruta 1.\n- Vistas excepcionales: Paisajes soñados de las Sierras de los Comechingones.\n- Lotes amplios: Desde 1000 m², que te brindan privacidad, comodidad y espacios ideales para tu recreación.\n- Entorno natural y exclusivo: Arboleda autóctona, fauna local y un ambiente natural que te permitirá vivir en armonía con la naturaleza.\n\nHacete dueño de tu lugar hoy mismo\nSi estás buscando un lugar único donde disfrutar de la tranquilidad de la naturaleza, El Solar es la opción ideal para vos. No dejes pasar la oportunidad de ser parte de este desarrollo exclusivo en Carpintería. ¡Tu nuevo hogar te espera en El Solar, el refugio perfecto para tu vida!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.4169027565,
+   "lng": -64.9891535395,
+   "fotos": [
+    "fotos/u-4791-1.webp",
+    "fotos/u-4791-2.webp"
+   ],
+   "propiedades": [
+    "310304"
+   ]
+  },
+  {
+   "id": "5106",
+   "nombre": "PLAZA PUEBLO",
+   "acceso": "Acceso: Ruta Provincial 1 | Villa de Merlo",
+   "localidad": "Villa de Merlo",
+   "descripcion": "PLAZA PUEBLO: Un lugar en la naturaleza al alcance de todo\n\nUbicación estratégica\nPlaza Pueblo está situada sobre la Ruta 1, a tan solo 5 minutos del casco histórico de la Villa de Merlo. Gracias a su ubicación, podrás disfrutar de la tranquilidad de las afueras sin perder la cercanía al entorno urbano, facilitando el acceso a todo lo que necesitas.\n\nCercanía a todo\nLa urbanización se encuentra cerca de la Universidad de los Comechingones, la escuela E.M.E.I., y diversos clubes deportivos como Alerces Hockey Club, Cryder y La Herradura Rugby Club. Todo lo que necesitas está al alcance de tu mano, lo que hace que vivir aquí sea más cómodo y conveniente.\n\nLotes amplios pensados para tu confort\nLos lotes, que van desde los 1500 m², están rodeados de arboleda autóctona y fauna local, favoreciendo la preservación del entorno natural. Plaza Pueblo ofrece amplios espacios que garantizan privacidad, tranquilidad y confort, permitiéndote disfrutar del mejor de los entornos naturales.\n\nDisfrutá tu tiempo libre al máximo\nImaginate desayunar por la mañana en tu jardín, apreciando la hermosa vista a las sierras, rodeado de naturaleza y aire libre. En Plaza Pueblo, tendrás el espacio ideal para relajarte, compartir momentos inolvidables y aprovechar al máximo tu tiempo libre. Cada día aquí es una invitación a vivir plenamente.\n\n¿Por qué elegir Plaza Pueblo?\n- Ubicación estratégica: A solo minutos del centro de la Villa de Merlo, con acceso directo desde Ruta 1.\n- Cercanía a todo: Instituciones educativas, clubes deportivos y diversos servicios a poca distancia.\n- Lotes amplios: Desde 1500 m², brindándote privacidad, comodidad y espacios ideales para tu recreación.\n\nHacete dueño de tu lugar hoy mismo\nSi estás buscando un lugar único donde disfrutar de la tranquilidad de la naturaleza, Plaza Pueblo es la opción ideal para vos. No dejes pasar la oportunidad de ser parte de este desarrollo exclusivo en Carpintería. ¡Tu nuevo hogar te espera en Plaza Pueblo, el refugio perfecto para tu vida!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público",
+    "Celular"
+   ],
+   "lat": -32.3776048044,
+   "lng": -65.0225686255,
+   "fotos": [
+    "fotos/u-5106-1.webp",
+    "fotos/u-5106-2.webp"
+   ],
+   "propiedades": [
+    "347647"
+   ]
+  },
+  {
+   "id": "5205",
+   "nombre": "Punta Norte",
+   "acceso": "Acceso: Av. Fermin Romero | Piedra Blanca",
+   "localidad": "Piedra Blanca",
+   "descripcion": "PUNTA NORTE: Un Barrio Estratégico en la Villa de Merlo\n\nUbicación Ideal\nPunta Norte se encuentra sobre la Av. Fermín Romero, a solo 3 minutos del casco histórico de la Villa de Merlo. Esta ubicación permite disfrutar de la tranquilidad de un entorno natural, pero con todo lo que necesitas al alcance. Vas a estar cerca de los servicios y actividades que ofrece el centro de la ciudad, sin perder la paz y calma que te da la naturaleza.\n\nEntorno Natural Único\nEl barrio se distingue por su arboleda autóctona y su cercanía al arroyo y río de Piedra Blanca, creando un ambiente relajado y lleno de belleza. Además, en pocos minutos podés acceder a la provincia de Córdoba, gracias a la Av. Fermín Romero, visitando localidades como La Paz, Luyaba, La Población o San Javier.\n\nLotes Amplios Pensados para tu Confort\nLos lotes, que van desde los 800 m², están rodeados de vegetación autóctona y fauna local, favoreciendo la conservación del entorno natural. Esto te permite tener más privacidad y espacios verdes para disfrutar, ideal para aquellos que buscan un hogar amplio y cómodo en medio de la naturaleza.\n\nDisfrutá tu Tiempo Libre al Máximo\nImaginá poder disfrutar de la serenidad del arroyo, tomar mates con la familia o amigos, y sentir la brisa de las montañas tantas veces como quieras durante la semana. Punta Norte te brinda la posibilidad de disfrutar cada día como si estuvieras de vacaciones, sin necesidad de esperar al finde para vivir momentos de calidad.\n\n¿Por qué Elegir Punta Norte?\n- Ubicación Estratégica: A solo 3 minutos del casco histórico de la Villa de Merlo, con acceso directo por la Av. Fermín Romero.\n- Entorno Natural Único: Un barrio rodeado de naturaleza y tranquilidad, ideal para disfrutar con toda la familia.\n- Lotes Amplios: Desde 800 m², con espacios ideales para tu recreación, privacidad y comodidad.\n- Conectividad: A pocos minutos de la provincia de Córdoba, con fácil acceso a localidades cercanas como La Paz, Luyaba, La Población y San Javier.\n\nHacé tu Inversión Hoy Mismo\nSi estás buscando un lugar único donde disfrutar de la tranquilidad de la naturaleza sin alejarte de la ciudad, Punta Norte es la opción perfecta para vos. No dejes pasar la oportunidad de ser parte de este desarrollo exclusivo en la Villa de Merlo. ¡Tu nuevo hogar te espera en Punta Norte, el refugio perfecto para tu vida!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público",
+    "Celular"
+   ],
+   "lat": -32.3257611691,
+   "lng": -65.0272671786,
+   "fotos": [
+    "fotos/u-5205-1.webp",
+    "fotos/u-5205-2.webp"
+   ],
+   "propiedades": [
+    "355568",
+    "2756287",
+    "4604172",
+    "6854097",
+    "7521380",
+    "8015126"
+   ]
+  },
+  {
+   "id": "6227",
+   "nombre": "LA PITUCA",
+   "acceso": "Acceso: Av. Padre Tavolaro | Santa Rosa del Conlara",
+   "localidad": "Santa Rosa del Conlara",
+   "descripcion": "LA PITUCA: Inversión Estratégica en un Entorno Natural\n\nUbicación Ideal\nLa Pituca se encuentra en Santa Rosa del Conlara, a solo 15 minutos de la Villa de Merlo, con acceso directo por la Av. Padre Tavolaro. Esta ubicación te permite disfrutar de la paz de un entorno natural, mientras estás cerca de todos los servicios y actividades que ofrece la ciudad.\n\nClima Agradable\nCon un clima templado durante todo el año, veranos cálidos y suaves e inviernos frescos, Santa Rosa del Conlara es el lugar perfecto para disfrutar de la vida al aire libre y escapar del calor extremo o del frío de otras regiones.\n\nTranquilidad y Calidad de Vida\nAlejada del bullicio urbano, La Pituca ofrece un ambiente relajado, con baja densidad poblacional y rodeada de naturaleza. Es el lugar ideal para quienes buscan un espacio apacible, saludable y con una mayor calidad de vida.\n\nLotes Amplios Pensados para tu Confort\nLos lotes de La Pituca, que van desde los 500 m², están rodeados de vegetación autóctona y fauna local, lo que promueve la conservación del entorno natural. Además, los precios son accesibles, lo que te permite disfrutar de más espacio y mejores condiciones de vida por un costo menor.\n\n¿Por qué elegir La Pituca?\n- Ubicación estratégica: A solo 15 minutos de la Villa de Merlo, pero con la paz y tranquilidad de un entorno natural.\n- Clima perfecto: Un clima templado durante todo el año, ideal para disfrutar al aire libre sin los extremos de calor o frío.\n- Tranquilidad y naturaleza: Vivir rodeado de naturaleza, con poca densidad poblacional, para una mayor calidad de vida.\n- Lotes amplios y accesibles: Desde 500 m², perfectos para quienes buscan más espacio y una vida tranquila a un precio accesible.\n\n¡Inversión segura y de calidad!\nLa Pituca es el lugar ideal para quienes desean invertir en un entorno natural único, sin renunciar a la cercanía de la ciudad. Vení y descubrí todo lo que este lugar tiene para ofrecerte. ¡Tu nuevo espacio te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3394091335,
+   "lng": -65.1900503432,
+   "fotos": [
+    "fotos/u-6227-1.webp",
+    "fotos/u-6227-2.webp"
+   ],
+   "propiedades": [
+    "467549",
+    "467562"
+   ]
+  },
+  {
+   "id": "6255",
+   "nombre": "JARDINES DE LA PLAZA",
+   "acceso": "Acceso: Calle Las Artes | Centro",
+   "localidad": "Centro",
+   "descripcion": "JARDINES DE LA PLAZA: Todo lo que necesitás, al alcance de tu mano\n\nUbicación privilegiada\nJardines de La Plaza está ubicado en el corazón de la Villa de Merlo, lo que te permite disfrutar de una ubicación estratégica con fácil acceso a comercios, restaurantes, centros educativos y deportivos, centros de salud y mucho más, todo a pocos minutos de tu nuevo hogar. Además, vas a contar con gas natural en tu hogar, lo que le suma comodidad a tu día a día.\n\nAmbiente natural\nUbicado en un entorno rodeado de naturaleza, vas a poder disfrutar de vistas impresionantes de las sierras de Los Comechingones y de un ambiente tranquilo, ideal para quienes buscan un equilibrio entre la vida urbana y la naturaleza.\n\nÁreas recreativas\nLa zona cuenta con diversas áreas recreativas cercanas, donde vas a poder realizar actividades al aire libre, pasear en familia o disfrutar de momentos de ocio que van a enriquecer tu calidad de vida.\n\nLotes amplios pensados para tu confort\nLos lotes de Jardines de La Plaza, que van desde los 800 m², están rodeados de vegetación autóctona y fauna local, lo que promueve la conservación del entorno natural.\n\nConstrucción de alta calidad: Las casas mantienen una estética y diseño exclusivo.\n\n¿Por qué elegir Jardines de La Plaza?\n- Calidad constructiva superior\n- Ubicación estratégica: En el corazón de la Villa de Merlo, cerca de todo lo que te interesa.\n- Ambiente natural: Un entorno tranquilo, ideal para quienes valoran la paz, pero sin renunciar a las comodidades urbanas.\n- Lotes amplios: Desde 800 m², perfectos para tu recreación, privacidad y confort.\n\nHacete tu inversión hoy mismo\nJardines de La Plaza es el lugar ideal para quienes buscan estar cerca de todo sin dejar de vivir en un entorno natural único. Vení y descubrí todo lo que Villa de Merlo y Jardines de La Plaza tienen para ofrecerte. ¡Tu nuevo hogar te espera!",
+   "servicios": [
+    "Agua Corriente",
+    "Gas Natural",
+    "Electricidad",
+    "Wifi",
+    "Alumbrado público",
+    "Celular"
+   ],
+   "lat": -32.3385349194,
+   "lng": -65.0112372209,
+   "fotos": [
+    "fotos/u-6255-1.webp",
+    "fotos/u-6255-2.webp"
+   ],
+   "propiedades": [
+    "470721",
+    "5422473"
+   ]
+  },
+  {
+   "id": "6330",
+   "nombre": "SAN PEDRITO",
+   "acceso": "Acceso: Ruta Provincial 5 | Santa Rosa del Conlara",
+   "localidad": "Santa Rosa del Conlara",
+   "descripcion": "SAN PEDRITO: Inversión Estratégica en un Entorno Natural\n\nUbicación Ideal\nSan Pedrito se encuentra en Santa Rosa del Conlara, a solo 15 minutos de la Villa de Merlo, con acceso directo por la Ruta Provincial 5. Esta ubicación te ofrece la serenidad de un entorno natural, sin perder la cercanía a todos los servicios y actividades de la ciudad.\n\nClima Agradable\nCon un clima templado durante todo el año, veranos calidos e inviernos frescos, San Pedrito es el lugar perfecto para disfrutar del aire libre, sin los extremos de calor o frío de otras regiones.\n\nTranquilidad y Calidad de Vida\nAlejado del bullicio urbano, San Pedrito te brinda un ambiente relajado, con baja densidad poblacional y rodeado de naturaleza. Es el espacio ideal para quienes buscan paz, salud y una mayor calidad de vida en un entorno natural.\n\nLotes Amplios Pensados para tu Confort\nLos lotes de San Pedrito, que van desde los 500 m², están rodeados de vegetación autóctona y fauna local, lo que contribuye a la conservación del entorno natural. Además, los precios son accesibles, permitiéndote disfrutar de más espacio y mejores condiciones de vida a un costo menor.\n\n¿Por qué elegir San Pedrito?\n- Ubicación estratégica: A solo 15 minutos de la Villa de Merlo, con acceso directo por la Ruta Provincial 5, pero con la paz de un entorno natural.\n- Clima ideal: Templado durante todo el año, perfecto para quienes disfrutan de actividades al aire libre sin los extremos climáticos.\n- Tranquilidad y naturaleza: Un ambiente rodeado de naturaleza, con baja densidad poblacional y excelente calidad de vida.\n- Lotes amplios y accesibles: Desde 500 m², ideales para quienes buscan más espacio y un estilo de vida tranquilo a un precio accesible.\n\n¡Inversión segura y de calidad!\nSan Pedrito es el lugar perfecto para quienes buscan invertir en un entorno natural único, manteniendo la cercanía con la ciudad y todas sus comodidades. Vení y descubrí todo lo que este lugar tiene para ofrecerte. ¡Tu nuevo hogar te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3379802972,
+   "lng": -65.195035881,
+   "fotos": [
+    "fotos/u-6330-1.webp",
+    "fotos/u-6330-2.webp"
+   ],
+   "propiedades": [
+    "482328",
+    "482356"
+   ]
+  },
+  {
+   "id": "9364",
+   "nombre": "Don Fermín",
+   "acceso": "Acceso: Av. Fermin Romero | Piedra Blanca",
+   "localidad": "Piedra Blanca",
+   "descripcion": "DON FERMIN: Un Lugar en Armonía con el Entorno\n\nUbicación Ideal\nDon Fermín está ubicado sobre la Av. Fermín Romero, a solo 10 minutos del casco histórico de la Villa de Merlo. Esta ubicación te ofrece lo mejor de ambos mundos: la tranquilidad de un entorno natural y la proximidad a todos los servicios y actividades del centro de la ciudad. Estás cerca de todo lo que necesitas, pero con la paz que solo la naturaleza puede brindar.\n\nEntorno Natural Único\nEl barrio se caracteriza por su arboleda autóctona y su cercanía al arroyo y río de Piedra Blanca, creando un ambiente relajado, tranquilo y lleno de belleza natural. Además, a pocos minutos podrás acceder a la provincia de Córdoba, con localidades cercanas como La Paz, Luyaba, La Población o San Javier, gracias a la Av. Fermín Romero.\n\nLotes Amplios Pensados para tu Confort\nLos lotes de Don Fermín, que van desde los 800 m², están rodeados de vegetación autóctona y fauna local, favoreciendo la conservación del entorno natural y proporcionando mayor privacidad y espacios verdes para disfrutar. Es el lugar perfecto para quienes buscan un hogar amplio, cómodo y en pleno contacto con la naturaleza, sin sacrificar la accesibilidad a la ciudad.\n\nDisfrutá tu Tiempo Libre al Máximo\nImaginá disfrutar de la serenidad del arroyo, compartir mates con tus seres queridos, y sentir la brisa de las montañas siempre que lo desees. En Don Fermín podés vivir todos los días como si estuvieras de vacaciones, con la tranquilidad del campo y la cercanía de la ciudad, para disfrutar de momentos de calidad sin esperar al fin de semana.\n\n¿Por Qué Elegir Don Fermín?\n- Ubicación estratégica: A solo 10 minutos del casco histórico de la Villa de Merlo, con acceso directo por la Av. Fermín Romero.\n- Entorno natural único: Un barrio rodeado de naturaleza, serenidad y belleza, ideal para disfrutar con toda la familia.\n- Lotes amplios y accesibles: Desde 800 m², ideales para recreación, privacidad y comodidad.\n- Conectividad: A minutos de la provincia de Córdoba, con fácil acceso a localidades cercanas como La Paz, Luyaba, La Población y San Javier.\n\n¡Haz tu Inversión Hoy Mismo!\nSi estás buscando un lugar donde disfrutar de la paz de la naturaleza, sin alejarte de la ciudad y sus comodidades, Don Fermín es la opción perfecta para vos. No dejes pasar esta oportunidad única de ser parte de un desarrollo exclusivo en la Villa de Merlo. ¡Tu nuevo hogar te espera en Don Fermín, el refugio ideal para tu vida!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3191174089,
+   "lng": -65.0439268028,
+   "fotos": [
+    "fotos/u-9364-1.webp",
+    "fotos/u-9364-2.webp"
+   ],
+   "propiedades": [
+    "687827"
+   ]
+  },
+  {
+   "id": "9382",
+   "nombre": "LA ELOISA",
+   "acceso": "Acceso: Ruta Provincial 1 | Carpintería",
+   "localidad": "Carpintería",
+   "descripcion": "LA ELOISA: Un Lugar Único para tu Vida en la Naturaleza\n\nUbicación Privilegiada y Acceso Sencillo\nLa Eloisa se encuentra en la pintoresca localidad de Carpintería, a solo 12 km de la Villa de Merlo, lo que equivale a 20 minutos en auto. Aunque está más alejada del bullicio de la ciudad, la urbanización ofrece el equilibrio perfecto entre la tranquilidad del campo y la proximidad a todos los servicios que Merlo tiene para ofrecer. Gracias a su acceso directo por la Ruta 1, llegar al centro es rápido y sencillo, permitiéndote disfrutar de la calma sin perder la conectividad.\n\nVistas que te Van a Enamorar\nLa urbanización está rodeada de una belleza natural única, con vistas panorámicas inigualables de las Sierras de los Comechingones. Vivir en La Eloisa es tener la oportunidad de desconectar del estrés diario y reconectar con la naturaleza, mejorando tu calidad de vida en un paisaje que invita al descanso, la tranquilidad y la paz interior.\n\nLotes Amplios Pensados para tu Confort\nLos lotes en La Eloisa son una verdadera joya, con superficies desde los 1200 m², lo que los convierte en una de las opciones más espaciosas y exclusivas de la zona. Pocas urbanizaciones pueden ofrecer terrenos de este tamaño, permitiendo la privacidad, el confort y la libertad de crear tu hogar ideal en un entorno natural inigualable. Además, la urbanización está rodeada de arboleda autóctona y fauna local, favoreciendo la conservación del entorno natural.\n\nDisfrutá tu Tiempo Libre al Máximo\nImaginá disfrutar de tardes de verano en tu propio jardín, rodeado de naturaleza y aire libre. En La Eloisa, tendrás espacio suficiente para relajarte, compartir momentos inolvidables con la familia y amigos, o simplemente disfrutar de la serenidad del lugar. Aquí, cada día será una oportunidad para vivir plenamente, rodeado de belleza natural y paz.\n\n¿Por Qué Elegir La Eloisa?\n-  Ubicación estratégica: A solo 12 km de la Villa de Merlo, con acceso directo por Ruta 1, lo que te permite disfrutar de la tranquilidad de Carpintería con la cercanía a Merlo.\n- Vistas excepcionales: Paisajes soñados de las Sierras de los Comechingones que te brindan una conexión única con la naturaleza.\n- Lotes amplios: Desde 1200 m², ideales para quienes buscan más espacio, privacidad y un estilo de vida único.\n- Entorno natural y exclusivo: Arboleda autóctona, fauna local y un ambiente natural que te permitirá vivir en armonía con el entorno.\n\nHacete Dueño de tu Lugar Hoy Mismo\nSi estás buscando un lugar único para disfrutar de la tranquilidad de la naturaleza y contar con un terreno amplio y exclusivo, La Eloisa es la opción ideal para vos. No dejes pasar esta oportunidad de ser parte de este desarrollo único en Carpintería, a solo unos minutos de la Villa de Merlo. ¡Tu nuevo hogar te espera en La Eloisa, el refugio perfecto para tu vida!",
+   "servicios": [
+    "Agua Corriente",
+    "Internet",
+    "Electricidad",
+    "Agua Potable",
+    "Gas Envasado",
+    "TV por Satélite"
+   ],
+   "lat": -32.426809381,
+   "lng": -64.9905364403,
+   "fotos": [
+    "fotos/u-9382-1.webp",
+    "fotos/u-9382-2.webp"
+   ],
+   "propiedades": [
+    "691683"
+   ]
+  },
+  {
+   "id": "13880",
+   "nombre": "La Sebastiana",
+   "acceso": "Acceso: Av. Fermin Romero | Piedra Blanca",
+   "localidad": "Piedra Blanca",
+   "descripcion": "LA SEBASTIANA: Un Barrio Exclusivo en la Villa de Merlo\n\nUbicación Ideal\nLa Sebastiana se encuentra sobre la Av. Fermín Romero, a solo 3 minutos del casco histórico de la Villa de Merlo. Esta ubicación privilegiada te permite disfrutar de la paz de un entorno natural, pero con toda la comodidad de tener los servicios y actividades de la ciudad a tu alcance. Vas a estar cerca de todo lo que necesitás, sin renunciar a la tranquilidad que solo la naturaleza te puede brindar.\n\nEntorno Natural Único\nEl barrio se distingue por su arboleda autóctona y su cercanía al arroyo y río de Piedra Blanca, creando un ambiente relajado y lleno de belleza. Además, en pocos minutos podés acceder a la provincia de Córdoba, gracias a la Av. Fermín Romero, y visitar localidades como La Paz, Luyaba, La Población o San Javier.\n\nLotes Amplios para tu Confort\nLos lotes de La Sebastiana, que arrancan desde los 800 m², están rodeados de vegetación nativa y fauna local, favoreciendo la conservación del entorno natural. Estos lotes te ofrecen más privacidad y espacios verdes, ideales para quienes buscan un hogar amplio y cómodo en medio de la naturaleza.\n\nDisfrutá tu Tiempo Libre al Máximo\nImaginá poder disfrutar de la serenidad del arroyo, tomar mates con tu familia o amigos, y sentir la brisa de las montañas siempre que lo desees. En La Sebastiana vas a poder vivir como si estuvieras de vacaciones todos los días, sin esperar al fin de semana para desconectarte y disfrutar de la naturaleza.\n\n¿Por Qué Elegir La Sebastiana?\n- Ubicación Estratégica: A solo 3 minutos del casco histórico de la Villa de Merlo, con acceso directo por la Av. Fermín Romero.\n- Entorno Natural Único: Un barrio rodeado de tranquilidad y naturaleza, ideal para disfrutar con la familia.\n- Lotes Amplios: Desde 800 m², perfectos para tu recreación, privacidad y confort.\n- Conectividad: A minutos de la provincia de Córdoba, con fácil acceso a localidades cercanas como La Paz, Luyaba, La Población y San Javier.\n\nHacete tu Inversión Hoy Mismo\nSi estás buscando un lugar único para disfrutar de la calma de la naturaleza sin alejarte de la ciudad, La Sebastiana es la opción ideal. No dejes pasar la oportunidad de ser parte de este desarrollo exclusivo en la Villa de Merlo. ¡Tu nuevo hogar te espera en La Sebastiana, el refugio perfecto para tu vida!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3248017304,
+   "lng": -65.0229987907,
+   "fotos": [
+    "fotos/u-13880-1.webp",
+    "fotos/u-13880-2.webp"
+   ],
+   "propiedades": [
+    "1334233",
+    "1334293",
+    "7540987",
+    "8014696"
+   ]
+  },
+  {
+   "id": "28456",
+   "nombre": "TALITA",
+   "acceso": "Acceso: Av. Norte y Dr. Roberto Martin| centro",
+   "localidad": "centro",
+   "descripcion": "TALITA: El Lugar Perfecto para tu Confort\n\nUbicación Estratégica y Acceso Rápido\nTalita está ubicada cerca de la Av. Norte, a solo 3 minutos del centro histórico de la Villa de Merlo. Con acceso fácil y rápido a través de calles pavimentadas, vas a poder disfrutar de la cercanía al centro sin perder la tranquilidad de vivir en un entorno natural.\n\nUn Paisaje Incomparable\nLa urbanización se desarrolla en un marco natural único, con vistas panorámicas impresionantes a las Sierras de los Comechingones. Vivir en Talita es vivir rodeado de belleza, calma y un paisaje inigualable.\n\nLotes Amplios Pensados para tu Comodidad\nLos lotes, que van desde los 600 m², están rodeados de arboleda autóctona y fauna local, promoviendo la preservación del entorno natural. Estos espacios te ofrecen la posibilidad de disfrutar de la naturaleza, brindando a tu familia y mascotas áreas recreativas para el disfrute diario.\n\nDisfrutá tu Tiempo Libre al Máximo\nImaginate pasar una tarde de verano leyendo bajo un árbol en tu propio jardín, con el canto de los pájaros de fondo, disfrutando del aire libre y rodeado de naturaleza. En Talita, vas a tener el lugar perfecto para relajarte y compartir momentos inolvidables.\n\n¿Por Qué Elegir Talita?\n- Ubicación conveniente: A solo minutos del centro de la Villa de Merlo, con acceso rápido.\n- Vistas panorámicas: Paisajes espectaculares de las Sierras.\n- Lotes amplios: Desde 600 m², ideales para disfrutar de privacidad y recreación.\n- Entorno natural privilegiado: Arboleda autóctona y fauna local que te permiten estar en armonía con la naturaleza.\n\nHacé tu Inversión Hoy Mismo\nTalita es el lugar perfecto para quienes buscan equilibrio entre la paz de la naturaleza y la comodidad de vivir cerca del centro. No te pierdas la oportunidad de ser parte de este desarrollo único en la Villa de Merlo. ¡Tu nuevo hogar te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3318164243,
+   "lng": -65.0229525852,
+   "fotos": [
+    "fotos/u-28456-1.webp",
+    "fotos/u-28456-2.webp"
+   ],
+   "propiedades": [
+    "2605797"
+   ]
+  },
+  {
+   "id": "29734",
+   "nombre": "LAS MAGDALENAS",
+   "acceso": "Acceso: Juan de Videla y Av. Cincurvanlación | Centro",
+   "localidad": "Centro",
+   "descripcion": "LAS MAGDALENAS: El Lugar Perfecto para tu Confort\n\nUbicación Estratégica y Acceso Rápido\nLas Magdalenas se encuentra próximo al centro de la Villa de Merlo, con acceso directo por la Av. Circunvalación o Juan de Videla. Estás a pocos minutos de todos los servicios y actividades del centro, disfrutando de la comodidad de la ciudad sin perder la paz que te brinda un entorno natural.\n\nUn Paisaje Incomparable\nLa urbanización se desarrolla en un marco natural único, con vistas espectaculares a las Sierras de los Comechingones. Vivir en Las Magdalenas es vivir rodeado de belleza, tranquilidad y un paisaje impresionante, ideal para quienes buscan un lugar con vistas que quitan el aliento.\n\nLotes Económicos y Rentables\nLos lotes en Las Magdalenas, con superficies que van desde los 400 m², se ofrecen a precios muy accesibles. Esta es una oportunidad única para quienes buscan una inversión económica con gran potencial de valorización. Estás apostando por una urbanización en pleno desarrollo y crecimiento, lo que asegura una excelente rentabilidad a futuro.\n\nDisfrutá tu Tiempo Libre al Máximo\nImaginá poder disfrutar de la serenidad de las sierras, tomar un mate con la familia o amigos mientras te rodeas de naturaleza y aire puro. En Las Magdalenas, tendrás el lugar ideal para disfrutar de tu tiempo libre y hacer de cada día una experiencia única.\n\n¿Por Qué Elegir Las Magdalenas?\n- Ubicación inmejorable: En pleno centro de la Villa de Merlo, con acceso rápido y directo por Av. Circunvalación o Juan de Videla.\n- Vistas panorámicas: Impresionantes paisajes de las Sierras de los Comechingones.\n- Lotes económicos y rentables: A precios accesibles, ideales para quienes buscan una buena inversión a futuro.\n- Desarrollo en crecimiento: Un barrio en pleno desarrollo, con gran potencial de valorización.\n\nHacé tu Inversión Hoy Mismo\nLas Magdalenas es el lugar ideal para quienes buscan aprovechar la oportunidad de invertir en una urbanización en pleno crecimiento, con una ubicación privilegiada y una excelente rentabilidad a futuro. No dejes pasar esta oportunidad única de ser parte de un proyecto en expansión. ¡Tu nuevo hogar o inversión te está esperando en Las Magdalenas!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3434093153,
+   "lng": -65.0264960649,
+   "fotos": [
+    "fotos/u-29734-1.webp",
+    "fotos/u-29734-2.webp"
+   ],
+   "propiedades": [
+    "251389",
+    "2757630",
+    "4927614",
+    "5811225",
+    "5910186",
+    "6645734",
+    "6682273",
+    "6853410",
+    "6869918",
+    "7626332",
+    "7626461",
+    "7950949",
+    "7973638"
+   ]
+  },
+  {
+   "id": "30382",
+   "nombre": "PADRE TISSERA",
+   "acceso": "Acceso: Av. Norte y Bv. Alberto Olivera | Centro",
+   "localidad": "Centro",
+   "descripcion": "Padre Tisserra: El Último Terreno Disponible para Tu Confort\n\nUbicación Estratégica y Acceso Fácil\nPadre Tisserra se encuentra en una ubicación privilegiada, con acceso directo por Av. Norte y Bv. Alberto Olivera, a pocos minutos del centro histórico de la Villa de Merlo. Este acceso rápido te permite disfrutar de la cercanía a todos los servicios y actividades del centro, mientras vives en un entorno natural y tranquilo.\n\nUn Paisaje Incomparable\nLa urbanización Padre Tisserra te ofrece vistas panorámicas a las Sierras de los Comechingones, un lugar ideal para quienes buscan belleza natural y serenidad. Vivir en Padre Tisserra es rodearse de paisajes espectaculares, con un entorno único que te invita a relajarte y disfrutar de la calma.\n\nLotes Económicos y Rentables\nEl lote de 400 m² disponible es el último terreno disponible en esta urbanización, lo que lo convierte en una oportunidad única. Un espacio ideal para quienes buscan invertir en un terreno con un gran potencial de valorización, a un precio accesible y con un alto retorno a futuro.\n\nDisfrutá tu Tiempo Libre al Máximo\nImaginate vivir en un lugar donde puedas disfrutar de tu tiempo libre al máximo, rodeado de naturaleza y belleza. En Padre Tisserra, tendrás el lugar perfecto para relajarte, compartir con tus seres queridos y crear recuerdos inolvidables.\n\n¿Por Qué Elegir Padre Tisserra?\n- Último terreno disponible: Lote de 400 m², la última oportunidad en esta urbanización exclusiva.\n- Ubicación conveniente: Con acceso directo por Av. Norte y Bv. Alberto Olivera, cerca del centro de la Villa de Merlo.\n- Vistas panorámicas: Disfrutá de paisajes espectaculares de las Sierras de los Comechingones.\n- Lote económico y rentable: Una excelente oportunidad para invertir en un terreno con alto potencial de valorización.\n\nHacé tu Inversión Hoy Mismo\nPadre Tisserra es la oportunidad perfecta para quienes buscan un terreno económico, con una ubicación estratégica y rodeado de naturaleza. No dejes pasar la oportunidad de ser parte de este desarrollo único. ¡El último lote disponible te está esperando en Padre Tisserra!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3373688599,
+   "lng": -65.0305562357,
+   "fotos": [
+    "fotos/u-30382-1.webp",
+    "fotos/u-30382-2.webp"
+   ],
+   "propiedades": [
+    "2849780",
+    "2849818",
+    "7237784",
+    "7791095"
+   ]
+  },
+  {
+   "id": "31891",
+   "nombre": "LAS VERBENAS",
+   "acceso": "Acceso: Calle Cerro Aspero | Centro",
+   "localidad": "Centro",
+   "descripcion": "LAS VERBENAS: Tu lugar ideal, cerca de todo\n\nUbicación privilegiada\nLas Verbenas se encuentra en una de las zonas más destacadas de la Villa de Merlo, a solo 3 cuadras de la Av. del Sol, lo que te permite tener acceso rápido a las principales arterias de la ciudad. Esta ubicación estratégica te ofrece una excelente conexión con otros puntos de la villa, sin perder la tranquilidad de un entorno residencial.\n\nCercanía a servicios y actividades\nA tan solo unos minutos de tu nuevo hogar, encontrarás una amplia oferta de bares, restaurantes y comercios varios. Además, el Centro Educativo N°27 Gdor. Santiago Besso está ubicado a solo 1 cuadra, lo que te brinda la comodidad de tener un lugar educativo cercano para tus hijos. También estarás cerca de supermercados, centros de salud y otros servicios básicos, garantizando comodidad y accesibilidad.\n\nAmbiente natural\nLas Verbenas está rodeada de un entorno natural que combina la belleza de la vegetación autóctona con la tranquilidad de vivir en un barrio residencial. Ideal para quienes buscan paz y contacto con la naturaleza, pero sin perder la proximidad a la vida urbana.\n\nLotes amplios para tu comodidad\nLos terrenos en Las Verbenas van desde los 850 m², ofreciendo amplios espacios donde podrás construir la casa de tus sueños y disfrutar de la privacidad, comodidad y recreación que deseas.\n\n¿Por qué elegir Las Verbenas?\n- Ubicación estratégica: A solo 3 cuadras de la Av. del Sol, con fácil acceso a diferentes puntos de la ciudad.\n- Cercanía a servicios: A minutos de bares, restaurantes, comercios y con el Centro Educativo N°27 Gdor. Santiago Besso a solo 1 cuadra.\n- Ambiente natural: Rodeado de vegetación autóctona y tranquilidad, ideal para quienes buscan paz y comodidad.\n- Lotes amplios: Desde 850 m², perfectos para tu privacidad y confort.\n\nHacete tu inversión hoy mismo\nLas Verbenas es el lugar ideal para quienes buscan un hogar cerca de todo, sin perder la paz de un entorno natural. No te pierdas la oportunidad de ser parte de esta urbanización única en Villa de Merlo. ¡Tu nuevo hogar te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.350108419,
+   "lng": -65.011080673,
+   "fotos": [
+    "fotos/u-31891-1.webp",
+    "fotos/u-31891-2.webp"
+   ],
+   "propiedades": [
+    "455351",
+    "455354"
+   ]
+  },
+  {
+   "id": "61812",
+   "nombre": "LA ARBOLADA",
+   "acceso": "Acceso: Carlos Gardel,  Av. Eva Duarte y Ruta Nacional N°1",
+   "localidad": "",
+   "descripcion": "LA ARBOLADA: Un barrio exclusivo con un desarrollo único en la Villa de Merlo\n\nUbicación privilegiada\nLa Arbolada está estratégicamente ubicada, con acceso desde la Av. Carlos Gardel y la Av. Eva Duarte, así como desde la Ruta Nacional N°1, lo que garantiza una excelente conectividad con el centro de Villa de Merlo y otros puntos clave de la ciudad.\n\nUn barrio con calidad constructiva de primer nivel\nLa Arbolada es uno de los barrios más lindos de la Villa de Merlo, destacándose por la calidad constructiva de sus viviendas. Este detalle resalta la exclusividad y el buen gusto en su diseño, creando un entorno único y sofisticado.\n\nInfraestructura moderna y servicios de calidad\nEste barrio exclusivo cuenta con GAS NATURAL, lo que asegura un confort adicional para sus residentes. Además, sus calles están equipadas con veredas, cordón cuneta y luminarias LED, lo que brinda no solo comodidad, sino también un entorno moderno y eficiente.\n\nLotes amplios para tu comodidad\nLos terrenos en La Arbolada van desde los 800 m² hasta los 1000 m², ofreciendo un espacio ideal para aquellos que buscan privacidad, comodidad y un lugar para disfrutar en familia o con amigos.\n\nVistas impresionantes\nLa urbanización tiene una vista impresionante de las Sierras de los Comechingones y del Valle del Conlara, lo que hace que cada día en este barrio sea una experiencia única, rodeado de belleza natural.\n\n¿Por qué elegir La Arbolada?\n- Ubicación privilegiada: Con acceso rápido desde la Av. Carlos Gardel, Av. Eva Duarte y Ruta Nacional N°1, a solo minutos del centro de Villa de Merlo.\n- Calidad constructiva: Un barrio con viviendas de alto nivel, ideal para quienes buscan vivir en un entorno exclusivo y moderno.\n- Infraestructura de calidad: Gas natural, veredas, cordón cuneta y luminarias LED.\n- Lotes amplios: Desde 800 m² hasta 1000 m², perfectos para disfrutar de privacidad y recreación.\n- Vistas impresionantes: Con vistas alucinantes de las Sierras y el Valle, un paisaje que te cautivará a diario.\n\nHacete tu inversión hoy mismo\nLa Arbolada es el lugar ideal para quienes buscan un barrio exclusivo, con excelente calidad constructiva y un entorno natural impresionante. Aprovechá la oportunidad de ser parte de este desarrollo único en la Villa de Merlo. ¡Tu nuevo hogar te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Gas Natural",
+    "Electricidad",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3644276254,
+   "lng": -65.0105961175,
+   "fotos": [
+    "fotos/u-61812-1.webp",
+    "fotos/u-61812-2.webp"
+   ],
+   "propiedades": [
+    "6949659"
+   ]
+  },
+  {
+   "id": "61814",
+   "nombre": "POLO LOGÍSTICO PRODUCTIVO MERLO",
+   "acceso": "Acceso: Ruta Nacional N°5 y Av. de Circunvalación",
+   "localidad": "",
+   "descripcion": "POLO LOGÍSTICO PRODUCTIVO MERLO: La clave para tu inversión industrial\n\nUbicación estratégica\nPolo Logístico está ubicado sobre la Ruta Nacional Nº5, con fácil acceso al centro de Villa de Merlo y a otras áreas productivas de San Luis. Esta ubicación, sobre una ruta clave, ofrece visibilidad y una conectividad privilegiada, convirtiéndolo en el lugar ideal para el desarrollo de proyectos industriales y comerciales.\n\nSuelo apto para la construcción de naves industriales\nEste desarrollo se destaca por su suelo de alta calidad, apto para la construcción de naves industriales y galpones. Los lotes, que van desde los 750 m², cuentan con un F.O.T. del 80%, lo que permite un aprovechamiento máximo del terreno. Es el lugar perfecto para proyectos de gran envergadura, permitiendo a las empresas maximizar su espacio útil y optimizar su operación.\n\nInfraestructura moderna para el desarrollo comercial e industrial\nEl área cuenta con la infraestructura necesaria para el desarrollo de actividades industriales, señalización clara e iluminación en las instalaciones y rutas cercanas, lo que asegura realizar operaciones durante todo el día y la noche.\n\nAccesibilidad y cercanía a servicios\nPolo Logístico está cerca de estaciones de servicio, restaurantes, centros médicos y farmacias, lo que facilita el acceso a servicios esenciales. Además, tiene conexión con líneas de colectivos cercanas, mejorando la movilidad dentro de la región.\n\nEntorno natural y paisajístico atractivo\nAunque está orientado al desarrollo industrial, Polo Logístico disfruta de un entorno natural único, con vistas a las Sierras de los Comechingones, lo que aporta un marco paisajístico atractivo, sin perder de vista las necesidades logísticas y productivas de las empresas.\n\n¿Por qué elegir Polo Logístico Productivo Merlo?\n- Ubicación estratégica: Sobre la Ruta Nacional Nº5, con acceso rápido y directo a San Luis y otras zonas productivas.\n- Suelo apto para naves industriales: Lotes desde 750 m² con un F.O.T. del 80%, ideal para la construcción de naves industriales, galpones y más.\n- Infraestructura adecuada: Señalización clara e iluminación en rutas para el desarrollo de actividades industriales.\n- Cercanía a servicios: Estaciones de servicio, restaurantes, centros médicos y farmacias cercanas.\n\nHacete tu inversión hoy mismo\nPolo Logístico es la oportunidad perfecta para quienes buscan desarrollar proyectos industriales, comerciales o de servicios en una zona con gran proyección y conectividad. Aprovechá la oportunidad de ser parte de este desarrollo clave para el crecimiento económico de la región. ¡Tu próximo proyecto está acá!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Pavimento",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3478326,
+   "lng": -65.0157565,
+   "fotos": [
+    "fotos/u-61814-1.webp",
+    "fotos/u-61814-2.webp"
+   ],
+   "propiedades": [
+    "6225362"
+   ]
+  },
+  {
+   "id": "61815",
+   "nombre": "LAS MORERAS",
+   "acceso": "Acceso: Av. José A. Mercau y Av. Eva Duarte",
+   "localidad": "",
+   "descripcion": "LAS MORERAS: El barrio ideal en Villa de Merlo\n\nUbicación inmejorable y acceso rápido\nLas Moreras está ubicado en una zona privilegiada de la Villa de Merlo, a solo minutos del centro. Con acceso rápido a través de la Av. José A. Mercau y la Av. Eva Duarte, este barrio ofrece una ubicación estratégica que te permite estar cerca de todo, pero al mismo tiempo disfrutar de un entorno tranquilo y encantador. A lo largo de los últimos 20 años, ha sido uno de los barrios con mayor crecimiento y desarrollo en la región, convirtiéndose en una de las opciones preferidas por las familias.\n\nUn paisaje impresionante\nLas Moreras te ofrece vistas espectaculares a las Sierras de los Comechingones y al Valle del Conlara, creando un ambiente natural único. Vivir aquí es tener la oportunidad de disfrutar panorámicas increíbles todos los días, rodeado de belleza y tranquilidad.\n\nLotes amplios para tu comodidad\nLos terrenos en Las Moreras van desde los 600m², lo que brinda la posibilidad de disfrutar de espacios amplios, ideales para construir el hogar de tus sueños. Este barrio se destaca por su crecimiento continuo y por ofrecer el espacio perfecto para quienes buscan privacidad, calidad de vida y contacto con la naturaleza.\n\nCercanía a servicios básicos\nA solo minutos de supermercados, escuelas y centros de salud, lo que garantiza comodidad y accesibilidad. A partir de ahora, vas a poder vivir en un entorno natural único, al alcance de todo.\n\n¿Por qué elegir Las Moreras?\n- Ubicación estratégica: A solo minutos del centro de Villa de Merlo, con acceso rápido por la Av. José A. Mercau y la Av. Eva Duarte.\n- Crecimiento y desarrollo: Uno de los barrios con mayor crecimiento en los últimos 20 años en la zona.\n- Vistas impresionantes: Hermosas panorámicas a las Sierras y al Valle del Conlara.\n- Lotes amplios: Desde 600m², ideales para disfrutar de privacidad y confort.\n- Cercanía a servicios básicos: Todo lo que necesitás para vivir cómodo, a pocos minutos de distancia.\n\nHace tu inversión hoy mismo\nLas Moreras es el lugar ideal para quienes buscan una vida tranquila en un entorno natural, pero sin perder la comodidad de estar cerca del centro de la ciudad. No te pierdas la oportunidad de ser parte de este desarrollo único en la Villa de Merlo. ¡Tu nuevo hogar te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3581478,
+   "lng": -64.9949656,
+   "fotos": [
+    "fotos/u-61815-1.webp",
+    "fotos/u-61815-2.webp"
+   ],
+   "propiedades": [
+    "556725",
+    "557040",
+    "4213706",
+    "4611928",
+    "6566851",
+    "7239518"
+   ]
+  },
+  {
+   "id": "61818",
+   "nombre": "BARRANCA ARRIBA",
+   "acceso": "Av. Del Libertar San Martin | Centro",
+   "localidad": "Centro",
+   "descripcion": "BARRANCA ARRIBA: La urbanización con más desarrollo en los últimos años\n\nUbicación privilegiada\nBarranca Arriba se encuentra estratégicamente ubicada a los laterales de la Av. Del Libertador San Martín, a tan solo unos minutos del centro histórico de Merlo. Con acceso fácil y rápido a través de la Av. Norte, Av. Dos Venados y Av. Del Deporte, esta urbanización se destaca por su cercanía a los principales puntos de la ciudad. Sin duda, es la opción ideal para quienes buscan vivir en el corazón de la Villa de Merlo, con acceso inmediato a todos los servicios y comodidades que ofrece esta encantadora localidad.\n\nUn paisaje incomparable\nLa urbanización se desarrolla en un marco natural único, con vistas panorámicas impresionantes a las Sierras de los Comechingones y al Valle del Conlara. Vivir en Barranca Arriba es vivir rodeado de belleza, calma y un paisaje inigualable.\n\nLotes amplios pensados para tu comodidad\nLos lotes, que van desde los 600 m², están rodeados de arboleda autóctona y fauna local, promoviendo la preservación del entorno natural. Estos espacios te ofrecen la posibilidad de disfrutar de la naturaleza y brindar a tu familia y mascotas áreas recreativas para el disfrute diario.\n\nDisfrutá tu tiempo libre al máximo\nBarranca Arriba se caracteriza por estar ubicada en una zona recreativa, ya que en sus alrededores se encuentra el Parque Recreativo  con canchas. Además, la zona cuenta con bicicendas, el centro de salud CIC, la universidad de Urbanismo y Turismo, bares, restaurantes y comercios varios.\n\n¿Por qué elegir Barranca Arriba?\n- Ubicación privilegiada: Ubicada a los laterales de la Av. Del Libertador San Martín, a tan solo unos minutos del centro histórico de Merlo, con acceso por tres avenidas principales.\n- Paisaje incomparable: Vistas panorámicas impresionantes a las Sierras y al Valle.\n- Lotes amplios: Desde 600 m², ideales para disfrutar de privacidad y recreación.\n- Zona recreativa: Una amplia oferta de actividades para disfrutar al aire libre.\n\nHacé tu inversión hoy mismo\nBarranca Arriba es el lugar perfecto para quienes buscan el equilibrio entre la paz de la naturaleza y la comodidad de vivir cerca del centro. No te pierdas la oportunidad de ser parte de este desarrollo único en Villa de Merlo. ¡Tu nuevo hogar te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Pavimento",
+    "Gas Envasado",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3338824,
+   "lng": -64.9989571,
+   "fotos": [
+    "fotos/u-61818-1.webp",
+    "fotos/u-61818-2.webp"
+   ],
+   "propiedades": [
+    "276325",
+    "286937",
+    "550244",
+    "4733689",
+    "5679431",
+    "5733724",
+    "6429329",
+    "7233242",
+    "7235752",
+    "7794468",
+    "7831683",
+    "7852368",
+    "8542954"
+   ]
+  },
+  {
+   "id": "61954",
+   "nombre": "BUENAVISTA",
+   "acceso": "Acceso: Ruta Nacional N°5",
+   "localidad": "",
+   "descripcion": "BUENAVISTA: Tu nuevo hogar en Villa de Merlo\n\nUbicación ideal\nUbicada sobre la Ruta Nacional Nº 5, Buenavista ofrece un acceso rápido y fácil a la Villa de Merlo, con un trayecto ágil por doble carril. Esta ubicación privilegiada te permite disfrutar de la serenidad del entorno natural sin perder la cercanía a todos los servicios y actividades de la ciudad.\n\nEntorno natural único\nRodeada de flora autóctona y paisajes impresionantes, Buenavista se distingue por su belleza natural. Aquí podrás disfrutar de un entorno tranquilo y apacible, ideal para quienes buscan una vida en contacto directo con la naturaleza.\n\nCercanía a servicios educativos\nA tan solo 200 metros, se encuentra el complejo educativo EPA N°18 Legado Comechingón, que ofrece niveles inicial, primario y secundario, brindando gran comodidad a las familias que decidan establecerse en la urbanización.\n\nLotes económicos y rentables\nLos lotes en Buenavista, con superficies que van desde los 700 m², se ofrecen a precios muy accesibles. Esta es una oportunidad única para quienes buscan una inversión económica con un gran potencial de valorización. Estás apostando por una urbanización en pleno desarrollo y crecimiento, lo que asegura una excelente rentabilidad a futuro.\n\nServicios esenciales y escrituración inmediata\nLa urbanización cuenta con servicios fundamentales como gas natural en las inmediaciones, agua corriente, energía eléctrica, alumbrado público, y lo mejor de todo: ¡escrituración inmediata!\n\n¿Por qué elegir Buenavista?\n- Ubicación estratégica: Acceso rápido y seguro a Merlo por la Ruta Nº 5, con un trayecto ágil por doble carril.\n- Entorno natural único: Rodeado de flora autóctona y paisajes que te permitirán disfrutar de la paz y tranquilidad del entorno.\n- Cercanía a servicios educativos: A solo 200 metros del complejo educativo EPA N°18 Legado Comechingón.\n- Lotes económicos y rentables: Desde 700 m², a un precio accesible.\n- Servicios esenciales: Gas natural en las inmediaciones, agua corriente, energía eléctrica, alumbrado público y escrituración inmediata.\n\n¡Una oportunidad única de inversión!\nBuenavista es el lugar ideal para aquellos que buscan un nuevo estilo de vida en un entorno natural incomparable. Aprovechá esta gran oportunidad y empezá una nueva vida en Villa de Merlo. ¡Tu nuevo hogar te está esperando!",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Pavimento",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3517373203,
+   "lng": -65.0701958755,
+   "fotos": [
+    "fotos/u-61954-1.webp"
+   ],
+   "propiedades": []
+  },
+  {
+   "id": "61958",
+   "nombre": "SAUZALITO",
+   "acceso": "Circunvalación",
+   "localidad": "",
+   "descripcion": "URBANIZACIÓN SAUZALITO\n\nDescubre Sauzalito, una urbanización que combina tranquilidad, naturaleza y confort en un entorno privilegiado.\n\nUbicación estratégica: A solo 12 cuadras de la plaza principal de Merlo, con rápido acceso por Ruta 5 y Circunvalación.\n\nEntorno natural: Rodeado de paisajes excepcionales, ideal para quienes buscan calidad de vida en contacto con la naturaleza.\n\nTerrenos amplios: Lotes de 750 m², perfectos para construir una vivienda o invertir en una zona en crecimiento.\n\nInfraestructura y servicios:\nCordón cuneta\nAgua potable\nEnergía eléctrica\nAlumbrado público\nEscritura inmediata para una compra segura\n\nBeneficios adicionales:\nVistas despejadas a las sierras\nAmbiente tranquilo y rodeado de espacios verdes\nZona en desarrollo con alta revalorización\nUna oportunidad única para vivir o invertir en un entorno natural con todas las comodidades.",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3478326,
+   "lng": -65.0157565,
+   "fotos": [
+    "fotos/u-61958-1.webp",
+    "fotos/u-61958-2.webp"
+   ],
+   "propiedades": [
+    "4765003"
+   ]
+  },
+  {
+   "id": "61978",
+   "nombre": "PEDRO MELO",
+   "acceso": "Ruta 5",
+   "localidad": "",
+   "descripcion": "Urbanización Pedro Melo – Naturaleza, confort y cercanía en la Villa de Merlo\n\nUbicada a solo 15 cuadras de la plaza principal, la urbanización Pedro Melo combina la tranquilidad de la naturaleza con la comodidad de la vida moderna. Su entorno privilegiado, rodeado de paisajes serranos, ofrece una excelente calidad de vida, ideal tanto para residencia permanente como para inversión.\n\nCon terrenos desde 500 m², Pedro Melo cuenta con infraestructura de calidad para garantizar el bienestar de tu familia:\nCordón cuneta\nVeredas\nAgua potable\nEnergía eléctrica\nLuminaria LED\nEscritura inmediata\n\nSus amplios espacios verdes y su cercanía a comercios, restaurantes y actividades culturales permiten disfrutar de un equilibrio perfecto entre tranquilidad y accesibilidad.\n\nDescubre en Pedro Melo el lugar ideal para vivir y disfrutar. Contáctanos para más información.",
+   "servicios": [
+    "Agua Corriente",
+    "Electricidad",
+    "Wifi",
+    "Alumbrado público"
+   ],
+   "lat": -32.3479487,
+   "lng": -65.0196416,
+   "fotos": [
+    "fotos/u-61978-1.webp",
+    "fotos/u-61978-2.webp"
+   ],
+   "propiedades": [
+    "6089302",
+    "7953785"
+   ]
+  }
+ ],
+ "equipo": [
+  {
+   "nombre": "Guillermo Castro",
+   "cargo": "Martillero y Corredor Público | Diplomado en Gestión Inmobiliaria",
+   "matricula": "581",
+   "whatsapp": "https://wa.me/5492665024444",
+   "email": "inmobiliariacastro@gmail.com",
+   "foto": "fotos/equipo-guillermocastro.webp"
+  },
+  {
+   "nombre": "Mauro Greco",
+   "cargo": "Martillero y Corredor Público | Lic. en Marketing.",
+   "matricula": "881",
+   "whatsapp": "https://wa.me/5492664649271",
+   "email": "inmobiliariacastro.mauro@gmail.com",
+   "foto": "fotos/equipo-maurogreco.webp"
+  },
+  {
+   "nombre": "Belen Herrería",
+   "cargo": "Martillero y Corredor Público",
+   "matricula": "-",
+   "whatsapp": "https://wa.me/5492664635959",
+   "email": "inmobiliariacastro.belen@gmail.com",
+   "foto": "fotos/equipo-belenherrera.webp"
+  },
+  {
+   "nombre": "Martín Casaretto",
+   "cargo": "Contador Público y Asesor Comercial",
+   "matricula": "",
+   "whatsapp": "https://wa.me/5492665000033",
+   "email": "castroinmobiliariacampos@gmail.com",
+   "foto": "fotos/equipo-martncasaretto.webp"
+  },
+  {
+   "nombre": "Fernando Flores",
+   "cargo": "Martillero y Corredor Público",
+   "matricula": "880",
+   "whatsapp": "https://wa.me/5492664213333",
+   "email": "inmobiliariacastro.fernando@gmail.com",
+   "foto": "fotos/equipo-fernandoflores.webp"
+  }
+ ],
+ "museo": {
+  "titulo": "Y así nació el Museo de La Firma, un lugar único en el país.",
+  "textos": [
+   "La combinación del negocio inmobiliario con la pasión por los autógrafos ha sido todo un éxito. Los visitantes no solo buscan propiedades, sino que también disfrutan de una impresionante colección que incluye objetos autografiados por personalidades como Freddie Mercury, Diego Maradona, Nicole Kidman, Lionel Messi, Ringo Starr, Elton John, Miley Cyrus, entre otros.\n\nLa exposición presenta camisetas firmadas por equipos de fútbol legendarios, guantes de boxeo autografiados por campeones mundiales, sombreros de artistas y muchas otras piezas únicas que cuentan historias excepcionales.",
+   "Guillermo comenta que el museo busca inspirar a las nuevas generaciones: “Esto no solo es una colección; es una forma de preservar la historia y transmitirla”. El diseño del edificio ha sido pensado para integrar la esencia del museo con la actividad inmobiliaria, lo que convierte a Castro Inmobiliaria en un destino turístico y cultural en la Villa de Merlo, más allá de ser una simple oficina de negocios.",
+   "La fusión de las pasiones de Guillermo—su profesión y el coleccionismo— ha dado lugar a un espacio que atrae no solo a quienes buscan propiedades, sino también a curiosos y amantes de los recuerdos históricos y las firmas de celebridades. “Nuestro objetivo es que cada visitante se sienta inspirado, que cada pieza de nuestra colección sea una puerta a nuevas historias y recuerdos”, agrega Guillermo.",
+   "Además de la exposición permanente, el museo organiza actividades y eventos que fomentan el interés por el coleccionismo y la conservación de estos valiosos recuerdos. El Museo de La Firma es una invitación abierta a todos aquellos que desean vivir una experiencia única, disfrutar de una historia de pasión y conectar con algo mucho más grande que una simple firma. ¡Te invitamos a visitarnos y ser parte de esta experiencia única!."
+  ],
+  "fotos": [
+   "fotos/museo-museoentera.webp",
+   "fotos/museo-camisetasmuseo.webp",
+   "fotos/museo-articulos.webp",
+   "fotos/museo-fondomuseo.webp",
+   "fotos/museo-photo1.webp",
+   "fotos/museo-photo2.webp",
+   "fotos/museo-photo3.webp",
+   "fotos/museo-photo4.webp",
+   "fotos/museo-photo5.webp",
+   "fotos/museo-photo6.webp",
+   "fotos/museo-photo7.webp",
+   "fotos/museo-photo8.webp",
+   "fotos/museo-photo9.webp",
+   "fotos/museo-photo10.webp",
+   "fotos/museo-photo11.webp",
+   "fotos/museo-photo12.webp"
+  ]
+ },
+ "inicio": {
+  "titular": "Todos buscan su lugar en el mundo,\ny nosotros te ayudamos a encontrarlo.",
+  "botones": [
+   "COMPRAR",
+   "VENDER",
+   "ALQUILAR"
+  ],
+  "experiencia_titulo": "Con 40 años de experiencia",
+  "experiencia_texto": "Somos un equipo de profesionales comprometidos con ofrecer una experiencia única y personalizada en la comercialización de bienes raíces en la Villa de Merlo.",
+  "museo_titulo": "Museo de La Firma",
+  "museo_bajada": "UNA HISTORIA DE PASIÓN Y CREATIVIDAD",
+  "museo_texto": "El Museo de La Firma es un innovador proyecto liderado por Guillermo Castro, que fusiona su pasión por los autógrafos con su actividad en el sector inmobiliario. Al transformar su oficina en la primera inmobiliaria temática del país, ha creado un espacio único que reúne miles de autógrafos de figuras legendarias, tanto nacionales como internacionales. Este museo es un punto de encuentro cultural que conecta a los visitantes con historias inspiradoras a través de estas valiosas firmas.",
+  "urbanizaciones_titulo": "Más de 20 Urbanizaciones a tu alcance"
+ },
+ "nosotros": {
+  "titulo": "QUIENES SOMOS",
+  "texto": "Hace 40 años, nos consolidamos como una empresa líder en el mercado inmobiliario, dedicada a ayudar a miles de familias a encontrar su hogar ideal. Nuestro compromiso es ofrecer soluciones que mejoren tu calidad de vida, participando activamente en el desarrollo de la Villa de Merlo. Con las urbanizaciones más importantes y un gran número de las mejores propiedades, trabajamos cada día para brindarte el mejor servicio y hacerte sentir en casa desde el primer momento.",
+  "valores": [
+   "Compromiso",
+   "Integridad",
+   "Excelencia",
+   "Innovación",
+   "Profesionalismo"
+  ]
+ },
+ "vender": {
+  "titular": "Tasa tu propiedad con nosotros y obtené una evaluación precisa y profesional.",
+  "boton": "Vender mi propiedad",
+  "distingue_titulo": "¿Qué nos distingue?",
+  "distingue": [
+   {
+    "titulo": "LÍDERES EN EL MERCADO INMOBILIARIO",
+    "texto": "Contamos con 40 años de trayectoria y un profundo conocimiento del rubro inmobiliario, estando involucrados activamente en el desarrollo de la Villa de Merlo."
+   },
+   {
+    "titulo": "EQUIPO DE PROFESIONALES",
+    "texto": "Contamos con un equipo de martilleros matriculados y profesionales altamente capacitados para atender todas tus necesidades y ofrecerte el mejor asesoramiento."
+   },
+   {
+    "titulo": "ASESORAMIENTO PERSONALIZADO",
+    "texto": "Te acompañamos en cada paso del proceso con un enfoque cercano y adaptado a tus necesidades, brindándote soluciones que se ajustan perfectamente a lo que buscas, para que tomar decisiones sea siempre fácil y confiable."
+   },
+   {
+    "titulo": "DIFUSIÓN DE INMUEBLES",
+    "texto": "Contamos con diseñadores y expertos en marketing y publicidad para dar la correcta difusión a tu propiedad y atraer a posibles interesados. Actualmente estamos presentes en varios portales y redes sociales, entre ellas: Instagram, Facebook, TikTok, Mercado Libre y otros sitios."
+   }
+  ],
+  "pasos_titulo": "Tu venta, paso a paso",
+  "pasos_bajada": "Descubrí cómo agilizar el proceso de venta.",
+  "pasos": [
+   "Llená el formulario",
+   "Hablá con un agente",
+   "Envia documentación",
+   "Coordinamos una visita"
+  ],
+  "cierre": "Recibí tu tasación profesional y conoce el valor de tu propiedad de manera sencilla y rápida",
+  "formulario_campos": [
+   "NOMBRE",
+   "EMAIL",
+   "TELÉFONO",
+   "DIRECCIÓN",
+   "TIPOLOGÍA",
+   "COMENTARIOS"
+  ],
+  "formulario_tipologias": [
+   "Terreno",
+   "Departamento",
+   "Casa",
+   "Oficina",
+   "Local",
+   "Edificio Comercial",
+   "Campo",
+   "Hotel"
+  ]
+ },
+ "pie": {
+  "texto": "Desde 1985 liderando el mercado inmobiliario de la Villa de Merlo y alrededores, ofreciendo una experiancia distinta en la comercialización de propiedades.",
+  "servicios": [
+   "Comprar",
+   "Vender",
+   "Alquilar",
+   "Tasación"
+  ],
+  "empresa": [
+   "Museo La Firma",
+   "Nosotros",
+   "Contacto",
+   "Video Tours"
+  ],
+  "legales": [
+   "Las medidas son orientativas; las exactas figuran en el título de propiedad.",
+   "Las fotos y videos son ilustrativos y no contractuales. Los precios son orientativos y no vinculantes."
+  ]
+ },
+ "contacto": {
+  "direccion": "Pbro. Becerra 436, Villa de Merlo, San Luis",
+  "telefono": "+54 266 502 4444",
+  "whatsapp": "https://wa.me/5492665024444",
+  "email": "inmobiliariacastro@gmail.com",
+  "redes": {
+   "instagram": "https://www.instagram.com/castroinmobiliaria/",
+   "facebook": "https://web.facebook.com/inmobiliariacastro?_rdc=1&_rdr",
+   "tiktok": "https://www.tiktok.com/@castroinmobiliaria",
+   "youtube": "https://www.youtube.com/@castro-inmobiliaria",
+   "youtube_alternativo": "https://www.youtube.com/@castroinmobiliariadiseno2186"
+  },
+  "corredor_y_matricula": "Guillermo Castro Martillero y Corredor Publico Matricula N°581 CMCPSL. Hab. Mun N°00570",
+  "colegio": "CMCPSL (así figura en el pie, sin desarrollar)",
+  "oficina_lat": -32.3452203,
+  "oficina_lng": -65.0132788
+ }
+}
