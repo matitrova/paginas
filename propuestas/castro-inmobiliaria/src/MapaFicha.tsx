@@ -64,7 +64,8 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
   const [fondo, setFondo] = useState<Fondo>("satelital");
   const [grande, setGrande] = useState(false);
   const [ver3d, setVer3d] = useState(false);
-  // No bajó Leaflet: Chrome guarda el import fallido hasta recargar, así que lo único que sirve es recargar la página
+  // No hay mapa que mostrar: no bajó Leaflet (Chrome guarda el import fallido hasta recargar, así que lo único que sirve
+  // es recargar la página) o no bajó ninguna imagen de la foto y queda la imagen fija. Sin Satelital/Calles, que no andarían
   const [error, setError] = useState(false);
   const botonGrande = useRef<HTMLButtonElement>(null);
   const boton3d = useRef<HTMLButtonElement>(null);
@@ -119,7 +120,7 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
           r.foto.on("tileload", () => {
             llego = true;
           });
-          r.foto.on("load", () => vivo && llego && setListo(true));
+          r.foto.on("load", () => vivo && (llego ? setListo(true) : setError(true)));
           control.current = { mapa, fondo: r.fondo };
           ro.observe(el);
         }).catch(() => vivo && setError(true));
@@ -151,12 +152,12 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
     }
     if (!grande) return;
     // Pantalla completa hecha con CSS: Safari en iPhone no la deja pedir para un div. Lo de atrás queda inerte, así el
-    // Tab no se va a botones tapados por el mapa
+    // Tab no se va a botones tapados por el mapa. La cinta de la propuesta no: queda a la vista arriba y sigue andando
     document.documentElement.style.overflow = "hidden";
     const inertes: HTMLElement[] = [];
     for (let e = caja.current?.parentElement; e && e !== document.body; e = e.parentElement)
       for (const h of Array.from(e.parentElement?.children ?? []))
-        if (h !== e && h instanceof HTMLElement && !h.inert) {
+        if (h !== e && h instanceof HTMLElement && !h.inert && !h.matches("aside[aria-label^='Aviso']")) {
           h.inert = true;
           inertes.push(h);
         }
@@ -176,7 +177,8 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
   useEffect(() => {
     if (!grande && !ver3d) return;
     const tecla = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      // El Escape de otro diálogo (la galería, la consulta) lo cierra a él y no al 3D
+      if (e.key !== "Escape" || (e.target as Element).closest?.("dialog")) return;
       if (ver3d) cerrar3d();
       else {
         setGrande(false);
@@ -204,10 +206,10 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
     <section id="mapa" className="mt-9 scroll-mt-28 md:scroll-mt-44">
       <h2 className="font-display text-2xl">{lote ? "El lote y su entorno" : "Ubicación"}</h2>
       <p className="mt-1 text-[15px] text-suave">{lugar(p)}</p>
+      {/* En pantalla completa, diálogo sin aria-modal: lo de atrás ya queda inerte, salvo la cinta, que sigue andando */}
       <div
         className={`isolate overflow-hidden bg-hondo ${grande ? "fixed inset-x-0 top-8 bottom-0 z-50" : "relative mt-4 h-[340px] rounded-2xl border border-linea sm:h-[440px]"}`}
         role={grande ? "dialog" : "region"}
-        aria-modal={grande || undefined}
         aria-label={lote ? "Mapa del lote" : "Mapa de la ubicación"}
         data-libre
         data-mapa-ficha

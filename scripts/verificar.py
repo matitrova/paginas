@@ -1094,16 +1094,21 @@ def castro_mapa(pg, nombre, cap):
     if "leaflet-grab" not in (pg.locator(".leaflet-container").get_attribute("class") or ""):
         problemas.append(f"{nombre}: en pantalla completa el mapa no se puede arrastrar")
     cap("mapa-pantalla-completa")
-    # El foco queda en "Cerrar" y el Tab no se va a lo que quedó tapado atrás
+    # El foco queda en "Cerrar" y el Tab no se va a lo que quedó tapado atrás. La cinta de la propuesta sigue a la
+    # vista arriba del mapa: esa sí tiene que seguir andando (no inerte)
+    cinta = "aside[aria-label^='Aviso']"
     enfocado = "() => ['data-pantalla-completa', 'data-cerrar-3d', 'data-ver-3d'].find(n => document.activeElement?.hasAttribute(n)) || document.activeElement?.tagName"
     if pg.evaluate(enfocado) != "data-pantalla-completa":
         problemas.append(f"{nombre}: al abrir la pantalla completa el foco queda en {pg.evaluate(enfocado)} y no en 'Cerrar'")
     escapados = set()
     for _ in range(15):
         pg.keyboard.press("Tab")
-        escapados |= set(pg.evaluate("() => { const a = document.activeElement; return a === document.body || a.closest('[data-mapa-ficha]') ? [] : [a.tagName + ' ' + a.textContent.trim().slice(0, 30)] }"))
+        escapados |= set(pg.evaluate(f"() => {{ const a = document.activeElement; return a === document.body || a.closest(\"[data-mapa-ficha], {cinta}\") ? [] : [a.tagName + ' ' + a.textContent.trim().slice(0, 30)] }}"))
     if escapados:
         problemas.append(f"{nombre}: en pantalla completa el Tab se va a lo que quedó tapado: {sorted(escapados)[:3]}")
+    links_cinta = pg.locator(f"{cinta} a")
+    if not links_cinta.count() or pg.locator(f"{cinta}[inert], [inert] {cinta}, {cinta} [inert]").count() or not links_cinta.first.is_visible():
+        problemas.append(f"{nombre}: en pantalla completa la cinta de la propuesta no se ve o quedó inerte ({links_cinta.count()} links)")
     pg.locator("[data-fondo='satelital']").focus()  # el foco en otro lado: al cerrar tiene que volver a "Cerrar"
     pg.keyboard.press("Escape")
     pg.wait_for_timeout(500)
@@ -1130,6 +1135,18 @@ def castro_mapa(pg, nombre, cap):
         problemas.append(f"{nombre}: el 3D no marca 'Este terreno'")
     if pg.evaluate(enfocado) != "data-cerrar-3d":
         problemas.append(f"{nombre}: al abrir el 3D el foco queda en {pg.evaluate(enfocado)} y no en 'Volver al mapa'")
+    # Con el 3D abierto, el Escape de otro diálogo (la galería) cierra ese diálogo y no el 3D
+    pg.locator("[data-ver-grande]").click()
+    try:
+        pg.wait_for_selector("[data-galeria-grande][open]", timeout=5000)
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(300)
+        abierta, con_3d = pg.locator("[data-galeria-grande][open]").count(), pg.locator("[data-mapa-3d]").count()
+        if abierta or not con_3d:
+            problemas.append(f"{nombre}: con el 3D abierto, Escape en la galería deja la galería {'abierta' if abierta else 'cerrada'} y el 3D {'abierto' if con_3d else 'cerrado'}")
+    except Exception:
+        problemas.append(f"{nombre}: con el 3D abierto, 'Ver las fotos en grande' no abre la galería")
+    pg.evaluate("document.querySelector('[data-cerrar-3d]')?.focus()")
     pg.keyboard.press("Escape")
     pg.wait_for_timeout(300)
     if pg.locator("[data-mapa-3d]").count() or pg.evaluate(enfocado) != "data-ver-3d":
@@ -1237,6 +1254,8 @@ def castro_mapa(pg, nombre, cap):
         otra.wait_for_timeout(3000)
         if not otra.locator("[data-forma]").is_visible() or otra.locator("[data-mapa-listo]").count():
             problemas.append(f"{nombre}: sin Esri, el {t} cambia su imagen fija por un mapa gris")
+        if otra.locator("[data-fondo]").count():
+            problemas.append(f"{nombre}: sin Esri, el {t} se queda con su imagen fija pero sigue mostrando Satelital/Calles, que no andan")
         otra.screenshot(path=str(OUT / f"{nombre}-mapa-sin-esri.png"))
     except Exception:
         problemas.append(f"{nombre}: sin Esri, el mapa del {t} ni siquiera se arma")
