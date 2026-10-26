@@ -29,6 +29,8 @@ export interface Propiedad {
   fotos: number;
   /** La silueta del lote del catastro, en una caja de 0 a 100 (solo terrenos con forma confirmada) */
   mini: string | null;
+  /** A estrenar, Apto crédito, Financiación, Gas natural: sale de lo que publican */
+  etiquetas: string[];
 }
 
 export interface Forma {

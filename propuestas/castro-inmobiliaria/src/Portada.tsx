@@ -1,4 +1,4 @@
-import { ir, Tarjeta, Titulo } from "./componentes";
+import { ir, MapaUrbanizaciones, Tarjeta, Titulo } from "./componentes";
 import { contar, PROPIEDADES, SITIO, TIPOS, URBANIZACIONES } from "./datos";
 
 const venta = PROPIEDADES.filter((p) => p.operacion.includes("venta"));
@@ -23,25 +23,25 @@ export default function Portada() {
   const { inicio, vender, equipo, museo } = SITIO;
   return (
     <>
-      <section className="mx-auto grid max-w-6xl gap-8 px-5 pt-10 pb-14 sm:px-6 md:grid-cols-[1.05fr_1fr] md:items-center md:pt-16">
+      <section className="mx-auto grid max-w-6xl gap-6 px-5 pt-5 pb-14 sm:gap-8 sm:px-6 sm:pt-10 md:grid-cols-[1.05fr_1fr] md:items-center md:pt-16">
         <div>
           <p className="text-[12px] font-semibold tracking-[0.2em] text-naranja-osc uppercase">Desde 1985 · Villa de Merlo, San Luis</p>
-          <h1 className="font-display mt-4 text-[2.2rem] leading-[1.1] text-balance whitespace-pre-line sm:text-[3.1rem]">{inicio.titular}</h1>
-          <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-tinta/80">{inicio.experiencia_texto}</p>
-          <div className="mt-7 flex flex-wrap gap-3">
+          <h1 className="font-display mt-3 text-[1.85rem] leading-[1.1] text-balance whitespace-pre-line sm:mt-4 sm:text-[3.1rem]">{inicio.titular}</h1>
+          <p className="mt-5 hidden max-w-lg text-[17px] leading-relaxed text-tinta/80 sm:block">{inicio.experiencia_texto}</p>
+          <div className="mt-5 flex flex-wrap gap-3 sm:mt-7" data-botones-portada>
             <a href={ir({ ver: "propiedades" })} className="rounded-full bg-naranja-osc px-6 py-3.5 text-[16px] font-semibold text-white hover:brightness-95">
               Ver las {venta.length} en venta
             </a>
             <a href={ir({ ver: "propiedades", op: "alquiler" })} className="rounded-full border border-tinta/20 px-6 py-3.5 text-[16px] font-semibold hover:bg-hondo">
               Alquileres
             </a>
-            <a href="#vender" className="rounded-full border border-tinta/20 px-6 py-3.5 text-[16px] font-semibold hover:bg-hondo">
+            <a href={ir({ ver: "vender" })} className="rounded-full border border-tinta/20 px-6 py-3.5 text-[16px] font-semibold hover:bg-hondo">
               Vender o tasar
             </a>
           </div>
         </div>
         <figure className="order-first overflow-hidden rounded-3xl bg-hondo shadow-[0_30px_60px_-34px_rgb(33_28_24/0.6)] md:order-none">
-          <img src="./fotos/imagcontact.webp" alt="La oficina de Castro Inmobiliaria en Pbro. Becerra 436, con las sierras atrás" className="aspect-[4/3] h-full w-full object-cover" />
+          <img src="./fotos/imagcontact.webp" alt="La oficina de Castro Inmobiliaria en Pbro. Becerra 436, con las sierras atrás" className="aspect-[16/9] h-full w-full object-cover sm:aspect-[4/3]" />
         </figure>
       </section>
 
@@ -83,6 +83,16 @@ export default function Portada() {
         </a>
       </section>
 
+      <section className="mx-auto mt-20 max-w-6xl px-5 sm:px-6">
+        <div className="flex items-end justify-between gap-4">
+          <Titulo chico={`${URBANIZACIONES.length} urbanizaciones`}>{SITIO.inicio.urbanizaciones_titulo}</Titulo>
+          <a href={ir({ ver: "urbanizaciones" })} className="hidden shrink-0 font-semibold text-naranja-osc sm:block">Ver todas →</a>
+        </div>
+        <div className="mt-6">
+          <MapaUrbanizaciones />
+        </div>
+      </section>
+
       <section id="vender" className="mt-20 scroll-mt-28 bg-hondo py-16">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 sm:px-6 md:grid-cols-2">
           <div>
@@ -95,7 +105,7 @@ export default function Portada() {
                 </li>
               ))}
             </ol>
-            <a href={ir({ ver: "contacto", motivo: "vender" })} className="mt-8 inline-block rounded-full bg-tinta px-6 py-3.5 text-[16px] font-semibold text-white hover:bg-tinta/90">
+            <a href={ir({ ver: "vender" })} className="mt-8 inline-block rounded-full bg-tinta px-6 py-3.5 text-[16px] font-semibold text-white hover:bg-tinta/90">
               {vender.boton}
             </a>
           </div>

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from "react";
-import { ir, Tarjeta } from "./componentes";
+import { ir, Tarjeta, useConsulta } from "./componentes";
 import { contar, esTerreno, porM2, precioEn, PROPIEDADES, TIPOS, type Propiedad } from "./datos";
 
 // Rangos fijos en vez de un deslizador: con 272 propiedades se elige rápido y se entiende de un vistazo
@@ -9,6 +9,13 @@ const PRECIOS = [
   { valor: "100000-150000", texto: "USD 100.000 a 150.000" },
   { valor: "150000-250000", texto: "USD 150.000 a 250.000" },
   { valor: "250000-", texto: "Más de USD 250.000" },
+];
+// Los alquileres se publican casi todos en pesos
+const PRECIOS_ALQUILER = [
+  { valor: "0-300000", texto: "Hasta $ 300.000" },
+  { valor: "300000-600000", texto: "$ 300.000 a 600.000" },
+  { valor: "600000-1000000", texto: "$ 600.000 a 1.000.000" },
+  { valor: "1000000-", texto: "Más de $ 1.000.000" },
 ];
 const SUPERFICIES = [
   { valor: "0-500", texto: "Hasta 500 m²" },
@@ -22,9 +29,10 @@ const ORDENES = [
   { valor: "menor", texto: "Menor precio" },
   { valor: "mayor", texto: "Mayor precio" },
   { valor: "m2", texto: "Menor USD/m²" },
+  { valor: "superficie", texto: "Más m²" },
 ];
 
-const CLAVES = ["op", "tipo", "zona", "precio", "dorm", "sup", "orden"] as const;
+const CLAVES = ["op", "tipo", "zona", "precio", "dorm", "sup", "orden", "q"] as const;
 // De a cuántas se muestran: 249 tarjetas de una son una tira interminable en el celular
 const TANDA = 30;
 type Filtros = Record<(typeof CLAVES)[number], string>;
@@ -36,6 +44,12 @@ const dentro = (n: number | null, rango: string) => {
   return n >= (desde ?? 0) && (hasta === null || n < hasta);
 };
 
+// Lo que mide: lo construido en una casa, el terreno en un lote
+const metros = (p: Propiedad) => (esTerreno(p) ? p.terreno : (p.cubierta ?? p.construido ?? p.terreno));
+const sinTildes = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+/** Buscar por código (el que publican en Instagram, CHO…), por zona o por palabras del título. */
+const buscar = (p: Propiedad, q: string) => sinTildes(`${p.codigo} ${p.id} ${p.titulo} ${p.zona} ${p.localidad}`).includes(sinTildes(q.trim()));
+
 export function filtrar(f: Filtros): Propiedad[] {
   const op = f.op || "venta";
   const lista = PROPIEDADES.filter(
@@ -43,7 +57,8 @@ export function filtrar(f: Filtros): Propiedad[] {
       p.operacion.includes(op) &&
       (!f.tipo || p.tipo === f.tipo) &&
       (!f.zona || p.zona === f.zona) &&
-      (op !== "venta" || !f.precio || (precioEn(p, op).moneda === "USD" && dentro(precioEn(p, op).precio, f.precio))) &&
+      (!f.precio || (precioEn(p, op).moneda === (op === "venta" ? "USD" : "ARS") && dentro(precioEn(p, op).precio, f.precio))) &&
+      (!f.q || buscar(p, f.q)) &&
       (!f.dorm || (p.dormitorios ?? 0) >= Number(f.dorm)) &&
       (!f.sup || dentro(p.terreno, f.sup)),
   );
@@ -54,6 +69,7 @@ export function filtrar(f: Filtros): Propiedad[] {
   if (f.orden === "menor") return lista.sort((a, b) => moneda(a, b) || sinDato(valor(a).precio, false) - sinDato(valor(b).precio, false));
   if (f.orden === "mayor") return lista.sort((a, b) => moneda(a, b) || sinDato(valor(b).precio, true) - sinDato(valor(a).precio, true));
   if (f.orden === "m2") return lista.sort((a, b) => sinDato(porM2(a, op), false) - sinDato(porM2(b, op), false));
+  if (f.orden === "superficie") return lista.sort((a, b) => sinDato(metros(b), true) - sinDato(metros(a), true));
   return lista.sort((a, b) => b.alta.localeCompare(a.alta));
 }
 
@@ -70,6 +86,25 @@ function Selector({ etiqueta, valor, opciones, alCambiar }: { etiqueta: string; 
       </select>
     </label>
   );
+}
+
+export function filtrosDeLaDireccion(): Filtros {
+  const q = new URLSearchParams(location.search);
+  return Object.fromEntries(CLAVES.map((k) => [k, q.get(k) ?? ""])) as Filtros;
+}
+
+/** "terrenos en venta en Las Magdalenas, hasta USD 50.000, 500 a 1.000 m²": la búsqueda dicha en palabras. */
+export function resumen(f: Filtros) {
+  const op = f.op || "venta";
+  const precios = op === "venta" ? PRECIOS : PRECIOS_ALQUILER;
+  return [
+    `${(TIPOS[f.tipo] ?? "propiedades").toLowerCase()} en ${op}`,
+    f.zona && `en ${f.zona}`,
+    precios.find((x) => x.valor === f.precio)?.texto.toLowerCase(),
+    f.dorm && `${f.dorm} dormitorios o más`,
+    SUPERFICIES.find((x) => x.valor === f.sup)?.texto,
+    f.q && `que diga "${f.q}"`,
+  ].filter(Boolean).join(", ");
 }
 
 // Al volver de una ficha, la tarjeta tocada queda donde estaba. No se le deja al navegador porque devuelve
@@ -104,10 +139,8 @@ function useVolverATarjeta() {
 
 export default function Listado() {
   useVolverATarjeta();
-  const [f, setF] = useState<Filtros>(() => {
-    const q = new URLSearchParams(location.search);
-    return Object.fromEntries(CLAVES.map((k) => [k, q.get(k) ?? ""])) as Filtros;
-  });
+  const consulta = useConsulta();
+  const [f, setF] = useState<Filtros>(filtrosDeLaDireccion);
   // Cuántas se ven también queda en la dirección: al volver de una ficha, el navegador encuentra la tarjeta donde estaba
   const [cuantas, setCuantas] = useState(() => Math.max(TANDA, Number(new URLSearchParams(location.search).get("n")) || 0));
 
@@ -146,7 +179,20 @@ export default function Listado() {
     <section className="mx-auto max-w-6xl px-5 pt-8 sm:px-6">
       <h1 className="font-display text-[2rem] leading-tight sm:text-[2.6rem]">Propiedades en {op === "venta" ? "venta" : "alquiler"}</h1>
 
-      <div className="mt-5 flex gap-2" role="group" aria-label="Operación">
+      <form onSubmit={(e) => e.preventDefault()} className="mt-4">
+        <label className="sr-only" htmlFor="buscar">Buscar por código, zona o palabra</label>
+        <input
+          id="buscar"
+          type="search"
+          value={f.q}
+          onChange={(e) => cambiar({ q: e.target.value })}
+          placeholder="Buscar por código (CHO…), zona o palabra"
+          data-buscar
+          className="h-12 w-full rounded-xl border border-linea bg-white px-4 text-[16px]"
+        />
+      </form>
+
+      <div className="mt-4 flex gap-2" role="group" aria-label="Operación">
         {["venta", "alquiler"].map((o) => (
           <button key={o} onClick={() => cambiar({ op: o === "venta" ? "" : o })} aria-pressed={op === o} className="rounded-full border border-linea px-5 py-2.5 text-[15px] font-semibold capitalize aria-pressed:border-tinta aria-pressed:bg-tinta aria-pressed:text-white">
             {o === "venta" ? "Comprar" : "Alquilar"}
@@ -167,7 +213,7 @@ export default function Listado() {
 
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Selector etiqueta="Zona" valor={f.zona} alCambiar={(zona) => cambiar({ zona })} opciones={[{ valor: "", texto: "Todas las zonas" }, ...zonas.map(([z, n]) => ({ valor: z, texto: `${z} (${n})` }))]} />
-        {op === "venta" && <Selector etiqueta="Precio" valor={f.precio} alCambiar={(precio) => cambiar({ precio })} opciones={[{ valor: "", texto: "Cualquier precio" }, ...PRECIOS]} />}
+        <Selector etiqueta="Precio" valor={f.precio} alCambiar={(precio) => cambiar({ precio })} opciones={[{ valor: "", texto: "Cualquier precio" }, ...(op === "venta" ? PRECIOS : PRECIOS_ALQUILER)]} />
         {conCasas && !conTerreno && (
           <Selector etiqueta="Dormitorios" valor={f.dorm} alCambiar={(dorm) => cambiar({ dorm })} opciones={[{ valor: "", texto: "Cualquiera" }, ...[1, 2, 3, 4].map((n) => ({ valor: String(n), texto: `${n} o más` }))]} />
         )}
@@ -180,11 +226,16 @@ export default function Listado() {
           <b className="font-semibold">{lista.length}</b> {lista.length === 1 ? "propiedad" : "propiedades"}
         </p>
         {hayFiltros && (
-          <button onClick={() => cambiar({ tipo: "", zona: "", precio: "", dorm: "", sup: "" })} className="text-[14px] font-semibold text-naranja-osc">
+          <button onClick={() => cambiar({ tipo: "", zona: "", precio: "", dorm: "", sup: "", q: "" })} className="text-[14px] font-semibold text-naranja-osc">
             Limpiar filtros
           </button>
         )}
       </div>
+      {hayFiltros && (
+        <button onClick={() => consulta.abrir(`Hola, avisenme si entra algo así: ${resumen(f)}.\nLa búsqueda: ${location.href}`)} data-avisame className="mt-3 text-[14px] font-semibold text-tinta/80 underline underline-offset-4">
+          Avisame por WhatsApp si entra algo así
+        </button>
+      )}
 
       {lista.length ? (
         <div onClick={recordarTarjeta} className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -203,6 +254,7 @@ export default function Listado() {
           </button>
         </div>
       )}
+      {consulta.vista}
       {lista.some(esTerreno) && f.orden === "m2" && <p className="mt-6 text-[13px] text-suave">Las que no publican superficie van al final.</p>}
     </section>
   );

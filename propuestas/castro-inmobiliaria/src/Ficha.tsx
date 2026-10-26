@@ -1,15 +1,34 @@
 import { useEffect, useRef, useState } from "react";
-import { ir, lugar, Tarjeta, tipoTexto, useConsulta } from "./componentes";
+import { BotonGuardar, Etiquetas, ir, linkPropiedad, lugar, Tarjeta, tipoTexto, useConsulta } from "./componentes";
 import { esTerreno, pedirFicha, portada, porId, precio, PROPIEDADES, SITIO, superficie, TELEFONO, TIPOS, URBANIZACIONES, type Ficha as DatosFicha, type Forma as DatosForma, type Propiedad } from "./datos";
 
-/** Galería deslizable con el dedo. Las fotos vienen del servicio de fotos de ellos; si alguna no carga, se saca. */
+/** Galería deslizable con el dedo; al tocar una foto se abre a pantalla completa. Las fotos vienen del servicio de
+ *  fotos de ellos y se piden de a una (la que se ve y la siguiente); si alguna no carga, se saca. */
 function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
   const caja = useRef<HTMLDivElement>(null);
+  const cajaGrande = useRef<HTMLDivElement>(null);
+  const dialogo = useRef<HTMLDialogElement>(null);
   const [actual, setActual] = useState(0);
+  const [grande, setGrande] = useState<number | null>(null);
   const [rotas, setRotas] = useState<Set<string>>(new Set());
   const lista = fotos ? fotos.filter((f) => !rotas.has(f)) : [];
   const total = lista.length;
-  const mover = (paso: number) => caja.current?.scrollBy({ left: paso * caja.current.clientWidth, behavior: "smooth" });
+  const mover = (c: HTMLDivElement | null, paso: number) => c?.scrollBy({ left: paso * c.clientWidth, behavior: "smooth" });
+
+  useEffect(() => {
+    const d = dialogo.current;
+    if (!d) return;
+    if (grande !== null && !d.open) {
+      d.showModal();
+      requestAnimationFrame(() => cajaGrande.current?.scrollTo({ left: grande * cajaGrande.current.clientWidth, behavior: "instant" }));
+    }
+  }, [grande]);
+
+  const cerrar = () => {
+    // La galería de la página queda en la foto donde se cerró la grande
+    if (grande !== null) caja.current?.scrollTo({ left: grande * caja.current.clientWidth, behavior: "instant" });
+    setGrande(null);
+  };
 
   return (
     <div className="relative overflow-hidden bg-hondo sm:rounded-3xl">
@@ -25,21 +44,56 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
             key={f}
             src={i <= actual + 1 ? f : undefined}
             alt={`${p.titulo}, foto ${i + 1}`}
+            onClick={() => setGrande(i)}
             onError={() => setRotas((r) => new Set(r).add(f))}
             style={i === 0 ? { backgroundImage: `url(${portada(p.id)})`, backgroundSize: "cover" } : undefined}
-            className="h-full w-full shrink-0 snap-center object-cover"
+            className="h-full w-full shrink-0 cursor-zoom-in snap-center object-cover"
           />
         ))}
       </div>
+      {total > 0 && (
+        <button onClick={() => setGrande(actual)} aria-label="Ver las fotos en grande" data-ver-grande className="absolute top-3 right-3 grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" /></svg>
+        </button>
+      )}
       {total > 1 && (
         <>
           <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 text-[13px] text-white" data-contador>
             {actual + 1} / {total}
           </span>
-          <button onClick={() => mover(-1)} aria-label="Foto anterior" disabled={actual === 0} className="absolute top-1/2 left-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">‹</button>
-          <button onClick={() => mover(1)} aria-label="Foto siguiente" disabled={actual === total - 1} className="absolute top-1/2 right-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">›</button>
+          <button onClick={() => mover(caja.current, -1)} aria-label="Foto anterior" disabled={actual === 0} className="absolute top-1/2 left-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">‹</button>
+          <button onClick={() => mover(caja.current, 1)} aria-label="Foto siguiente" disabled={actual === total - 1} className="absolute top-1/2 right-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">›</button>
         </>
       )}
+
+      <dialog
+        ref={dialogo}
+        onClose={cerrar}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") mover(cajaGrande.current, 1);
+          if (e.key === "ArrowLeft") mover(cajaGrande.current, -1);
+        }}
+        className="m-0 h-dvh max-h-none w-screen max-w-none bg-black p-0 backdrop:bg-black"
+        data-galeria-grande
+      >
+        {grande !== null && (
+          <>
+            <div
+              ref={cajaGrande}
+              onScroll={(e) => setGrande(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
+              className="sin-barra flex h-full snap-x snap-mandatory overflow-x-auto"
+            >
+              {lista.map((f, i) => (
+                <img key={f} src={Math.abs(i - grande) <= 1 ? f : undefined} alt={`${p.titulo}, foto ${i + 1}`} className="h-full w-full shrink-0 snap-center object-contain" />
+              ))}
+            </div>
+            <span className="absolute top-4 left-4 rounded-full bg-white/15 px-3 py-1 text-[14px] text-white">{grande + 1} / {total}</span>
+            <button onClick={() => dialogo.current?.close()} aria-label="Cerrar" className="absolute top-3 right-3 grid h-11 w-11 place-items-center rounded-full bg-white/15 text-2xl text-white">×</button>
+            <button onClick={() => mover(cajaGrande.current, -1)} aria-label="Foto anterior" className="absolute top-1/2 left-3 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-2xl text-white sm:grid">‹</button>
+            <button onClick={() => mover(cajaGrande.current, 1)} aria-label="Foto siguiente" className="absolute top-1/2 right-3 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-2xl text-white sm:grid">›</button>
+          </>
+        )}
+      </dialog>
     </div>
   );
 }
@@ -138,10 +192,12 @@ export default function Ficha({ id }: { id: string }) {
   const precios = ficha && ficha.operaciones.length > 1
     ? ficha.operaciones.map((o) => `${o.operacion === "venta" ? "Venta" : "Alquiler"} ${precio({ precio: Number(o.precio), moneda: o.moneda })}`)
     : [precio(p) ?? "Consultar precio"];
-  const mensaje = `Hola, me interesa: ${p.titulo} (cód. ${p.codigo}), ${precios.join(" / ")}. ¿Sigue disponible?\n${location.href}`;
+  const link = linkPropiedad(p.id);
+  const mensaje = `Hola, me interesa: ${p.titulo} (cód. ${p.codigo}), ${precios.join(" / ")}. ¿Sigue disponible?\n${link}`;
+  const mail = `mailto:${SITIO.contacto.email}?subject=${encodeURIComponent(`Consulta por ${p.titulo} (cód. ${p.codigo})`)}&body=${encodeURIComponent(`Hola, me interesa esta propiedad: ${p.titulo} (cód. ${p.codigo}), ${precios.join(" / ")}.\n${link}\n\nMi nombre:\nMi teléfono:`)}`;
   const compartir = async () => {
-    if (navigator.share) return navigator.share({ title: p.titulo, url: location.href }).catch(() => {});
-    await navigator.clipboard.writeText(location.href);
+    if (navigator.share) return navigator.share({ title: p.titulo, url: link }).catch(() => {});
+    await navigator.clipboard.writeText(link);
     setCopiado(true);
   };
 
@@ -173,7 +229,15 @@ export default function Ficha({ id }: { id: string }) {
                 <button onClick={() => location.reload()} className="font-semibold text-naranja-osc underline">Reintentar</button>
               </p>
             )}
-            <p className="mt-1 text-[15px] text-suave">{tipoTexto(p.tipo)} · {lugar(p)}</p>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[15px] text-suave">{tipoTexto(p.tipo)} · {lugar(p)}</p>
+              <span className="flex items-center gap-2 text-[14px] font-semibold">
+                <BotonGuardar id={p.id} className="border border-linea" /> Guardar
+              </span>
+            </div>
+            <div className="mt-3">
+              <Etiquetas p={p} max={4} />
+            </div>
 
             <dl className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               <Dato etiqueta="Terreno" valor={superficie(p.terreno)} />
@@ -239,9 +303,20 @@ export default function Ficha({ id }: { id: string }) {
             <section className="mt-8">
               <h2 className="font-display text-2xl">Ubicación</h2>
               <p className="mt-2 text-[15.5px]">{lugar(p)}</p>
-              <a href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`} target="_blank" rel="noopener" data-mapa className="mt-2 inline-block font-semibold text-naranja-osc">
-                Ver en el mapa →
-              </a>
+              <iframe
+                title={`Ubicación de ${p.titulo}`}
+                src={`https://maps.google.com/maps?q=${p.lat},${p.lng}&z=15&output=embed`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="mt-3 h-64 w-full rounded-2xl border border-linea"
+                data-mapa-embebido
+              />
+              <p className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[13px] text-suave">
+                Ubicación aproximada, la que publica la inmobiliaria.
+                <a href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`} target="_blank" rel="noopener" data-mapa className="font-semibold text-naranja-osc">
+                  Abrir en Google Maps →
+                </a>
+              </p>
             </section>
 
             {esTerreno(p) && <p className="mt-8 text-[13px] text-suave">{SITIO.pie.legales[0]}</p>}
@@ -257,7 +332,10 @@ export default function Ficha({ id }: { id: string }) {
               <button onClick={() => consulta.abrir(mensaje)} data-consultar className="rounded-full bg-[#25d366] px-5 py-3 font-semibold text-black hover:brightness-95">Consultar por WhatsApp</button>
               <a href={`tel:+54${TELEFONO.replace(/\D/g, "")}`} className="rounded-full border border-linea px-5 py-3 text-center font-semibold hover:bg-hondo">Llamar · {TELEFONO}</a>
             </div>
-            <button onClick={compartir} className="mt-3 w-full rounded-full px-5 py-2.5 text-[14.5px] font-semibold text-naranja-osc hover:bg-hondo">
+            <a href={mail} data-mail className="mt-3 block rounded-full px-5 py-2 text-center text-[14px] text-tinta/75 underline underline-offset-4 hover:bg-hondo">
+              Prefiero que me escriban por mail
+            </a>
+            <button onClick={compartir} className="mt-1 w-full rounded-full px-5 py-2.5 text-[14.5px] font-semibold text-naranja-osc hover:bg-hondo">
               {copiado ? "Link copiado" : "Compartir esta propiedad"}
             </button>
           </div>
@@ -272,6 +350,9 @@ export default function Ficha({ id }: { id: string }) {
               <Tarjeta key={o.id} p={o} op={p.operacion[0]} />
             ))}
           </div>
+          <a href={ir({ ver: "propiedades", tipo: p.tipo, op: p.operacion[0] === "venta" ? undefined : p.operacion[0] })} className="mt-5 inline-block font-semibold text-naranja-osc">
+            Ver más {(TIPOS[p.tipo] ?? "propiedades").toLowerCase()} →
+          </a>
         </section>
       )}
 

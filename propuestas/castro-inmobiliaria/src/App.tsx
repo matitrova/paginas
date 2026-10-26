@@ -3,16 +3,25 @@
 // al mismo lugar del listado y abrir en otra pestaña los resuelve el navegador.
 import { useEffect } from "react";
 import CintaPropuesta from "../../../compartido/CintaPropuesta";
-import { Encabezado, Pie } from "./componentes";
-import { NEGOCIO } from "./datos";
-import Ficha from "./Ficha";
-import Listado from "./Listado";
+import { Encabezado, Pie, WhatsAppFlotante } from "./componentes";
+import { NEGOCIO, URBANIZACIONES } from "./datos";
+import Ficha, { nombreLindo } from "./Ficha";
+import Listado, { filtrosDeLaDireccion, resumen } from "./Listado";
 import Portada from "./Portada";
-import { Contacto, Nosotros, Urbanizacion, Urbanizaciones } from "./Secciones";
+import { Contacto, Guardadas, Nosotros, Urbanizacion, Urbanizaciones, Vender } from "./Secciones";
 
 const TITULOS: Record<string, string> = {
   propiedades: "Propiedades en Villa de Merlo",
 };
+
+/** El mensaje del botón flotante dice qué se estaba mirando. */
+function mensajeFlotante(ver: string, u: string | null) {
+  if (ver === "propiedades") return `Hola, estoy buscando ${resumen(filtrosDeLaDireccion())}.\n${location.href}`;
+  const urb = u && URBANIZACIONES.find((x) => x.id === u);
+  if (urb) return `Hola, quiero información sobre la urbanización ${nombreLindo(urb.nombre)}.`;
+  if (ver === "vender") return "Hola, quiero vender o tasar mi propiedad.";
+  return "Hola, quería hacerles una consulta.";
+}
 
 export default function App() {
   const q = new URLSearchParams(location.search);
@@ -30,6 +39,8 @@ export default function App() {
     : ver === "urbanizaciones" ? <Urbanizaciones />
     : ver === "nosotros" ? <Nosotros />
     : ver === "contacto" ? <Contacto />
+    : ver === "vender" ? <Vender />
+    : ver === "guardadas" ? <Guardadas />
     : <Portada />;
 
   return (
@@ -37,7 +48,8 @@ export default function App() {
       <CintaPropuesta negocio={NEGOCIO} />
       <Encabezado actual={ver} />
       <main>{pantalla}</main>
-      <Pie pegado={ver === "nosotros"} abajo={!!p} />
+      <Pie pegado={ver === "nosotros"} />
+      {!p && <WhatsAppFlotante mensaje={() => mensajeFlotante(ver, u)} />}
     </div>
   );
 }

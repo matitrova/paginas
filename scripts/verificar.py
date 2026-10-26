@@ -561,6 +561,29 @@ def castro(pg, nombre, cap):
     if resultados() != esperado["Terrenos"]:
         problemas.append(f"{nombre}: elegir Terrenos con la zona {solo_casas} (sin terrenos) deja {resultados()} resultados")
 
+    # Lo que suma la comparación con su sitio: buscar por código, precios de alquiler en pesos, etiquetas
+    # y el WhatsApp de todas las pantallas, que dice qué se estaba mirando
+    ir("?ver=propiedades")
+    pg.fill("[data-buscar]", "CHO7876886")
+    pg.wait_for_timeout(400)
+    if resultados() != 1 or not pg.locator("[data-tarjeta='7876886']").count():
+        problemas.append(f"{nombre}: buscar CHO7876886 da {resultados()} resultados")
+    ir("?ver=propiedades&op=alquiler&precio=300000-600000")
+    alq = [x for x in indice if "alquiler" in x["operacion"] and x["precios"].get("alquiler", [None, ""])[1] == "ARS" and 300000 <= (x["precios"]["alquiler"][0] or -1) < 600000]
+    if resultados() != len(alq) or not alq:
+        problemas.append(f"{nombre}: alquileres de $ 300.000 a 600.000 da {resultados()} y en los datos hay {len(alq)}")
+    ir("?ver=propiedades&n=200")
+    con_etiqueta = sum(1 for x in venta if x.get("etiquetas"))
+    if not con_etiqueta or not pg.locator("[data-tarjeta] [data-etiquetas]").count():
+        problemas.append(f"{nombre}: las tarjetas no muestran las etiquetas ({con_etiqueta} en los datos)")
+    ir("?ver=propiedades&tipo=Terreno")
+    pg.locator("[data-whatsapp-flotante]").click()
+    pg.wait_for_timeout(400)
+    mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text()
+    if "terrenos en venta" not in mensaje or "tipo=Terreno" not in mensaje:
+        problemas.append(f"{nombre}: el WhatsApp flotante del listado no dice qué se buscaba: {mensaje[:90]!r}")
+    pg.keyboard.press("Escape")
+
     # Fichas con casos difíciles de sus datos
     for ident, debe, no_debe in [("6601604", "47 ha", "470000"), ("12024296", None, None), ("7665257", "Venta USD 78.000", None)]:
         texto = ir(f"?p={ident}", 1200)
@@ -586,7 +609,7 @@ def castro(pg, nombre, cap):
     boton = "[data-barra-contacto] button" if pg.viewport_size["width"] < 768 else "[data-consultar]"
     pg.locator(boton).click()
     pg.wait_for_timeout(400)
-    mensaje = pg.locator("[data-mensaje]").inner_text()
+    mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text()
     if "CHO7876886" not in mensaje or titulo not in mensaje:
         problemas.append(f"{nombre}: el mensaje de WhatsApp no nombra la propiedad: {mensaje[:80]}")
     pg.keyboard.press("Escape")
@@ -596,6 +619,47 @@ def castro(pg, nombre, cap):
     parecidas = pg.locator("[data-parecidas] [data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.tarjeta)")
     if len(parecidas) != 3 or "7876886" in parecidas:
         problemas.append(f"{nombre}: las parecidas no son 3 distintas de la propia: {parecidas}")
+
+    if pg.locator("[data-whatsapp-flotante]").count():
+        problemas.append(f"{nombre}: en la ficha aparece el WhatsApp flotante encima de la barra de contacto")
+    pg.locator("[data-ver-grande]").click()
+    pg.wait_for_timeout(500)
+    if not pg.locator("[data-galeria-grande][open]").count() or not pg.evaluate("[...document.querySelectorAll('[data-galeria-grande] img[src]')].some(i => i.naturalWidth > 0)"):
+        problemas.append(f"{nombre}: la galería a pantalla completa no abre o no muestra la foto")
+    cap("03c-galeria-grande")
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(300)
+    if pg.locator("[data-galeria-grande][open]").count():
+        problemas.append(f"{nombre}: la galería a pantalla completa no se cierra con Escape")
+    mapa = pg.locator("[data-mapa-embebido]").get_attribute("src") or ""
+    if not re.search(r"q=-3[23]\.\d+,-6[45]\.\d+", mapa):
+        problemas.append(f"{nombre}: la ficha no trae el mapa con su ubicación ({mapa[:80]})")
+    if "mailto:" not in (pg.locator("[data-mail]").get_attribute("href") or "") or "CHO7876886" not in (pg.locator("[data-mail]").get_attribute("href") or ""):
+        problemas.append(f"{nombre}: falta 'Prefiero que me escriban por mail' con el código de la propiedad")
+    pg.locator("[data-guardar='7876886']").first.click()
+    pg.reload(wait_until="networkidle")
+    pg.wait_for_timeout(500)
+    if pg.locator("[data-guardar='7876886']").first.get_attribute("aria-pressed") != "true":
+        problemas.append(f"{nombre}: guardar una propiedad no queda al recargar")
+    ir("?ver=guardadas")
+    cap("08-guardadas")
+    if pg.locator("[data-guardadas] [data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.tarjeta)") != ["7876886"]:
+        problemas.append(f"{nombre}: la página de guardadas no muestra la que se guardó")
+    pg.locator("[data-consultar-guardadas]").click()
+    pg.wait_for_timeout(400)
+    mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text()
+    if "CHO7876886" not in mensaje or "/p/7876886/" not in mensaje:
+        problemas.append(f"{nombre}: consultar por las guardadas no nombra la propiedad con su link: {mensaje[:90]!r}")
+    pg.keyboard.press("Escape")
+    pg.evaluate("localStorage.clear()")
+
+    # El link para compartir: trae su foto y su precio para la vista previa, y lleva a la ficha
+    compartir = (DIST / "propuestas/castro-inmobiliaria/p/7876886/index.html").read_text()
+    if 'og:image" content="https://static.tokkobroker.com' not in compartir or titulo not in compartir:
+        problemas.append(f"{nombre}: el link para compartir la 7876886 no trae foto o título para la vista previa")
+    pg.goto(raiz + "p/7876886/", wait_until="networkidle")
+    if "p=7876886" not in pg.url:
+        problemas.append(f"{nombre}: el link para compartir no lleva a la ficha ({pg.url})")
 
     # Si el servicio de fotos de ellos falla, la ficha queda con la portada propia y sin fotos rotas.
     # Página aparte, para que sus errores de carga (esperados) no se cuenten como problemas.
@@ -648,6 +712,13 @@ def castro(pg, nombre, cap):
     if pg.locator("[data-urbanizacion]").count() != 22:
         problemas.append(f"{nombre}: hay {pg.locator('[data-urbanizacion]').count()} urbanizaciones y son 22")
     sitio = json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/sitio.json").read_text())
+    pines = pg.locator("[data-mapa-urbanizaciones] [data-pin]").evaluate_all("es => es.map(e => e.getAttribute('href'))")
+    if len(pines) != 22 or any(not h.startswith("?u=") for h in pines):
+        problemas.append(f"{nombre}: el mapa de urbanizaciones tiene {len(pines)} logos o alguno no lleva a su página")
+    pg.locator("[data-mapa-urbanizaciones]").scroll_into_view_if_needed()
+    pg.wait_for_timeout(1500)
+    if not pg.evaluate("[...document.querySelectorAll('[data-mapa-urbanizaciones] img')].every(i => i.naturalWidth > 0)"):
+        problemas.append(f"{nombre}: alguna imagen del mapa de urbanizaciones no se dibujó")
     ids = {x["id"] for x in indice}
     for u in [x for x in sitio["urbanizaciones"] if x["id"] in ("29734", "61954")]:
         ir(f"?u={u['id']}")
@@ -665,10 +736,21 @@ def castro(pg, nombre, cap):
     pg.select_option("[data-formulario] [name=motivo]", "Quiero vender o tasar")
     pg.locator("[data-formulario] button[type=submit]").click()
     pg.wait_for_timeout(400)
-    mensaje = pg.locator("[data-mensaje]").inner_text()
+    mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text()
     if "Prueba" not in mensaje or "Motivo: Quiero vender o tasar" not in mensaje:
         problemas.append(f"{nombre}: el formulario de contacto arma mal el mensaje: {mensaje[:80]}")
     cap("07-contacto")
+    ir("?ver=vender")
+    cap("09-vender")
+    pg.fill("[data-formulario-vender] [name=nombre]", "Prueba")
+    pg.select_option("[data-formulario-vender] [name=tipo]", "Casa")
+    pg.fill("[data-formulario-vender] [name=metros]", "850")
+    pg.fill("[data-formulario-vender] [name=direccion]", "Barrio Rincón del Este")
+    pg.locator("[data-formulario-vender] button[type=submit]").click()
+    pg.wait_for_timeout(400)
+    mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text()
+    if not all(x in mensaje for x in ["Prueba", "Tipo: Casa", "850 m²", "Rincón del Este"]):
+        problemas.append(f"{nombre}: el formulario de vender arma mal el mensaje: {mensaje[:90]!r}")
 
 
 PAGINAS = {

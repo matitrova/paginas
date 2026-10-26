@@ -55,6 +55,21 @@ def antiguedad(texto):
     return (f"{n} años" if n > 1 else "1 año") if n else None
 
 
+def etiquetas(p):
+    """Lo que se ve de un vistazo en la tarjeta. Sale de lo que publican: el título, la descripción y los servicios."""
+    texto = f"{p['titulo']} {p.get('descripcion') or ''}"
+    marcas = []
+    if re.search(r"\ba estrenar\b", texto, re.I):
+        marcas.append("A estrenar")
+    if re.search(r"apto\s+cr[eé]dito", texto, re.I):
+        marcas.append("Apto crédito")
+    if re.search(r"financiaci[oó]n|financiamos|en cuotas", texto, re.I):
+        marcas.append("Financiación")
+    if any("gas natural" in s.lower() for s in p.get("servicios") or []):
+        marcas.append("Gas natural")
+    return marcas
+
+
 def clave_zona(z):
     """'Rincón Del Este', 'Rincón del Este' y 'rincon del este' son la misma zona."""
     import unicodedata
@@ -97,6 +112,7 @@ assert superficie("600.00M2") == 600 and superficie("0.00M2") is None and superf
 assert antiguedad("0 años") is None and antiguedad("-1 años") is None and antiguedad("7 años") == "7 años"
 
 propiedades = json.load(open(FUENTE / "propiedades.json"))
+PINES = json.load(open(FUENTE / "pines.json"))
 # Las zonas salen del título de cada aviso, escritas de varias formas: se agrupan y se muestra la grafía que más usan.
 # Es solo para el filtro y la tarjeta; los títulos quedan tal cual los publican.
 _grafias = {}
@@ -148,6 +164,7 @@ for p in propiedades:
         "lng": p["lng"],
         "fotos": len(p["fotos"]),
         "mini": FORMAS.get(ident, {}).get("mini"),
+        "etiquetas": etiquetas(p),
     })
     ficha = {
         "id": ident,
@@ -180,7 +197,7 @@ for u in json.load(open(FUENTE / "urbanizaciones.json")):
     urbanizaciones.append({
         "id": u["id"], "nombre": u["nombre"], "acceso": u.get("acceso_ubicacion") or "", "localidad": u.get("localidad") or "",
         "descripcion": u.get("descripcion") or "", "servicios": u.get("servicios") or [], "lat": u.get("lat"), "lng": u.get("lng"),
-        "fotos": fotos, "propiedades": u.get("propiedades") or [],
+        "fotos": fotos, "propiedades": u.get("propiedades") or [], "adicionales": u.get("adicionales") or [],
     })
 
 inst = json.load(open(FUENTE / "institucional.json"))
@@ -216,7 +233,9 @@ sitio = {
     "nosotros": {k: inst["nosotros"][k] for k in ("titulo", "texto", "valores", "equipo_titulo")},
     "vender": inst["vender"],
     "pie": inst["pie"],
-    "contacto": {k: inst[k] for k in ("direccion", "telefono", "whatsapp", "email", "redes", "corredor_y_matricula", "colegio", "oficina_lat", "oficina_lng")},
+    "contacto": {k: inst[k] for k in ("direccion", "telefono", "whatsapp", "email", "redes", "corredor_y_matricula", "colegio", "oficina_lat", "oficina_lng", "razon_social", "cuit", "afip_data_fiscal")},
+    # Su mapa ilustrado de Merlo con los 22 loteos, tal cual lo tienen en su portada (pines en % del ancho y del alto)
+    "mapa": {"fondo": "fotos/mapa-merlo.webp", "pines": [{**pin, "img": f"fotos/pin-{i + 1:02d}.webp"} for i, pin in enumerate(PINES)]},
 }
 # Tres errores de tipeo de sus textos, corregidos: el resto va tal cual lo escribieron
 _texto = json.dumps(sitio, ensure_ascii=False, indent=1)
@@ -224,6 +243,34 @@ for mal, bien in {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu p
     assert mal in _texto, mal
     _texto = _texto.replace(mal, bien)
 (SRC / "sitio.json").write_text(_texto)
+
+# El mapa ilustrado y sus pines
+foto(FUENTE / "fotos/sitio/mapfondo.jpg", PUB / "fotos" / "mapa-merlo.webp", 1600, 70)
+for i, pin in enumerate(PINES):
+    destino = PUB / "fotos" / f"pin-{i + 1:02d}.webp"
+    if not destino.exists():
+        Image.open(FUENTE / "fotos/sitio/pines" / pin["img"].rsplit("/", 1)[-1]).convert("RGBA").resize((180, 180), Image.LANCZOS).save(destino, "WEBP", quality=85)
+
+# Una página chica por propiedad, solo para que al compartir el link por WhatsApp se vea su foto, título y precio:
+# GitHub Pages sirve archivos fijos y la ficha se arma en el navegador, que WhatsApp no ejecuta. Redirige a ?p=ID.
+URL_BASE = "https://matitrova.github.io/paginas/propuestas/castro-inmobiliaria/"
+for p in indice:
+    ficha = json.loads((PUB / "fichas" / f"{p['id']}.json").read_text())
+    precio_txt = (f"USD {p['precio']:,}" if p["moneda"] == "USD" else f"$ {p['precio']:,}").replace(",", ".") if p["precio"] else ""
+    titulo = f"{p['titulo']}{' · ' + precio_txt if precio_txt else ''}"
+    desc = " · ".join(x for x in [p["tipo"], p["zona"], p["localidad"], "Castro Inmobiliaria"] if x)
+    esc = lambda s: s.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+    carpeta = PUB / "p" / p["id"]
+    carpeta.mkdir(parents=True, exist_ok=True)
+    (carpeta / "index.html").write_text(f"""<!doctype html><html lang="es-AR"><head><meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow"><title>{esc(titulo)}</title>
+<meta property="og:title" content="{esc(titulo)}"><meta property="og:description" content="{esc(desc)}">
+<meta property="og:image" content="{esc(ficha['fotos'][0] if ficha['fotos'] else URL_BASE + 'fotos/og.jpg')}">
+<meta property="og:url" content="{URL_BASE}p/{p['id']}/"><meta property="og:type" content="website">
+<meta http-equiv="refresh" content="0; url=../../?p={p['id']}"></head>
+<body><script>location.replace("../../?p={p['id']}")</script><a href="../../?p={p['id']}">{esc(p['titulo'])}</a></body></html>
+""")
+
 
 (FUENTE / "errores_de_carga.md").write_text(
     "# Lo que no cierra en los datos que publica Castro Inmobiliaria\n\n"
