@@ -133,7 +133,6 @@ export default function Ficha({ id }: { id: string }) {
     );
   }
 
-  const corredor = SITIO.equipo[0];
   const otras = parecidas(p);
   const urbs = URBANIZACIONES.filter((u) => p.urbanizacion.includes(u.id));
   const precios = ficha && ficha.operaciones.length > 1
@@ -180,7 +179,8 @@ export default function Ficha({ id }: { id: string }) {
               <Dato etiqueta="Terreno" valor={superficie(p.terreno)} />
               <Dato etiqueta="Cubierta" valor={superficie(p.cubierta)} />
               <Dato etiqueta="Semicubierta" valor={superficie(ficha?.semicubierta ?? null)} />
-              <Dato etiqueta="Total construido" valor={superficie(p.construido)} />
+              {/* Si es igual a la cubierta, repetirlo no dice nada */}
+              <Dato etiqueta="Total construido" valor={p.construido !== p.cubierta ? superficie(p.construido) : null} />
               <Dato etiqueta="Ambientes" valor={p.ambientes} />
               <Dato etiqueta="Dormitorios" valor={p.dormitorios} />
               <Dato etiqueta="Baños" valor={p.banos} />
@@ -249,14 +249,10 @@ export default function Ficha({ id }: { id: string }) {
         </div>
 
         <aside className="px-5 sm:px-0">
+          {/* Como en los portales: el precio siempre a la vista al lado de los botones (en el celular, la barra de abajo) */}
           <div className="sticky top-28 rounded-3xl border border-linea bg-white p-5">
-            <div className="flex items-center gap-3">
-              <img src={corredor.foto} alt="" className="h-14 w-14 rounded-full object-cover object-top" />
-              <div>
-                <p className="font-semibold">{corredor.nombre}</p>
-                <p className="text-[13px] leading-snug text-suave">Corredor responsable · Matrícula {corredor.matricula} CMCPSL</p>
-              </div>
-            </div>
+            <p className="hidden text-[13px] text-suave md:block">{p.operacion.map((o) => (o === "venta" ? "Venta" : "Alquiler")).join(" y ")} · Cód. {p.codigo}</p>
+            <p className="mt-1 hidden text-[24px] leading-tight font-semibold tracking-tight md:block">{precios.join(" · ")}</p>
             <div className="mt-5 hidden gap-2 md:grid">
               <button onClick={() => consulta.abrir(mensaje)} data-consultar className="rounded-full bg-[#25d366] px-5 py-3 font-semibold text-black hover:brightness-95">Consultar por WhatsApp</button>
               <a href={`tel:+54${TELEFONO.replace(/\D/g, "")}`} className="rounded-full border border-linea px-5 py-3 text-center font-semibold hover:bg-hondo">Llamar · {TELEFONO}</a>
