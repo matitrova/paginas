@@ -1,6 +1,6 @@
 import { useState } from "react";
 import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
-import { esTerreno, NEGOCIO, portada, porM2, precio, SITIO, superficie, TELEFONO, type Propiedad } from "./datos";
+import { esTerreno, NEGOCIO, portada, precio, precioEn, precioPorSuperficie, SITIO, superficie, TELEFONO, type Propiedad } from "./datos";
 import { CAIDA, NOTA_DATOS } from "./textos";
 
 /** Arma un link a otra pantalla. Cada pantalla es una página común: "atrás" y abrir en otra pestaña andan solos. */
@@ -28,17 +28,17 @@ export function Encabezado({ actual }: { actual: string }) {
             <span className="block text-[11px] tracking-[0.18em] text-suave">INMOBILIARIA</span>
           </span>
         </a>
-        <nav className="ml-auto hidden items-center gap-1 md:flex">
+        <nav className="ml-auto hidden items-center gap-1 lg:flex">
           {MENU.map((m) => (
             <a key={m.ver} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="rounded-full px-3.5 py-2 text-[15px] font-medium text-tinta/80 hover:bg-hondo aria-[current=page]:text-naranja-osc">
               {m.texto}
             </a>
           ))}
         </nav>
-        <a href={`tel:+54${TELEFONO.replace(/\D/g, "")}`} className="ml-2 hidden rounded-full bg-naranja px-4 py-2 text-[15px] font-semibold text-white hover:brightness-95 md:inline-block">
+        <a href={`tel:+54${TELEFONO.replace(/\D/g, "")}`} className="ml-2 hidden rounded-full bg-naranja-osc px-4 py-2 text-[15px] font-semibold whitespace-nowrap text-white hover:brightness-95 lg:inline-block">
           {TELEFONO}
         </a>
-        <details className="relative ml-auto md:hidden">
+        <details className="relative ml-auto lg:hidden">
           <summary className="flex h-10 cursor-pointer list-none items-center rounded-full border border-linea px-4 text-[15px] font-medium">Menú</summary>
           <nav className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-linea bg-white py-2 shadow-xl">
             {MENU.map((m) => (
@@ -46,7 +46,7 @@ export function Encabezado({ actual }: { actual: string }) {
                 {m.texto}
               </a>
             ))}
-            <a href={`tel:+54${TELEFONO.replace(/\D/g, "")}`} className="mx-3 mt-1 block rounded-xl bg-naranja px-4 py-3 text-center font-semibold text-white">
+            <a href={`tel:+54${TELEFONO.replace(/\D/g, "")}`} className="mx-3 mt-1 block rounded-xl bg-naranja-osc px-4 py-3 text-center font-semibold whitespace-nowrap text-white">
               Llamar · {TELEFONO}
             </a>
           </nav>
@@ -66,14 +66,17 @@ export function AvisoCaida() {
   );
 }
 
-export function Pie() {
+const REDES: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", youtube: "YouTube" };
+
+/** pegado: sin margen arriba, cuando la pantalla ya termina en oscuro (el museo). abajo: lugar para la barra fija de la ficha. */
+export function Pie({ pegado = false, abajo = false }: { pegado?: boolean; abajo?: boolean }) {
   const c = SITIO.contacto;
   return (
-    <footer className="mt-20 bg-tinta text-white/80">
+    <footer className={`${pegado ? "" : "mt-20"} ${abajo ? "pb-20 md:pb-0" : ""} bg-tinta text-white/80`}>
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-6 md:grid-cols-[1.2fr_1fr_1fr]">
         <div>
           <img src="./fotos/logofooter.png" alt="Castro Inmobiliaria" className="h-12 w-auto" />
-          <p className="mt-5 max-w-sm text-[14.5px] leading-relaxed">{SITIO.pie.texto.replace("experiancia", "experiencia")}</p>
+          <p className="mt-5 max-w-sm text-[14.5px] leading-relaxed">{SITIO.pie.texto}</p>
         </div>
         <div className="text-[14.5px] leading-relaxed">
           <p className="font-semibold text-white">Oficina y Museo de La Firma</p>
@@ -84,8 +87,8 @@ export function Pie() {
           <p className="mt-1">{c.email}</p>
           <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1">
             {Object.entries(c.redes).filter(([red]) => red !== "youtube_alternativo").map(([red, url]) => (
-              <a key={red} href={url} target="_blank" rel="noopener" className="capitalize underline-offset-2 hover:text-white hover:underline">
-                {red}
+              <a key={red} href={url} target="_blank" rel="noopener" className="underline-offset-2 hover:text-white hover:underline">
+                {REDES[red] ?? red}
               </a>
             ))}
           </p>
@@ -111,14 +114,17 @@ export const tipoTexto = (tipo: string) => (tipo === "Hotel" ? "Complejo u hotel
 export const lugar = (p: Propiedad) => [p.zona, p.localidad].filter((x, i, a) => x && a.indexOf(x) === i).join(", ");
 
 /** Una tarjeta para el listado. La de un terreno muestra lo que importa en un terreno: superficie y precio por m². */
-export function Tarjeta({ p }: { p: Propiedad }) {
+export function Tarjeta({ p, op }: { p: Propiedad; op?: string }) {
   const terreno = esTerreno(p);
-  const m2 = porM2(p);
+  // Cubierta y total construido son cosas distintas (el total suma lo semicubierto): cada una con su nombre
+  const construida = p.cubierta ? `${superficie(p.cubierta)} cub.` : p.construido ? `${superficie(p.construido)} construidos` : null;
   const datos = terreno
-    ? [superficie(p.terreno), m2 && `USD ${Math.round(m2).toLocaleString("es-AR")} el m²`]
-    : [p.dormitorios && `${p.dormitorios} dorm.`, p.banos && `${p.banos} ${p.banos === 1 ? "baño" : "baños"}`, superficie(p.construido ?? p.cubierta) && `${superficie(p.construido ?? p.cubierta)} cub.`, !p.construido && !p.cubierta && superficie(p.terreno) && `${superficie(p.terreno)} de terreno`];
+    ? [superficie(p.terreno), precioPorSuperficie(p, op)]
+    : [p.dormitorios && `${p.dormitorios} dorm.`, p.banos && `${p.banos} ${p.banos === 1 ? "baño" : "baños"}`, construida, !construida && superficie(p.terreno) && `${superficie(p.terreno)} de terreno`];
+  // El título casi siempre ya dice la zona: entonces abajo va solo el tipo
+  const linea = p.zona && p.titulo.toLowerCase().includes(p.zona.toLowerCase()) ? tipoTexto(p.tipo) : `${tipoTexto(p.tipo)} · ${lugar(p)}`;
   return (
-    <a href={ir({ p: p.id })} data-tarjeta={p.id} data-precio={p.precio ?? ""} data-tipo={p.tipo} className="tarjeta group flex flex-col overflow-hidden rounded-2xl border border-linea bg-white transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-24px_rgb(33_28_24/0.45)]">
+    <a href={ir({ p: p.id })} data-tarjeta={p.id} data-precio={precioEn(p, op).precio ?? ""} data-tipo={p.tipo} className="tarjeta group flex flex-col overflow-hidden rounded-2xl border border-linea bg-white transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-24px_rgb(33_28_24/0.45)]">
       <div className="relative aspect-[4/3] overflow-hidden bg-hondo">
         <img src={portada(p.id)} alt="" loading="lazy" width={560} height={420} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
         <span className="absolute top-3 left-3 flex gap-1.5">
@@ -128,7 +134,8 @@ export function Tarjeta({ p }: { p: Propiedad }) {
             </span>
           ))}
         </span>
-        {p.fotos > 1 && <span className="absolute right-3 bottom-3 rounded-full bg-black/55 px-2 py-0.5 text-[11.5px] text-white">{p.fotos} fotos</span>}
+        {/* Arriba a la derecha: abajo a la derecha está la marca de agua de Castro en sus fotos */}
+        {p.fotos > 1 && <span className="absolute top-3 right-3 rounded-full bg-black/55 px-2 py-0.5 text-[11.5px] text-white">{p.fotos} fotos</span>}
         {p.mini && (
           <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-xl bg-white/95 py-1 pr-2.5 pl-1 text-[11.5px] font-semibold text-tinta" data-mini>
             <svg viewBox="-12 -12 124 124" className="h-8 w-8" aria-hidden="true">
@@ -139,9 +146,9 @@ export function Tarjeta({ p }: { p: Propiedad }) {
         )}
       </div>
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[20px] font-semibold tracking-tight">{precio(p) ?? "Consultar precio"}</p>
+        <p className="text-[20px] font-semibold tracking-tight">{precio(precioEn(p, op)) ?? "Consultar precio"}</p>
         <h3 className="mt-1 line-clamp-2 text-[15px] leading-snug text-tinta/85">{p.titulo}</h3>
-        <p className="mt-1 text-[13px] text-suave">{tipoTexto(p.tipo)} · {lugar(p)}</p>
+        <p className="mt-1 text-[13px] text-suave">{linea}</p>
         {datos.some(Boolean) && (
           <p className="mt-auto flex flex-wrap gap-x-3 gap-y-1 pt-3 text-[13.5px] font-medium text-tinta/80">
             {datos.filter(Boolean).map((d) => (
@@ -157,7 +164,7 @@ export function Tarjeta({ p }: { p: Propiedad }) {
 /** El botón de consulta de las propuestas: no le escribe a nadie, muestra cómo le llegaría el mensaje a la inmobiliaria. */
 export function useConsulta() {
   const [mensaje, setMensaje] = useState<string | null>(null);
-  const vista = <VistaWhatsApp mensaje={mensaje} negocio={NEGOCIO} pagina="castro-inmobiliaria" tipo="propuesta" alCerrar={() => setMensaje(null)} />;
+  const vista = <VistaWhatsApp mensaje={mensaje} negocio={NEGOCIO} pagina="castro-inmobiliaria" tipo="propuesta" que="la consulta" alCerrar={() => setMensaje(null)} />;
   return { abrir: setMensaje, vista };
 }
 

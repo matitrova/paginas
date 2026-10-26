@@ -536,6 +536,30 @@ def castro(pg, nombre, cap):
     if "orden=menor" not in pg.url or pg.locator("[data-tarjeta]").count() <= tarjetas or not caja or not 0 <= caja["y"] < pg.viewport_size["height"] - 100:
         problemas.append(f"{nombre}: al volver de la ficha la tarjeta tocada no queda a la vista (url {pg.url}, tarjeta en {caja and round(caja['y'])})")
 
+    # Lo que encontró la revisión del 26/10: que no vuelva
+    casa = next(x for x in indice if x["cubierta"] and x["construido"] and x["construido"] - x["cubierta"] > 20 and x["tipo"] == "Casa" and "venta" in x["operacion"])
+    ir(f"?ver=propiedades&tipo=Casa&n=200")
+    texto_casa = pg.locator(f"[data-tarjeta='{casa['id']}']").inner_text()
+    if f"{round(casa['cubierta'])} m² cub." not in texto_casa.replace(".", "").replace(" m² cub", " m² cub."):
+        problemas.append(f"{nombre}: la tarjeta {casa['id']} no muestra su superficie cubierta ({casa['cubierta']} m²): {texto_casa[-60:]!r}")
+    texto = ir("?ver=propiedades&tipo=Campo")
+    if "USD 0 el m²" in texto or "USD 1 el m²" in texto or "la ha" not in texto:
+        problemas.append(f"{nombre}: los campos no muestran el precio por hectárea")
+    ir("?ver=propiedades&op=alquiler&orden=menor")
+    precios_alq = pg.locator("[data-tarjeta] p.text-\\[20px\\]").all_inner_texts()
+    if any(a.startswith("USD") and b.startswith("$") for a, b in zip(precios_alq, precios_alq[1:])):
+        problemas.append(f"{nombre}: en alquileres, el orden por precio mezcla dólares y pesos: {precios_alq[:6]}")
+    for q, precio_esperado in [("?ver=propiedades&op=alquiler&tipo=Departamento", "$ 600.000"), ("?ver=propiedades&tipo=Departamento", "USD 78.000")]:
+        ir(q)
+        if precio_esperado not in pg.locator("[data-tarjeta='7665257']").inner_text():
+            problemas.append(f"{nombre}: la 7665257 no muestra {precio_esperado} en {q}")
+    solo_casas = next(z for z in {x["zona"] for x in venta} if z and all(x["tipo"] != "Terreno" for x in venta if x["zona"] == z))
+    ir(f"?ver=propiedades&zona={solo_casas}")
+    pg.locator("[data-filtro-tipo='Terreno']").click()
+    pg.wait_for_timeout(300)
+    if resultados() != esperado["Terrenos"]:
+        problemas.append(f"{nombre}: elegir Terrenos con la zona {solo_casas} (sin terrenos) deja {resultados()} resultados")
+
     # Fichas con casos difíciles de sus datos
     for ident, debe, no_debe in [("6601604", "47 ha", "470000"), ("12024296", None, None), ("7665257", "Venta USD 78.000", None)]:
         texto = ir(f"?p={ident}", 1200)
@@ -579,7 +603,7 @@ def castro(pg, nombre, cap):
     otra.route("**/static.tokkobroker.com/**", lambda r: r.abort())
     otra.goto(raiz + "?p=7876886", wait_until="networkidle")
     otra.wait_for_timeout(1500)
-    rotas = otra.evaluate("[...document.querySelectorAll('[data-galeria] img')].filter(i => !i.naturalWidth).length")
+    rotas = otra.evaluate("[...document.querySelectorAll('[data-galeria] img[src]')].filter(i => !i.naturalWidth).length")
     visibles = otra.evaluate("[...document.querySelectorAll('[data-galeria] img')].filter(i => i.naturalWidth).length")
     if rotas or not visibles:
         problemas.append(f"{nombre}: sin el servicio de fotos quedan {rotas} rotas y {visibles} a la vista")

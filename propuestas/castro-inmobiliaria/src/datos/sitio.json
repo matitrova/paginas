@@ -650,10 +650,11 @@
    "Excelencia",
    "Innovación",
    "Profesionalismo"
-  ]
+  ],
+  "equipo_titulo": "Conocé a nuestro equipo de profesionales"
  },
  "vender": {
-  "titular": "Tasa tu propiedad con nosotros y obtené una evaluación precisa y profesional.",
+  "titular": "Tasá tu propiedad con nosotros y obtené una evaluación precisa y profesional.",
   "boton": "Vender mi propiedad",
   "distingue_titulo": "¿Qué nos distingue?",
   "distingue": [
@@ -679,7 +680,7 @@
   "pasos": [
    "Llená el formulario",
    "Hablá con un agente",
-   "Envia documentación",
+   "Enviá documentación",
    "Coordinamos una visita"
   ],
   "cierre": "Recibí tu tasación profesional y conoce el valor de tu propiedad de manera sencilla y rápida",
@@ -703,7 +704,7 @@
   ]
  },
  "pie": {
-  "texto": "Desde 1985 liderando el mercado inmobiliario de la Villa de Merlo y alrededores, ofreciendo una experiancia distinta en la comercialización de propiedades.",
+  "texto": "Desde 1985 liderando el mercado inmobiliario de la Villa de Merlo y alrededores, ofreciendo una experiencia distinta en la comercialización de propiedades.",
   "servicios": [
    "Comprar",
    "Vender",

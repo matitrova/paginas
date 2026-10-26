@@ -23,9 +23,8 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
         {lista.map((f, i) => (
           <img
             key={f}
-            src={f}
+            src={i <= actual + 1 ? f : undefined}
             alt={`${p.titulo}, foto ${i + 1}`}
-            loading={i === 0 ? "eager" : "lazy"}
             onError={() => setRotas((r) => new Set(r).add(f))}
             style={i === 0 ? { backgroundImage: `url(${portada(p.id)})`, backgroundSize: "cover" } : undefined}
             className="h-full w-full shrink-0 snap-center object-cover"
@@ -34,7 +33,7 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
       </div>
       {total > 1 && (
         <>
-          <span className="absolute right-3 bottom-3 rounded-full bg-black/60 px-3 py-1 text-[13px] text-white" data-contador>
+          <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 text-[13px] text-white" data-contador>
             {actual + 1} / {total}
           </span>
           <button onClick={() => mover(-1)} aria-label="Foto anterior" disabled={actual === 0} className="absolute top-1/2 left-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">‹</button>
@@ -86,7 +85,7 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string | number | 
   );
 }
 
-function Descripcion({ texto }: { texto: string }) {
+export function Descripcion({ texto }: { texto: string }) {
   const [abierta, setAbierta] = useState(false);
   const larga = texto.length > 420;
   return (
@@ -105,7 +104,7 @@ function Descripcion({ texto }: { texto: string }) {
 
 /** Las 3 más parecidas: mismo tipo y operación; primero las de la misma zona y después por precio cercano. */
 function parecidas(p: Propiedad) {
-  return PROPIEDADES.filter((o) => o.id !== p.id && o.tipo === p.tipo && o.operacion.some((op) => p.operacion.includes(op)) && o.moneda === p.moneda)
+  return PROPIEDADES.filter((o) => o.id !== p.id && o.tipo === p.tipo && o.operacion.some((op) => p.operacion.includes(op)))
     .sort((a, b) => Number(b.zona === p.zona) - Number(a.zona === p.zona) || Math.abs((a.precio ?? 0) - (p.precio ?? 0)) - Math.abs((b.precio ?? 0) - (p.precio ?? 0)))
     .slice(0, 3);
 }
@@ -113,13 +112,14 @@ function parecidas(p: Propiedad) {
 export default function Ficha({ id }: { id: string }) {
   const p = porId.get(id);
   const [ficha, setFicha] = useState<DatosFicha | null>(null);
+  const [fallo, setFallo] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const consulta = useConsulta();
 
   useEffect(() => {
     if (p) {
       document.title = `${p.titulo} · Castro Inmobiliaria`;
-      pedirFicha(id).then(setFicha, () => setFicha(null));
+      pedirFicha(id).then(setFicha, () => setFallo(true));
     }
   }, [id, p]);
 
@@ -128,12 +128,13 @@ export default function Ficha({ id }: { id: string }) {
       <section className="mx-auto max-w-2xl px-5 py-20 text-center">
         <h1 className="font-display text-3xl">Esta propiedad ya no está publicada</h1>
         <p className="mt-4 text-suave">Puede que se haya vendido o alquilado.</p>
-        <a href={ir({ ver: "propiedades" })} className="mt-8 inline-block rounded-full bg-naranja px-6 py-3 font-semibold text-white">Ver las propiedades</a>
+        <a href={ir({ ver: "propiedades" })} className="mt-8 inline-block rounded-full bg-naranja-osc px-6 py-3 font-semibold text-white">Ver las propiedades</a>
       </section>
     );
   }
 
   const corredor = SITIO.equipo[0];
+  const otras = parecidas(p);
   const urbs = URBANIZACIONES.filter((u) => p.urbanizacion.includes(u.id));
   const precios = ficha && ficha.operaciones.length > 1
     ? ficha.operaciones.map((o) => `${o.operacion === "venta" ? "Venta" : "Alquiler"} ${precio({ precio: Number(o.precio), moneda: o.moneda })}`)
@@ -153,7 +154,7 @@ export default function Ficha({ id }: { id: string }) {
         {p.zona && (
           <>
             {" · "}
-            <a href={ir({ ver: "propiedades", zona: p.zona })} className="hover:text-tinta">{p.zona}</a>
+            <a href={ir({ ver: "propiedades", zona: p.zona, op: p.operacion[0] === "venta" ? undefined : p.operacion[0] })} className="hover:text-tinta">{p.zona}</a>
           </>
         )}
       </nav>
@@ -167,6 +168,12 @@ export default function Ficha({ id }: { id: string }) {
               <p className="text-[13.5px] text-suave">Cód. {p.codigo}</p>
             </div>
             <h1 className="mt-2 text-[22px] leading-snug font-medium text-balance sm:text-[26px]">{p.titulo}</h1>
+            {fallo && (
+              <p className="mt-3 rounded-xl bg-hondo px-4 py-3 text-[14.5px]">
+                No se pudo cargar el detalle de esta propiedad.{" "}
+                <button onClick={() => location.reload()} className="font-semibold text-naranja-osc underline">Reintentar</button>
+              </p>
+            )}
             <p className="mt-1 text-[15px] text-suave">{tipoTexto(p.tipo)} · {lugar(p)}</p>
 
             <dl className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -229,6 +236,14 @@ export default function Ficha({ id }: { id: string }) {
               </section>
             )}
 
+            <section className="mt-8">
+              <h2 className="font-display text-2xl">Ubicación</h2>
+              <p className="mt-2 text-[15.5px]">{lugar(p)}</p>
+              <a href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`} target="_blank" rel="noopener" data-mapa className="mt-2 inline-block font-semibold text-naranja-osc">
+                Ver en el mapa →
+              </a>
+            </section>
+
             {esTerreno(p) && <p className="mt-8 text-[13px] text-suave">{SITIO.pie.legales[0]}</p>}
           </div>
         </div>
@@ -253,14 +268,16 @@ export default function Ficha({ id }: { id: string }) {
         </aside>
       </div>
 
-      <section className="mt-14 px-5 sm:px-0">
-        <h2 className="font-display text-2xl sm:text-3xl">Parecidas</h2>
-        <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-parecidas>
-          {parecidas(p).map((o) => (
-            <Tarjeta key={o.id} p={o} />
-          ))}
-        </div>
-      </section>
+      {otras.length > 0 && (
+        <section className="mt-14 px-5 sm:px-0">
+          <h2 className="font-display text-2xl sm:text-3xl">Parecidas</h2>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-parecidas>
+            {otras.map((o) => (
+              <Tarjeta key={o.id} p={o} op={p.operacion[0]} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* En el celular, los dos botones quedan siempre a mano */}
       <div className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-2 border-t border-linea bg-white/95 p-3 backdrop-blur md:hidden" data-barra-contacto>

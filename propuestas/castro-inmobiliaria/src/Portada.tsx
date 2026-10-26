@@ -1,4 +1,4 @@
-import { ir, Tarjeta, Titulo, useConsulta } from "./componentes";
+import { ir, Tarjeta, Titulo } from "./componentes";
 import { contar, PROPIEDADES, SITIO, TIPOS, URBANIZACIONES } from "./datos";
 
 const venta = PROPIEDADES.filter((p) => p.operacion.includes("venta"));
@@ -20,7 +20,6 @@ const ZONAS = contar(venta, (p) => p.zona).slice(0, 10);
 const DESTACADAS = PROPIEDADES.filter((p) => p.destacada).sort((a, b) => b.alta.localeCompare(a.alta)).slice(0, 6);
 
 export default function Portada() {
-  const consulta = useConsulta();
   const { inicio, vender, equipo, museo } = SITIO;
   return (
     <>
@@ -30,7 +29,7 @@ export default function Portada() {
           <h1 className="font-display mt-4 text-[2.2rem] leading-[1.1] text-balance whitespace-pre-line sm:text-[3.1rem]">{inicio.titular}</h1>
           <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-tinta/80">{inicio.experiencia_texto}</p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <a href={ir({ ver: "propiedades" })} className="rounded-full bg-naranja px-6 py-3.5 text-[16px] font-semibold text-white hover:brightness-95">
+            <a href={ir({ ver: "propiedades" })} className="rounded-full bg-naranja-osc px-6 py-3.5 text-[16px] font-semibold text-white hover:brightness-95">
               Ver las {venta.length} en venta
             </a>
             <a href={ir({ ver: "propiedades", op: "alquiler" })} className="rounded-full border border-tinta/20 px-6 py-3.5 text-[16px] font-semibold hover:bg-hondo">
@@ -41,7 +40,7 @@ export default function Portada() {
             </a>
           </div>
         </div>
-        <figure className="overflow-hidden rounded-3xl bg-hondo shadow-[0_30px_60px_-34px_rgb(33_28_24/0.6)]">
+        <figure className="order-first overflow-hidden rounded-3xl bg-hondo shadow-[0_30px_60px_-34px_rgb(33_28_24/0.6)] md:order-none">
           <img src="./fotos/imagcontact.webp" alt="La oficina de Castro Inmobiliaria en Pbro. Becerra 436, con las sierras atrás" className="aspect-[4/3] h-full w-full object-cover" />
         </figure>
       </section>
@@ -79,6 +78,9 @@ export default function Portada() {
             <Tarjeta key={p.id} p={p} />
           ))}
         </div>
+        <a href={ir({ ver: "propiedades" })} className="mt-6 block rounded-full border border-tinta/20 py-3.5 text-center font-semibold sm:hidden">
+          Ver las {venta.length} en venta →
+        </a>
       </section>
 
       <section id="vender" className="mt-20 scroll-mt-28 bg-hondo py-16">
@@ -88,14 +90,14 @@ export default function Portada() {
             <ol className="mt-6 space-y-3">
               {vender.pasos.map((paso, i) => (
                 <li key={paso} className="flex items-center gap-3 text-[16px]">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-naranja text-[14px] font-semibold text-white">{i + 1}</span>
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-naranja-osc text-[14px] font-semibold text-white">{i + 1}</span>
                   {paso}
                 </li>
               ))}
             </ol>
-            <button onClick={() => consulta.abrir("Hola, quiero tasar mi propiedad en Villa de Merlo. ¿Me pueden asesorar?")} className="mt-8 rounded-full bg-tinta px-6 py-3.5 text-[16px] font-semibold text-white hover:bg-tinta/90">
+            <a href={ir({ ver: "contacto", motivo: "vender" })} className="mt-8 inline-block rounded-full bg-tinta px-6 py-3.5 text-[16px] font-semibold text-white hover:bg-tinta/90">
               {vender.boton}
-            </button>
+            </a>
           </div>
           <ul className="grid gap-4 sm:grid-cols-2">
             {vender.distingue.map((d) => (
@@ -120,7 +122,7 @@ export default function Portada() {
       </section>
 
       <section className="mx-auto mt-20 max-w-6xl px-5 sm:px-6">
-        <Titulo chico="El equipo">Martilleros y corredores matriculados</Titulo>
+        <Titulo chico="El equipo">{SITIO.nosotros.equipo_titulo}</Titulo>
         <ul className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {equipo.map((e) => (
             <li key={e.nombre}>
@@ -132,7 +134,6 @@ export default function Portada() {
           ))}
         </ul>
       </section>
-      {consulta.vista}
     </>
   );
 }

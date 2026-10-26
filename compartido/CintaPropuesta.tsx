@@ -13,8 +13,8 @@ export default function CintaPropuesta({ negocio }: { negocio: string }) {
       className="fixed inset-x-0 top-0 z-[60] flex h-8 items-center justify-center gap-2.5 bg-black px-3 text-[10.5px] leading-tight whitespace-nowrap text-white sm:text-xs"
     >
       <a href="../../" className="font-semibold underline-offset-2 hover:underline">
-        ← <span className="hidden sm:inline">Ver todas</span>
-        <span className="sm:hidden">Todas</span>
+        ← <span className="hidden sm:inline">Más trabajos</span>
+        <span className="sm:hidden">Trabajos</span>
       </a>
       {/* En celular va la versión corta, para que entre en un renglón y no tape el encabezado */}
       <span>
@@ -22,7 +22,7 @@ export default function CintaPropuesta({ negocio }: { negocio: string }) {
         <span className="hidden sm:inline"> de Matías Trovato para {negocio}</span> · No es la página oficial
       </span>
       <a href={c.href} target={c.canal === "whatsapp" ? "_blank" : undefined} rel="noopener" className="rounded-full bg-white px-2.5 py-0.5 font-semibold text-black">
-        <span className="sm:hidden">Contacto</span>
+        <span className="sm:hidden">Matías</span>
         <span className="hidden sm:inline">Hablar con Matías</span>
       </a>
     </aside>

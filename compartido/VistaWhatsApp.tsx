@@ -10,10 +10,12 @@ interface Props {
   pagina: string;
   /** "propuesta" = página armada para un comercio real; cambia el texto de abajo. */
   tipo?: "ejemplo" | "propuesta";
+  /** Qué le llega al negocio: "el pedido" a un comercio, "la consulta" a una inmobiliaria. */
+  que?: string;
   alCerrar: () => void;
 }
 
-export default function VistaWhatsApp({ mensaje, negocio, pagina, tipo = "ejemplo", alCerrar }: Props) {
+export default function VistaWhatsApp({ mensaje, negocio, pagina, tipo = "ejemplo", que = "el pedido", alCerrar }: Props) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const link = quieroUnaAsi(pagina);
 
@@ -31,11 +33,11 @@ export default function VistaWhatsApp({ mensaje, negocio, pagina, tipo = "ejempl
       className="m-auto w-[min(92vw,26rem)] overflow-hidden rounded-3xl bg-white p-0 text-neutral-900 shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
     >
       <div className="bg-[#075e54] px-5 py-4 text-white">
-        <p className="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-80">Así te llega el pedido</p>
+        <p className="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-80">Así te llega {que}</p>
         <p className="mt-0.5 text-lg font-semibold">WhatsApp de {negocio}</p>
       </div>
       <div className="bg-[#e5ddd5] px-4 py-5">
-        <div className="relative ml-auto w-fit max-w-[88%] rounded-2xl rounded-tr-sm bg-[#dcf8c6] px-3.5 py-2.5 text-[15px] leading-snug whitespace-pre-line shadow-sm" data-mensaje>
+        <div className="relative ml-auto w-fit max-w-[88%] rounded-2xl rounded-tr-sm bg-[#dcf8c6] px-3.5 py-2.5 text-[15px] leading-snug whitespace-pre-line [overflow-wrap:anywhere] shadow-sm" data-mensaje>
           {mensaje}
           <span className="mt-1 block text-right text-[11px] text-neutral-500">ahora ✓✓</span>
         </div>

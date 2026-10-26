@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState } from "react";
 import { ir, Tarjeta } from "./componentes";
-import { contar, esTerreno, porM2, PROPIEDADES, TIPOS, type Propiedad } from "./datos";
+import { contar, esTerreno, porM2, precioEn, PROPIEDADES, TIPOS, type Propiedad } from "./datos";
 
 // Rangos fijos en vez de un deslizador: con 272 propiedades se elige rápido y se entiende de un vistazo
 const PRECIOS = [
@@ -21,7 +21,7 @@ const ORDENES = [
   { valor: "", texto: "Más nuevas" },
   { valor: "menor", texto: "Menor precio" },
   { valor: "mayor", texto: "Mayor precio" },
-  { valor: "m2", texto: "Menor USD por m²" },
+  { valor: "m2", texto: "Menor USD/m²" },
 ];
 
 const CLAVES = ["op", "tipo", "zona", "precio", "dorm", "sup", "orden"] as const;
@@ -43,15 +43,17 @@ export function filtrar(f: Filtros): Propiedad[] {
       p.operacion.includes(op) &&
       (!f.tipo || p.tipo === f.tipo) &&
       (!f.zona || p.zona === f.zona) &&
-      (op !== "venta" || !f.precio || (p.moneda === "USD" && dentro(p.precio, f.precio))) &&
+      (op !== "venta" || !f.precio || (precioEn(p, op).moneda === "USD" && dentro(precioEn(p, op).precio, f.precio))) &&
       (!f.dorm || (p.dormitorios ?? 0) >= Number(f.dorm)) &&
       (!f.sup || dentro(p.terreno, f.sup)),
   );
-  const precioUsd = (p: Propiedad) => (p.moneda === "USD" ? p.precio : null);
+  // Pesos y dólares no se comparan entre sí (no se inventa un tipo de cambio): primero los pesos, después los dólares
+  const valor = (p: Propiedad) => precioEn(p, op);
+  const moneda = (a: Propiedad, b: Propiedad) => Number(valor(a).moneda === "USD") - Number(valor(b).moneda === "USD");
   const sinDato = (n: number | null, alto: boolean) => n ?? (alto ? -Infinity : Infinity);
-  if (f.orden === "menor") return lista.sort((a, b) => sinDato(precioUsd(a) ?? a.precio, false) - sinDato(precioUsd(b) ?? b.precio, false));
-  if (f.orden === "mayor") return lista.sort((a, b) => sinDato(precioUsd(b) ?? b.precio, true) - sinDato(precioUsd(a) ?? a.precio, true));
-  if (f.orden === "m2") return lista.sort((a, b) => sinDato(porM2(a), false) - sinDato(porM2(b), false));
+  if (f.orden === "menor") return lista.sort((a, b) => moneda(a, b) || sinDato(valor(a).precio, false) - sinDato(valor(b).precio, false));
+  if (f.orden === "mayor") return lista.sort((a, b) => moneda(a, b) || sinDato(valor(b).precio, true) - sinDato(valor(a).precio, true));
+  if (f.orden === "m2") return lista.sort((a, b) => sinDato(porM2(a, op), false) - sinDato(porM2(b, op), false));
   return lista.sort((a, b) => b.alta.localeCompare(a.alta));
 }
 
@@ -86,13 +88,13 @@ function recordarTarjeta(e: React.MouseEvent) {
 
 function useVolverATarjeta() {
   useLayoutEffect(() => {
-    history.scrollRestoration = "manual";
     let guardado: { busqueda: string; id: string; arriba: number } | null = null;
     try {
       guardado = JSON.parse(sessionStorage.getItem(VOLVER) ?? "null");
     } catch {
-      return;
+      return; // sin almacenamiento, que el navegador haga lo que pueda
     }
+    history.scrollRestoration = "manual";
     const volviendo = (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined)?.type === "back_forward";
     if (!guardado || !volviendo || guardado.busqueda !== location.search) return;
     const tarjeta = document.querySelector(`[data-tarjeta="${guardado.id}"]`);
@@ -112,8 +114,13 @@ export default function Listado() {
   // Los filtros viven en la dirección, sin sumar pasos al historial: "atrás" desde una ficha vuelve a esta búsqueda
   const cambiar = (cambios: Partial<Filtros>) => {
     const nuevo = { ...f, ...cambios };
-    if (cambios.tipo !== undefined) Object.assign(nuevo, { dorm: "", sup: "", orden: nuevo.orden === "m2" ? "" : nuevo.orden });
-    if (cambios.op !== undefined) Object.assign(nuevo, { tipo: "", zona: "", precio: "", dorm: "", sup: "" });
+    const op = nuevo.op || "venta";
+    if (cambios.tipo !== undefined) {
+      Object.assign(nuevo, { dorm: "", sup: "", orden: nuevo.orden === "m2" ? "" : nuevo.orden });
+      // Si en esa zona no hay de este tipo, la zona se suelta: si no, quedaba "0 propiedades" sin saber por qué
+      if (nuevo.zona && !PROPIEDADES.some((p) => p.operacion.includes(op) && p.zona === nuevo.zona && (!nuevo.tipo || p.tipo === nuevo.tipo))) nuevo.zona = "";
+    }
+    if (cambios.op !== undefined) Object.assign(nuevo, { tipo: "", zona: "", precio: "", dorm: "", sup: "", orden: nuevo.orden === "m2" ? "" : nuevo.orden });
     setF(nuevo);
     setCuantas(TANDA);
     history.replaceState(null, "", ir({ ver: "propiedades", ...nuevo }));
@@ -128,6 +135,8 @@ export default function Listado() {
   const deLaOperacion = PROPIEDADES.filter((p) => p.operacion.includes(op));
   const tipos = contar(deLaOperacion, (p) => p.tipo);
   const zonas = contar(deLaOperacion.filter((p) => !f.tipo || p.tipo === f.tipo), (p) => p.zona);
+  // Una zona que llegó por un link y no tiene nada acá igual aparece elegida: el selector nunca dice "Todas" si no es así
+  if (f.zona && !zonas.some(([z]) => z === f.zona)) zonas.unshift([f.zona, 0]);
   const lista = filtrar(f);
   const conCasas = !f.tipo || ["Casa", "Departamento", "Hotel"].includes(f.tipo);
   const conTerreno = f.tipo === "Terreno" || f.tipo === "Campo";
@@ -146,11 +155,11 @@ export default function Listado() {
       </div>
 
       <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Tipo de propiedad">
-        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja aria-pressed:bg-naranja aria-pressed:font-semibold aria-pressed:text-white">
+        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
           Todas <span className="opacity-70">{deLaOperacion.length}</span>
         </button>
         {tipos.map(([tipo, n]) => (
-          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja aria-pressed:bg-naranja aria-pressed:font-semibold aria-pressed:text-white">
+          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
             {TIPOS[tipo] ?? tipo} <span className="opacity-70">{n}</span>
           </button>
         ))}
@@ -180,7 +189,7 @@ export default function Listado() {
       {lista.length ? (
         <div onClick={recordarTarjeta} className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {lista.slice(0, cuantas).map((p) => (
-            <Tarjeta key={p.id} p={p} />
+            <Tarjeta key={p.id} p={p} op={op} />
           ))}
         </div>
       ) : (

@@ -52,7 +52,18 @@ def entero(valor):
 
 def antiguedad(texto):
     n = entero(re.sub(r"\D", "", texto or "") or None) if "-" not in (texto or "") else None
-    return f"{n} años" if n else None
+    return (f"{n} años" if n > 1 else "1 año") if n else None
+
+
+def clave_zona(z):
+    """'Rincón Del Este', 'Rincón del Este' y 'rincon del este' son la misma zona."""
+    import unicodedata
+    z = unicodedata.normalize("NFD", z or "").encode("ascii", "ignore").decode().lower()
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", "", z)).strip()
+
+
+# Variantes que el agrupado solo no junta (escritas distinto, no solo con otra mayúscula)
+ALIAS_ZONA = {"rincon de este": "rincon del este", "santa rosa de conlara": "santa rosa del conlara"}
 
 
 def foto(origen, destino, ancho, calidad=72, recorte=None):
@@ -86,6 +97,16 @@ assert superficie("600.00M2") == 600 and superficie("0.00M2") is None and superf
 assert antiguedad("0 años") is None and antiguedad("-1 años") is None and antiguedad("7 años") == "7 años"
 
 propiedades = json.load(open(FUENTE / "propiedades.json"))
+# Las zonas salen del título de cada aviso, escritas de varias formas: se agrupan y se muestra la grafía que más usan.
+# Es solo para el filtro y la tarjeta; los títulos quedan tal cual los publican.
+_grafias = {}
+for _p in propiedades:
+    _k = ALIAS_ZONA.get(clave_zona(_p["zona"]), clave_zona(_p["zona"]))
+    _grafias.setdefault(_k, []).append(_p["zona"] or "")
+ZONA = {z: max(set(v), key=lambda g: (v.count(g), g != g.lower(), "del" in g)) for z, v in _grafias.items()}
+zona_de = lambda z: ZONA[ALIAS_ZONA.get(clave_zona(z), clave_zona(z))]
+assert zona_de("Rincón Del Este") == zona_de("Rincón de Este") == "Rincón del Este"
+assert antiguedad("1 años") == "1 año" and antiguedad("7 años") == "7 años"
 # La forma real de los terrenos, armada por castro_satelite.py (si todavía no se corrió, no hay ninguna)
 FORMAS = json.load(open(FUENTE / "formas.json")) if (FUENTE / "formas.json").exists() else {}
 _muestra = {x["id"]: x for x in propiedades if x["id"] in ("633017", "8147479")}
@@ -107,11 +128,14 @@ for p in propiedades:
         "titulo": p["titulo"].strip(),
         "operacion": p["operacion"].split("/"),
         "tipo": p["tipo"],
-        "zona": p["zona"] or "",
+        "zona": zona_de(p["zona"]),
         "localidad": LOCALIDADES.get(p["localidad"], p["localidad"] or ""),
         "urbanizacion": [u["id"] for u in p.get("urbanizacion") or []],
-        "precio": entero(p["precio_numero"]),
-        "moneda": p["moneda"] or "",
+        # La única que está en venta y en alquiler (7665257) no trae precio de listado: va el de su primera operación
+        "precio": entero(p["precio_numero"]) or entero((p.get("operaciones") or [{}])[0].get("precio")),
+        "moneda": p["moneda"] or (p.get("operaciones") or [{}])[0].get("moneda", ""),
+        # El precio de cada operación: en el listado de alquileres se muestra el del alquiler
+        "precios": {o["operacion"]: [entero(o["precio"]), o["moneda"]] for o in p.get("operaciones") or []},
         "ambientes": entero(p["ambientes"]),
         "dormitorios": entero(p["dormitorios"]),
         "banos": entero(p["banos"]),
@@ -128,8 +152,8 @@ for p in propiedades:
     ficha = {
         "id": ident,
         "descripcion": p.get("descripcion") or "",
-        "adicionales": p.get("adicionales") or [],
-        "servicios": p.get("servicios") or [],
+        "adicionales": list(dict.fromkeys(p.get("adicionales") or [])),
+        "servicios": list(dict.fromkeys(p.get("servicios") or [])),
         "fotos": [p["fotos"][i] for i in orden],
         "semicubierta": superficie(s.get("semicubierta")),
         "cochera": entero(p.get("cochera")),
@@ -174,6 +198,9 @@ for archivo in ("museoentera.jpg", "camisetasmuseo.jpg", "articulos.jpg", "fondo
         destino = f"fotos/museo-{origen.stem}.webp"
         foto(origen, PUB / destino, 1200)
         museo.append(destino)
+# La imagen que aparece al compartir el link (WhatsApp no toma webp ni rutas relativas: va jpg y la dirección entera)
+_og = ImageOps.fit(ImageOps.exif_transpose(Image.open(FUENTE / "fotos/sitio/imagcontact.jpg")).convert("RGB"), (1200, 630), Image.LANCZOS)
+_og.save(PUB / "fotos" / "og.jpg", "JPEG", quality=82)
 for archivo in ("fondonos.jpg", "imagcontact.jpg"):
     foto(FUENTE / "fotos/sitio" / archivo, PUB / "fotos" / f"{Path(archivo).stem}.webp", 1600)
 for archivo in ("logo.png", "logofooter.png", "favicon.png"):
@@ -186,12 +213,17 @@ sitio = {
     "equipo": equipo,
     "museo": {"titulo": inst["museo"]["titulo"], "textos": inst["museo"]["textos"], "fotos": museo},
     "inicio": inst["inicio"],
-    "nosotros": {k: inst["nosotros"][k] for k in ("titulo", "texto", "valores")},
+    "nosotros": {k: inst["nosotros"][k] for k in ("titulo", "texto", "valores", "equipo_titulo")},
     "vender": inst["vender"],
     "pie": inst["pie"],
     "contacto": {k: inst[k] for k in ("direccion", "telefono", "whatsapp", "email", "redes", "corredor_y_matricula", "colegio", "oficina_lat", "oficina_lng")},
 }
-(SRC / "sitio.json").write_text(json.dumps(sitio, ensure_ascii=False, indent=1))
+# Tres errores de tipeo de sus textos, corregidos: el resto va tal cual lo escribieron
+_texto = json.dumps(sitio, ensure_ascii=False, indent=1)
+for mal, bien in {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación"}.items():
+    assert mal in _texto, mal
+    _texto = _texto.replace(mal, bien)
+(SRC / "sitio.json").write_text(_texto)
 
 (FUENTE / "errores_de_carga.md").write_text(
     "# Lo que no cierra en los datos que publica Castro Inmobiliaria\n\n"

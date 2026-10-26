@@ -41,7 +41,7 @@ export default function App() {
       <Encabezado actual={ver} />
       {ver !== "certificado" && <AvisoCaida />}
       <main>{pantalla}</main>
-      <Pie />
+      <Pie pegado={ver === "nosotros"} abajo={!!p} />
     </div>
   );
 }

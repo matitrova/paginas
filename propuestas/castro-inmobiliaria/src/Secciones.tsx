@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ir, Tarjeta, Titulo, useConsulta } from "./componentes";
 import { porId, SITIO, TELEFONO, URBANIZACIONES } from "./datos";
-import { nombreLindo } from "./Ficha";
+import { Descripcion, nombreLindo } from "./Ficha";
 
 const disponibles = (ids: string[]) => ids.map((id) => porId.get(id)).filter((p) => p !== undefined);
 
@@ -19,7 +19,8 @@ export function Urbanizaciones() {
           return (
             <a key={u.id} href={ir({ u: u.id })} data-urbanizacion={u.id} className="group overflow-hidden rounded-2xl border border-linea bg-white hover:shadow-[0_18px_40px_-24px_rgb(33_28_24/0.45)]">
               <div className="aspect-[16/10] overflow-hidden bg-hondo">
-                {u.fotos[0] && <img src={u.fotos[0]} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />}
+                {/* La segunda foto suele ser el lugar; la primera, el logo del loteo */}
+                {u.fotos.length > 0 && <img src={u.fotos[1] ?? u.fotos[0]} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />}
               </div>
               <div className="p-4">
                 <h2 className="font-display text-[1.35rem]">{nombreLindo(u.nombre)}</h2>
@@ -46,15 +47,21 @@ export function Urbanizacion({ id }: { id: string }) {
     <article className="mx-auto max-w-6xl px-5 pt-6 sm:px-6">
       <a href={ir({ ver: "urbanizaciones" })} className="text-[13.5px] text-suave hover:text-tinta">← Urbanizaciones</a>
       <div className="mt-4 grid gap-8 md:grid-cols-2">
-        <div className="grid gap-3">
-          {u.fotos.map((f, i) => (
-            <img key={f} src={f} alt={`${nombreLindo(u.nombre)}, foto ${i + 1}`} className="w-full rounded-2xl object-cover" />
-          ))}
+        <div className="content-start md:sticky md:top-28">
+          {(u.fotos[1] ?? u.fotos[0]) && <img src={u.fotos[1] ?? u.fotos[0]} alt={nombreLindo(u.nombre)} className="w-full rounded-2xl object-cover" />}
         </div>
         <div>
-          <h1 className="font-display text-[2.2rem] leading-tight">{nombreLindo(u.nombre)}</h1>
+          <div className="flex items-center gap-4">
+            {u.fotos.length > 1 && <img src={u.fotos[0]} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />}
+            <h1 className="font-display text-[2.2rem] leading-tight">{nombreLindo(u.nombre)}</h1>
+          </div>
           <p className="mt-2 text-[15px] text-suave">{u.acceso.replace(/^Acceso:\s*/, "Acceso: ")}</p>
-          <p className="mt-5 text-[16px] leading-relaxed whitespace-pre-line text-tinta/85">{u.descripcion}</p>
+          {props.length > 0 && (
+            <a href="#propiedades" className="mt-4 inline-block font-semibold text-naranja-osc">Ver las {props.length} propiedades ↓</a>
+          )}
+          <div className="mt-5">
+            <Descripcion texto={u.descripcion} />
+          </div>
           {u.servicios.length > 0 && (
             <ul className="mt-6 flex flex-wrap gap-2">
               {u.servicios.map((s) => (
@@ -62,12 +69,12 @@ export function Urbanizacion({ id }: { id: string }) {
               ))}
             </ul>
           )}
-          <button onClick={() => consulta.abrir(`Hola, quiero información sobre la urbanización ${nombreLindo(u.nombre)}.`)} className="mt-7 rounded-full bg-naranja px-6 py-3.5 font-semibold text-white hover:brightness-95">
+          <button onClick={() => consulta.abrir(`Hola, quiero información sobre la urbanización ${nombreLindo(u.nombre)}.`)} className="mt-7 rounded-full bg-naranja-osc px-6 py-3.5 font-semibold text-white hover:brightness-95">
             Consultar por {nombreLindo(u.nombre)}
           </button>
         </div>
       </div>
-      <section className="mt-14">
+      <section id="propiedades" className="mt-14 scroll-mt-28">
         <h2 className="font-display text-2xl sm:text-3xl">{props.length ? `Propiedades en ${nombreLindo(u.nombre)}` : "Hoy no tiene propiedades publicadas"}</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {props.map((p) => (
@@ -143,7 +150,10 @@ const MOTIVOS = ["Quiero comprar", "Quiero alquilar", "Quiero vender o tasar", "
 export function Contacto() {
   const c = SITIO.contacto;
   const consulta = useConsulta();
-  const [form, setForm] = useState({ nombre: "", telefono: "", motivo: MOTIVOS[0], mensaje: "" });
+  const [form, setForm] = useState(() => ({
+    nombre: "", telefono: "", mensaje: "",
+    motivo: new URLSearchParams(location.search).get("motivo") === "vender" ? "Quiero vender o tasar" : MOTIVOS[0],
+  }));
   useEffect(() => {
     document.title = "Contacto · Castro Inmobiliaria";
   }, []);
@@ -197,7 +207,7 @@ export function Contacto() {
           Mensaje
           <textarea value={form.mensaje} onChange={(e) => setForm({ ...form, mensaje: e.target.value })} rows={4} className="mt-1 w-full rounded-xl border border-linea bg-white p-3.5 text-[16px]" name="mensaje" />
         </label>
-        <button type="submit" className="mt-5 w-full rounded-full bg-naranja py-3.5 font-semibold text-white hover:brightness-95">Enviar por WhatsApp</button>
+        <button type="submit" className="mt-5 w-full rounded-full bg-naranja-osc py-3.5 font-semibold text-white hover:brightness-95">Enviar por WhatsApp</button>
       </form>
       {consulta.vista}
     </section>

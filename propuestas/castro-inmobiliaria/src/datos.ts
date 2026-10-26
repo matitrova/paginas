@@ -14,6 +14,8 @@ export interface Propiedad {
   urbanizacion: string[];
   precio: number | null;
   moneda: string;
+  /** El precio de cada operación (una sola, salvo la 7665257 que está en venta y en alquiler) */
+  precios: Record<string, [number | null, string]>;
   ambientes: number | null;
   dormitorios: number | null;
   banos: number | null;
@@ -50,7 +52,7 @@ export interface Ficha {
   forma: Forma | null;
 }
 
-export const PROPIEDADES = indiceCrudo as Propiedad[];
+export const PROPIEDADES = indiceCrudo as unknown as Propiedad[]; // el JSON no sabe que precios son pares [número, moneda]
 export const SITIO = sitioCrudo;
 export const URBANIZACIONES = sitioCrudo.urbanizaciones;
 export const porId = new Map(PROPIEDADES.map((p) => [p.id, p]));
@@ -69,7 +71,13 @@ export const TIPOS: Record<string, string> = {
   Galpón: "Galpones",
 };
 
-const miles = (n: number) => Math.round(n).toLocaleString("es-AR");
+export const miles = (n: number) => Math.round(n).toLocaleString("es-AR");
+
+/** El precio en la operación que se está mirando: en el listado de alquileres, el del alquiler. */
+export function precioEn(p: Propiedad, op?: string): Pick<Propiedad, "precio" | "moneda"> {
+  const [n, moneda] = (op && p.precios[op]) || [p.precio, p.moneda];
+  return { precio: n, moneda };
+}
 
 export function precio(p: Pick<Propiedad, "precio" | "moneda">) {
   if (!p.precio) return null;
@@ -83,8 +91,16 @@ export function superficie(m2: number | null) {
   return `${miles(m2)} m²`;
 }
 
-export function porM2(p: Propiedad) {
-  return p.precio && p.terreno && p.moneda === "USD" ? p.precio / p.terreno : null;
+export function porM2(p: Propiedad, op?: string) {
+  const { precio: n, moneda } = precioEn(p, op);
+  return n && p.terreno && moneda === "USD" ? n / p.terreno : null;
+}
+
+/** "USD 21 el m²"; desde una hectárea, por hectárea: un campo de 570 ha a USD 1.425.000 es "USD 2.500 la ha", no "USD 0 el m²". */
+export function precioPorSuperficie(p: Propiedad, op?: string) {
+  const m2 = porM2(p, op);
+  if (!m2 || !p.terreno) return null;
+  return p.terreno >= 10000 ? `USD ${miles(m2 * 10000)} la ha` : `USD ${miles(m2)} el m²`;
 }
 
 export const esTerreno = (p: Propiedad) => p.tipo === "Terreno" || p.tipo === "Campo";

@@ -1,3 +1,4 @@
+import { contacto, WHATSAPP_MATIAS_TEXTO } from "../../../compartido/contacto";
 import { CAIDA, CONTACTO, DOMINIO, PANTALLA } from "./textos";
 
 /** La pantalla que ve hoy cualquiera que entra. Dibujada, no una captura:
@@ -11,7 +12,9 @@ function PantallaDeError() {
           <i className="block h-2.5 w-2.5 rounded-full bg-[#e5b04b]" />
           <i className="block h-2.5 w-2.5 rounded-full bg-[#5bb85b]" />
         </span>
-        <span className="ml-2 flex-1 truncate rounded bg-white px-2.5 py-1 text-[11px] text-suave">🔓 {DOMINIO}</span>
+        <span className="ml-2 flex-1 truncate rounded bg-white px-2.5 py-1 text-[11px] text-suave">
+          <span className="font-medium text-[#d93025]">⚠ No seguro</span> {DOMINIO}
+        </span>
       </div>
       <div className="px-6 py-8 sm:px-10 sm:py-11">
         <div className="mb-5 text-4xl" aria-hidden="true">⚠️</div>
@@ -61,6 +64,12 @@ export default function Certificado() {
       <p className="mt-10 text-[17px] leading-relaxed text-tinta/85">
         Mientras tanto, armé cómo podría quedar la página nueva, con sus 272 propiedades.{" "}
         <a href="./" className="font-semibold text-naranja-osc underline underline-offset-4">Mirarla →</a>
+      </p>
+      <p className="mt-8 border-t border-linea pt-6 text-[15px] text-suave">
+        Matías Trovato · Hago páginas web.{" "}
+        <a href={contacto(`Hola Matías! Soy ${CONTACTO} de Castro Inmobiliaria. Vi lo de la página.`).href} target="_blank" rel="noopener" className="font-semibold text-naranja-osc">
+          WhatsApp {WHATSAPP_MATIAS_TEXTO}
+        </a>
       </p>
     </section>
   );
