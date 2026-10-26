@@ -785,12 +785,14 @@ def castro(pg, nombre, cap):
             problemas.append(f"{nombre}: el mapa del celular no se porta como ventana: modal {modal}, foco adentro {foco.count(True)} de {len(foco)} Tabs, "
                              f"mapa=1 {en_la_direccion}, Escape lo cierra {cerrado}, el foco vuelve a 'Mapa' {vuelve}")
         ir("?ver=propiedades&mapa=1")
+        # Sin ventana, 'Ver la lista' puede no estar a la vista: el click esperaba 30 s y cortaba la corrida entera
         if not pg.evaluate("!!document.querySelector('[data-panel-mapa]')?.matches(':modal')"):
             problemas.append(f"{nombre}: llegando con mapa=1 el mapa no se abre como ventana")
-        pg.locator("[data-cerrar-mapa]").click()
-        pg.wait_for_timeout(300)
-        if pg.locator("[data-panel-mapa]").count() or "mapa=1" in pg.url:
-            problemas.append(f"{nombre}: 'Ver la lista' no cierra el mapa o deja mapa=1 en la dirección")
+        else:
+            pg.locator("[data-cerrar-mapa]").click(timeout=5000)
+            pg.wait_for_timeout(300)
+            if pg.locator("[data-panel-mapa]").count() or "mapa=1" in pg.url:
+                problemas.append(f"{nombre}: 'Ver la lista' no cierra el mapa o deja mapa=1 en la dirección")
 
     # Lo que encontró la revisión del 26/10: que no vuelva
     casa = next(x for x in indice if x["cubierta"] and x["construido"] and x["construido"] - x["cubierta"] > 20 and x["tipo"] == "Casa" and "venta" in x["operacion"])
@@ -846,6 +848,12 @@ def castro(pg, nombre, cap):
             problemas.append(f"{nombre}: la ficha {ident} no muestra «{debe}»")
         if no_debe and no_debe in texto:
             problemas.append(f"{nombre}: la ficha {ident} muestra «{no_debe}»")
+    # La 7665257 es la única en venta y alquiler: los dos precios no entran en un renglón y la consulta quedaba sola abajo
+    if pg.viewport_size["width"] >= 768:
+        r = pg.evaluate("[...['[data-precio-ficha]', '[data-consultar-arriba]']].map(s => document.querySelector(s).getBoundingClientRect().top)")
+        alto = pg.locator("[data-precio-ficha]").bounding_box()["height"]
+        if r[1] > r[0] + alto:
+            problemas.append(f"{nombre}: en la ficha 7665257 'Consultar por WhatsApp' baja a un renglón propio, debajo del precio")
     texto = ir("?p=7876886", 1500)
     cap("03-ficha")
     ficha = json.loads((DIST / "propuestas/castro-inmobiliaria/fichas/7876886.json").read_text())
@@ -920,6 +928,13 @@ def castro(pg, nombre, cap):
         problemas.append(f"{nombre}: guardar una propiedad no queda al recargar")
     ir("?ver=guardadas")
     cap("08-guardadas")
+    # Donde el link de guardadas muestra solo el corazón y el número, el lector de pantalla igual dice "Guardadas"
+    for w in sorted({pg.viewport_size["width"], 1024}):
+        tam = pg.viewport_size
+        pg.set_viewport_size({"width": w, "height": tam["height"]})
+        if not pg.get_by_role("link", name=re.compile(r"^Guardadas")).count():
+            problemas.append(f"{nombre}: en {w} px el link de guardadas no tiene nombre para el lector de pantalla")
+        pg.set_viewport_size(tam)
     # El menú entero desde 1024 px (antes recién desde 1280), también con el link de guardadas: sin pisarse ni partir el logo
     if pg.viewport_size["width"] >= 1024:
         tam = pg.viewport_size

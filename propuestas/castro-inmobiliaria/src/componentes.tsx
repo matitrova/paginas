@@ -96,7 +96,7 @@ const LLAMAR = `tel:+54${TELEFONO.replace(/\D/g, "")}`;
 export function Encabezado({ actual }: { actual: string }) {
   const { ids } = useGuardadas();
   const guardadas = ids.length > 0 && (
-    <a href={ir({ ver: "guardadas" })} data-link-guardadas className="flex items-center gap-1.5 rounded-full border border-linea px-3 py-2 text-[14px] font-semibold whitespace-nowrap hover:bg-piedra">
+    <a href={ir({ ver: "guardadas" })} data-link-guardadas aria-label={`Guardadas (${ids.length})`} className="flex items-center gap-1.5 rounded-full border border-linea px-3 py-2 text-[14px] font-semibold whitespace-nowrap hover:bg-piedra">
       <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
         <path d={CORAZON} fill="var(--color-terracota)" />
       </svg>

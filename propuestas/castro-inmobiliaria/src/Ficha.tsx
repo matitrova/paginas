@@ -244,10 +244,13 @@ export default function Ficha({ id }: { id: string }) {
         <div className="px-5 sm:px-0">
           {/* En la compu, la consulta va al lado del precio: la barra fija aparece cuando el precio sale de la pantalla, así
               que siempre hay una a la vista (en el celular está la barra de abajo) */}
-          <div className="mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <p ref={precioGrande} className="text-[28px] font-semibold tracking-tight" data-precio-ficha>{precios.join(" · ")}</p>
-            <p className="text-[13.5px] text-suave">{p.operacion.map((o) => (o === "venta" ? "Venta" : "Alquiler")).join(" y ")} · Cód. {p.codigo}</p>
-            <button onClick={() => consulta.abrir(mensaje)} data-consultar-arriba className="ml-auto hidden self-center rounded-full bg-[#25d366] px-5 py-2.5 text-[14.5px] font-semibold text-black hover:brightness-95 md:block">
+          <div className="mt-6 flex items-center gap-4">
+            {/* Precio y código se acomodan entre ellos: con venta y alquiler no entran en un renglón y el botón quedaba solo abajo */}
+            <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-1">
+              <p ref={precioGrande} className="text-[28px] font-semibold tracking-tight" data-precio-ficha>{precios.join(" · ")}</p>
+              <p className="text-[13.5px] text-suave">{p.operacion.map((o) => (o === "venta" ? "Venta" : "Alquiler")).join(" y ")} · Cód. {p.codigo}</p>
+            </div>
+            <button onClick={() => consulta.abrir(mensaje)} data-consultar-arriba className="hidden shrink-0 rounded-full bg-[#25d366] px-5 py-2.5 text-[14.5px] font-semibold text-black hover:brightness-95 md:block">
               Consultar por WhatsApp
             </button>
           </div>
