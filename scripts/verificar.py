@@ -828,6 +828,11 @@ def castro_mapa(pg, nombre, cap):
     con = medir()
     cap("mapa-terreno")
     zoom, lat = (float(x) for x in con["vista"].split(","))
+    # El zoom y la latitud que dice el pane no se creen así nomás: el ancho del lote en pantalla tiene que dar ese zoom
+    lngs, lats = [x for x, _ in m["lote"]], [y for _, y in m["lote"]]
+    ancho = (max(lngs) - min(lngs)) / 360 * 256 * 2**zoom
+    if len(con["lote"]) != 1 or abs(con["lote"][0][2] - ancho) > max(2, ancho * 0.03) or abs(lat - sum(lats) / len(lats)) > 0.005:
+        problemas.append(f"{nombre}: el pane dice zoom {zoom} y latitud {lat}, pero el lote mide {con['lote'][:1]} px y en ese zoom serían {round(ancho)} de ancho")
     mpp = 156543.03392 * math.cos(math.radians(lat)) / 2**zoom
     esperado = [math.floor(m["calce"][0] / mpp + 0.5), math.floor(-m["calce"][1] / mpp + 0.5)]  # como Math.round
     if not any(esperado):
@@ -872,6 +877,8 @@ def castro_mapa(pg, nombre, cap):
         problemas.append(f"{nombre}: la ficha {t} no trae la altura")
     if pg.locator("iframe").count() or pedidos_a_google():
         problemas.append(f"{nombre}: la ficha pide a Google Maps: {pedidos_a_google()[:2]}")
+    if pg.locator("h1").count() != 1 or pg.locator("[data-consultar]").count() != 1:
+        problemas.append(f"{nombre}: la ficha tiene {pg.locator('h1').count()} h1 y {pg.locator('[data-consultar]').count()} [data-consultar]; va uno de cada uno")
 
     # El atajo "Mapa" (en la barra de arriba en la compu, en la de abajo en el celular) lleva al mapa sin que lo tapen
     pg.evaluate("window.scrollTo(0, 0)")
@@ -924,16 +931,43 @@ def castro_mapa(pg, nombre, cap):
     if pg.locator("[data-mapa-3d] canvas").count() and "Este terreno" not in pg.locator("[data-mapa-3d]").inner_text():
         problemas.append(f"{nombre}: el 3D no marca 'Este terreno'")
 
+    def costuras(ident):
+        """Una línea clara de 1 px entre una fila de tiles y la siguiente: en el celular (DPR 2) Chrome la dibuja si el
+        pane del mapa no tiene capa propia (will-change en index.css). Devuelve cuántos bordes pudo mirar."""
+        import io
+        from PIL import Image, ImageStat
+        m, dpr = pg.locator("[data-mapa-ficha]").bounding_box(), pg.evaluate("devicePixelRatio")
+        im = Image.open(io.BytesIO(pg.screenshot())).convert("L")
+        # Solo las filas de tiles que caen en el medio del mapa: arriba van los botones y abajo la escala y los créditos
+        bordes = {b for b in pg.evaluate("[...document.querySelectorAll('.leaflet-foto-pane img.leaflet-tile')].map(i => i.getBoundingClientRect().top)")
+                  if m["y"] + m["height"] * 0.2 < b < min(m["y"] + m["height"] * 0.75, pg.viewport_size["height"] - 120)}
+        x0, x1 = int((m["x"] + 70) * dpr), int((m["x"] + m["width"] - 70) * dpr)
+
+        def fila(y):
+            return ImageStat.Stat(im.crop((x0, y, x1, y + 1))).mean[0]
+
+        for b in bordes:
+            y = round(b * dpr)
+            salto = max(fila(y + d) - (fila(y + d - 2) + fila(y + d + 2)) / 2 for d in (-1, 0, 1))
+            if salto > 12:
+                problemas.append(f"{nombre}: el mapa del {ident} tiene una línea clara entre tiles en y={b} (salta {round(salto)} de brillo)")
+        return len(bordes)
+
     # Casa: la zona aproximada, sin lote; y un terreno de una zona sin calzar: zona, sin lote ni trama
+    mirados = 0
     if abrir("7876886"):
         cap("mapa-casa")
+        mirados += costuras("7876886")
         if not pg.locator(".zona").count() or pg.locator(".lote").count():
             problemas.append(f"{nombre}: la casa 7876886 no muestra la zona aproximada o muestra un lote")
         if pg.locator("iframe").count() or pedidos_a_google():
             problemas.append(f"{nombre}: la ficha de la casa pide a Google Maps: {pedidos_a_google()[:2]}")
     if abrir("12024296"):
+        mirados += costuras("12024296")
         if not pg.locator(".zona").count() or pg.locator(".lote, .vecina, [data-forma]").count():
             problemas.append(f"{nombre}: el 12024296 (zona sin calzar) tiene que ir solo con la zona aproximada")
+    if tactil and not mirados:
+        problemas.append(f"{nombre}: ningún borde entre tiles quedó en el medio del mapa: el chequeo de costuras no probó nada")
 
 
 PAGINAS = {

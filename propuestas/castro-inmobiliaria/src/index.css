@@ -56,6 +56,10 @@ body {
 [data-mapa-ficha] .leaflet-top.leaflet-right {
   top: 104px;
 }
+/* Sin capa propia, en el celular (DPR 2) Chrome dibuja una línea clara entre una fila de tiles y la otra */
+.leaflet-map-pane {
+  will-change: transform;
+}
 .leaflet-container .leaflet-control-attribution {
   font-size: 10px;
 }
