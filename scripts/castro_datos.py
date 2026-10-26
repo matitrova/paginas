@@ -35,7 +35,8 @@ from pathlib import Path
 
 from PIL import Image, ImageOps
 
-from castro_satelite import mundo
+sys.dont_write_bytecode = True  # que importar castro_satelite no deje scripts/__pycache__ en el repo
+from castro_satelite import mundo  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTE = Path(sys.argv[1] if len(sys.argv) > 1 else Path.home() / "castro-datos")
