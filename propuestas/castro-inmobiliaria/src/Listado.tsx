@@ -73,11 +73,11 @@ export function filtrar(f: Filtros): Propiedad[] {
   return lista.sort((a, b) => b.alta.localeCompare(a.alta));
 }
 
-function Selector({ etiqueta, valor, opciones, alCambiar }: { etiqueta: string; valor: string; opciones: { valor: string; texto: string }[]; alCambiar: (v: string) => void }) {
+function Selector({ nombre, etiqueta, valor, opciones, alCambiar }: { nombre: string; etiqueta: string; valor: string; opciones: { valor: string; texto: string }[]; alCambiar: (v: string) => void }) {
   return (
     <label className="flex min-w-0 flex-col gap-1 text-[12.5px] font-medium text-suave">
       {etiqueta}
-      <select value={valor} onChange={(e) => alCambiar(e.target.value)} className="h-11 min-w-0 rounded-xl border border-linea bg-white px-3 text-[15px] text-tinta">
+      <select name={nombre} value={valor} onChange={(e) => alCambiar(e.target.value)} className="h-11 min-w-0 rounded-xl border border-linea bg-white px-3 text-[15px] text-tinta">
         {opciones.map((o) => (
           <option key={o.valor} value={o.valor}>
             {o.texto}
@@ -212,13 +212,13 @@ export default function Listado() {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Selector etiqueta="Zona" valor={f.zona} alCambiar={(zona) => cambiar({ zona })} opciones={[{ valor: "", texto: "Todas las zonas" }, ...zonas.map(([z, n]) => ({ valor: z, texto: `${z} (${n})` }))]} />
-        <Selector etiqueta="Precio" valor={f.precio} alCambiar={(precio) => cambiar({ precio })} opciones={[{ valor: "", texto: "Cualquier precio" }, ...(op === "venta" ? PRECIOS : PRECIOS_ALQUILER)]} />
+        <Selector nombre="zona" etiqueta="Zona" valor={f.zona} alCambiar={(zona) => cambiar({ zona })} opciones={[{ valor: "", texto: "Todas las zonas" }, ...zonas.map(([z, n]) => ({ valor: z, texto: `${z} (${n})` }))]} />
+        <Selector nombre="precio" etiqueta="Precio" valor={f.precio} alCambiar={(precio) => cambiar({ precio })} opciones={[{ valor: "", texto: "Cualquier precio" }, ...(op === "venta" ? PRECIOS : PRECIOS_ALQUILER)]} />
         {conCasas && !conTerreno && (
-          <Selector etiqueta="Dormitorios" valor={f.dorm} alCambiar={(dorm) => cambiar({ dorm })} opciones={[{ valor: "", texto: "Cualquiera" }, ...[1, 2, 3, 4].map((n) => ({ valor: String(n), texto: `${n} o más` }))]} />
+          <Selector nombre="dorm" etiqueta="Dormitorios" valor={f.dorm} alCambiar={(dorm) => cambiar({ dorm })} opciones={[{ valor: "", texto: "Cualquiera" }, ...[1, 2, 3, 4].map((n) => ({ valor: String(n), texto: `${n} o más` }))]} />
         )}
-        {conTerreno && <Selector etiqueta="Superficie" valor={f.sup} alCambiar={(sup) => cambiar({ sup })} opciones={[{ valor: "", texto: "Cualquiera" }, ...SUPERFICIES]} />}
-        <Selector etiqueta="Ordenar" valor={f.orden} alCambiar={(orden) => cambiar({ orden })} opciones={ORDENES.filter((o) => o.valor !== "m2" || conTerreno)} />
+        {conTerreno && <Selector nombre="sup" etiqueta="Superficie" valor={f.sup} alCambiar={(sup) => cambiar({ sup })} opciones={[{ valor: "", texto: "Cualquiera" }, ...SUPERFICIES]} />}
+        <Selector nombre="orden" etiqueta="Ordenar" valor={f.orden} alCambiar={(orden) => cambiar({ orden })} opciones={ORDENES.filter((o) => o.valor !== "m2" || conTerreno)} />
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-4 border-b border-linea pb-3">

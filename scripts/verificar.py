@@ -446,6 +446,95 @@ def extras_indio_mejorada(pg, nombre, cap):
     pg.wait_for_timeout(400)
 
 
+# Las mismas erratas de su sitio que corrige scripts/castro_datos.py
+ERRATAS_CASTRO = {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación"}
+
+
+def normalizar(s):
+    """Minúsculas, sin tildes ni puntuación y con las erratas corregidas: para comparar textos sin que un acento los salve."""
+    import re
+    import unicodedata
+    for mal, bien in ERRATAS_CASTRO.items():
+        s = s.replace(mal, bien)
+    s = "".join(c for c in unicodedata.normalize("NFD", s.lower()) if not unicodedata.combining(c))
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", s).split())
+
+
+def oraciones(texto):
+    import re
+    return [normalizar(o) for o in re.split(r"[.!?;:\n“”\"]+", texto)]
+
+
+def frases_de_castro(sitio):
+    """Las oraciones de 25 caracteres o más de los textos de presentación de su sitio (sitio.json y, si está,
+    ~/castro-datos/institucional.json, que trae también misión, visión y el formulario de contacto).
+    Quedan afuera los datos y lo que se publica tal cual: su eslogan, los legales del pie, la matrícula del
+    corredor, los cargos del equipo y los nombres de las urbanizaciones."""
+    import json
+    crudo = Path.home() / "castro-datos/institucional.json"
+    textos = []
+
+    def juntar(x):
+        if isinstance(x, str):
+            textos.append(x)
+        elif isinstance(x, (list, tuple)):
+            for y in x:
+                juntar(y)
+        elif isinstance(x, dict):
+            juntar(list(x.values()))
+
+    for f in [sitio] + ([json.loads(crudo.read_text())] if crudo.exists() else []):
+        juntar([f["inicio"], {k: v for k, v in f["nosotros"].items() if k != "equipo"}, f["museo"]["titulo"], f["museo"]["textos"],
+                f["vender"], f["pie"]["texto"], f["contacto"].get("titulo_formulario"), f["contacto"].get("oficina_titulo"), f.get("globo_whatsapp")])
+    exentas = {o for t in [sitio["inicio"]["titular"], *sitio["pie"]["legales"], sitio["contacto"]["corredor_y_matricula"],
+                           *(e["cargo"] for e in sitio["equipo"]), *(u["nombre"] for u in sitio["urbanizaciones"])] for o in oraciones(t)}
+    return sorted({o for t in textos for o in oraciones(t) if len(o) >= 25 and o not in exentas})
+
+
+def castro_numeros(pg, nombre, donde, indice, sitio):
+    """Todo número marcado con data-dato tiene que ser el que sale del índice. Devuelve las claves que vio."""
+    from collections import Counter
+    venta = [x for x in indice if "venta" in x["operacion"]]
+    datos = {"venta": len(venta), "alquiler": sum("alquiler" in x["operacion"] for x in indice), "publicadas": len(indice),
+             "terrenos": sum(x["tipo"] == "Terreno" for x in venta), "forma": sum(bool(x.get("mini")) for x in venta),
+             "urbanizaciones": len(sitio["urbanizaciones"]), "equipo": len(sitio["equipo"]),
+             "urbanizaciones_con": sum(any(i in {x["id"] for x in indice} for i in u["propiedades"]) for u in sitio["urbanizaciones"]),
+             "martilleros": sum("Martillero" in e["cargo"] for e in sitio["equipo"]),
+             **{f"zona:{z}": n for z, n in Counter(x["zona"] for x in venta).items() if z}}
+    vistos = pg.locator("[data-dato]").evaluate_all("es => es.map(e => [e.dataset.dato, e.textContent.trim()])")
+    for clave, visto in vistos:
+        if visto != str(datos.get(clave)):
+            problemas.append(f"{nombre}: {donde} dice «{visto}» en {clave} y en los datos hay {datos.get(clave)}")
+    return {c for c, _ in vistos}
+
+
+def castro_portada(pg, nombre, indice, sitio):
+    """La portada nueva: números del índice, primera pantalla a mano en el celular, las últimas que entraron,
+    los terrenos con su forma y la fachada fuera de la portada."""
+    venta = [x for x in indice if "venta" in x["operacion"]]
+    claves = castro_numeros(pg, nombre, "la portada", indice, sitio)
+    if not {"venta", "forma"} <= claves or sum(c.startswith("zona:") for c in claves) < 5:
+        problemas.append(f"{nombre}: a la portada le faltan los números del titular o de las zonas: {sorted(claves)}")
+    # El celular primero: el buscador y "Explorar el mapa" se ven sin bajar
+    abajo = pg.evaluate("Math.max(...['[data-buscador] button[type=submit]', '[data-explorar]'].map(s => document.querySelector(s)?.getBoundingClientRect().bottom ?? 1e9))")
+    if abajo > pg.viewport_size["height"]:
+        problemas.append(f"{nombre}: los botones de la primera pantalla terminan en {abajo:.0f} px y la pantalla mide {pg.viewport_size['height']}")
+    if pg.locator("img[src*=imagcontact]").count():
+        problemas.append(f"{nombre}: la fachada volvió a la portada (va solo en Contacto)")
+    # Las últimas que entraron son las de alta más reciente, y cada una dice su fecha
+    altas = {x["id"]: x["alta"] for x in indice}
+    ultimas = pg.locator("[data-ultimas] [data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.tarjeta)")
+    if len(ultimas) < 3 or [altas[i] for i in ultimas] != sorted((x["alta"] for x in venta), reverse=True)[:len(ultimas)]:
+        problemas.append(f"{nombre}: 'Las últimas que entraron' no son las más nuevas: {[altas.get(i) for i in ultimas]}")
+    if pg.locator("[data-ultimas] [data-alta]").count() != len(ultimas):
+        problemas.append(f"{nombre}: no todas las últimas que entraron dicen su fecha")
+    # Terrenos con su forma: solo los que la tienen, con la imagen del lote sobre la foto satelital
+    con_forma = pg.locator("[data-con-forma] [data-tarjeta]").evaluate_all("es => es.map(e => [e.dataset.tarjeta, e.querySelector('img').getAttribute('src')])")
+    mini = {x["id"] for x in indice if x.get("mini")}
+    if len(con_forma) < 3 or any(i not in mini or f"lote-tarjeta-{i}." not in src for i, src in con_forma):
+        problemas.append(f"{nombre}: 'Terrenos con su forma real' trae {con_forma[:3]}")
+
+
 def castro(pg, nombre, cap):
     """El sitio nuevo de Castro Inmobiliaria: 272 propiedades sacadas de su propio sitio. Lo esperado se calcula
     del mismo índice que usa la página, así que si la página filtra o cuenta mal, esto falla."""
@@ -464,13 +553,16 @@ def castro(pg, nombre, cap):
         texto = pg.locator("body").inner_text()
         if (m := roto.search(texto)):
             problemas.append(f"{nombre}: dato roto a la vista en '{q or 'portada'}': «{m.group(0)}»")
+        if (h1 := pg.locator("h1").count()) != 1:
+            problemas.append(f"{nombre}: '{q or 'portada'}' tiene {h1} h1 y tiene que tener uno")
         textos_afuera(pg, f"{nombre} {q or 'portada'}")
         return texto
 
     def resultados():
         return int(pg.locator("[data-resultados]").get_attribute("data-resultados"))
 
-    # Portada: cartel, aviso de la caída y los números grandes, que tienen que ser los del índice
+    # Portada: cartel, aviso de la caída y los números, que tienen que ser los del índice
+    sitio = json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/sitio.json").read_text())
     texto = ir("", 1000)
     cap("01-portada")
     if "noindex" not in (pg.get_attribute("meta[name=robots]", "content") or ""):
@@ -481,20 +573,43 @@ def castro(pg, nombre, cap):
     # Lo de la caída se lo cuenta Matías en el mensaje: la página se muestra como su sitio real
     if re.search(r"no abre|certificado|22 de octubre", texto, re.I) or pg.locator("[data-aviso-caida]").count():
         problemas.append(f"{nombre}: volvió a aparecer el aviso de que su página no anda")
-    esperado = {"Casas": sum(x["tipo"] == "Casa" for x in venta), "Terrenos": sum(x["tipo"] == "Terreno" for x in venta),
-                "Alquileres": sum("alquiler" in x["operacion"] for x in indice), "Urbanizaciones": 22}
-    for acceso, n in esperado.items():
-        visto = pg.locator(f"[data-acceso='{acceso}'] span").first.inner_text()
-        if visto != str(n):
-            problemas.append(f"{nombre}: la portada dice {visto} {acceso} y en los datos hay {n}")
+    esperado = {"Terrenos": sum(x["tipo"] == "Terreno" for x in venta)}
+    castro_portada(pg, nombre, indice, sitio)
     pg.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     pg.wait_for_timeout(500)
     if not cartel.is_visible():
         problemas.append(f"{nombre}: el cartel de propuesta se pierde al bajar")
-    pg.locator("[data-acceso='Terrenos']").click()
-    pg.wait_for_load_state("networkidle")
-    if resultados() != esperado["Terrenos"]:
-        problemas.append(f"{nombre}: al tocar Terrenos el listado muestra {resultados()} y son {esperado['Terrenos']}")
+    # El buscador corto: tipo (y zona) y lleva al listado con eso elegido
+    def buscar():
+        # Navega por JS: sin esperar la navegación, networkidle daba bien en la portada todavía abierta. La pausa deja
+        # terminar la transición entre pantallas antes del próximo goto: con la máquina cargada salió a veces
+        # "Transition was skipped" en la consola (no se pudo confirmar que venga de acá)
+        with pg.expect_navigation(wait_until="networkidle"):
+            pg.locator("[data-buscador] button[type=submit]").click()
+        pg.wait_for_timeout(400)
+
+    pg.select_option("[data-buscador] select[name=tipo]", "Terreno")
+    buscar()
+    if resultados() != esperado["Terrenos"] or "tipo=Terreno" not in pg.url:
+        problemas.append(f"{nombre}: buscar Terrenos desde la portada da {resultados()} y son {esperado['Terrenos']} ({pg.url})")
+    zona = max({x["zona"] for x in venta if x["tipo"] == "Casa" and x["zona"]}, key=lambda z: sum(x["zona"] == z and x["tipo"] == "Casa" for x in venta))
+    ir("")
+    pg.select_option("[data-buscador] select[name=tipo]", "Casa")
+    pg.select_option("[data-buscador] select[name=zona]", zona)
+    buscar()
+    casas_zona = sum(x["zona"] == zona and x["tipo"] == "Casa" for x in venta)
+    if resultados() != casas_zona or "zona=" not in pg.url:
+        problemas.append(f"{nombre}: buscar casas en {zona} desde la portada da {resultados()} y son {casas_zona}")
+
+    # Los textos: ni una oración de su sitio tal cual (salvo su eslogan, los legales y los datos)
+    frases = frases_de_castro(sitio)
+    if len(frases) < 20:
+        problemas.append(f"{nombre}: solo {len(frases)} frases de su sitio para comparar: el chequeo de textos no probaría nada")
+    for q in ["", "?ver=nosotros", "?ver=vender", "?ver=urbanizaciones", "?ver=contacto"]:
+        pagina = normalizar(ir(q))
+        castro_numeros(pg, nombre, f"'{q or 'portada'}'", indice, sitio)
+        if copiadas := [f for f in frases if f in pagina]:
+            problemas.append(f"{nombre}: '{q or 'portada'}' repite {len(copiadas)} frases de su sitio, por ejemplo «{copiadas[0][:90]}»")
 
     # Listado: cantidades, filtros en la dirección y "atrás" desde una ficha
     ir("?ver=propiedades")
@@ -505,7 +620,13 @@ def castro(pg, nombre, cap):
     pg.wait_for_timeout(300)
     if resultados() != esperado["Terrenos"] or "tipo=Terreno" not in pg.url:
         problemas.append(f"{nombre}: filtrar terrenos da {resultados()} (url {pg.url})")
-    pg.select_option("select >> nth=1", "50000-100000")
+    # La tarjeta de un terreno con forma muestra el lote sobre la foto satelital; las demás, su foto
+    mini = {x["id"] for x in indice if x.get("mini")}
+    mal = [i for i, src in pg.locator("[data-tarjeta]").evaluate_all("es => es.map(e => [e.dataset.tarjeta, e.querySelector('img').getAttribute('src')])")
+           if (f"lote-tarjeta-{i}." in src) != (i in mini)]
+    if mal:
+        problemas.append(f"{nombre}: tarjetas de terreno con la imagen equivocada (lote o foto): {mal[:5]}")
+    pg.select_option("select[name=precio]", "50000-100000")
     pg.wait_for_timeout(300)
     precios = [int(x) for x in pg.locator("[data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.precio)")]
     if not precios or any(not 50000 <= x < 100000 for x in precios):
@@ -547,8 +668,8 @@ def castro(pg, nombre, cap):
     if "USD 0 el m²" in texto or "USD 1 el m²" in texto or "la ha" not in texto:
         problemas.append(f"{nombre}: los campos no muestran el precio por hectárea")
     ir("?ver=propiedades&op=alquiler&orden=menor")
-    precios_alq = pg.locator("[data-tarjeta] p.text-\\[20px\\]").all_inner_texts()
-    if any(a.startswith("USD") and b.startswith("$") for a, b in zip(precios_alq, precios_alq[1:])):
+    precios_alq = pg.locator("[data-tarjeta] [data-precio-texto]").all_inner_texts()
+    if not precios_alq or any(a.startswith("USD") and b.startswith("$") for a, b in zip(precios_alq, precios_alq[1:])):
         problemas.append(f"{nombre}: en alquileres, el orden por precio mezcla dólares y pesos: {precios_alq[:6]}")
     for q, precio_esperado in [("?ver=propiedades&op=alquiler&tipo=Departamento", "$ 600.000"), ("?ver=propiedades&tipo=Departamento", "USD 78.000")]:
         ir(q)
@@ -711,7 +832,6 @@ def castro(pg, nombre, cap):
     cap("05-urbanizaciones")
     if pg.locator("[data-urbanizacion]").count() != 22:
         problemas.append(f"{nombre}: hay {pg.locator('[data-urbanizacion]').count()} urbanizaciones y son 22")
-    sitio = json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/sitio.json").read_text())
     pines = pg.locator("[data-mapa-urbanizaciones] [data-pin]").evaluate_all("es => es.map(e => e.getAttribute('href'))")
     if len(pines) != 22 or any(not h.startswith("?u=") for h in pines):
         problemas.append(f"{nombre}: el mapa de urbanizaciones tiene {len(pines)} logos o alguno no lleva a su página")
@@ -729,9 +849,9 @@ def castro(pg, nombre, cap):
     cap("06-nosotros")
     if pg.locator("[data-equipo] li").count() != 5 or "Matrícula -" in texto:
         problemas.append(f"{nombre}: el equipo no son las 5 personas o aparece una matrícula vacía")
-    if pg.evaluate("[...document.querySelectorAll('[data-museo] img, [data-equipo] img')].every(i => (i.scrollIntoView(), true))") and False:
-        pass
     ir("?ver=contacto")
+    if not pg.locator("img[src*=imagcontact]").count():
+        problemas.append(f"{nombre}: la foto de la fachada no está en Contacto")
     pg.fill("[data-formulario] [name=nombre]", "Prueba")
     pg.select_option("[data-formulario] [name=motivo]", "Quiero vender o tasar")
     pg.locator("[data-formulario] button[type=submit]").click()
