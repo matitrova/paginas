@@ -36,7 +36,7 @@ from pathlib import Path
 from PIL import Image, ImageOps
 
 sys.dont_write_bytecode = True  # que importar castro_satelite no deje scripts/__pycache__ en el repo
-from castro_satelite import mundo  # noqa: E402
+from castro_satelite import adentro, celda_de, mundo  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTE = Path(sys.argv[1] if len(sys.argv) > 1 else Path.home() / "castro-datos")
@@ -132,9 +132,11 @@ def rutas(puntos):
 
 
 def cercanos(lat, lng, viajes):
-    """En auto, aproximado. Lejos de Merlo (más de 20 km en línea recta de la plaza), solo cuánto queda Merlo."""
+    """En auto, aproximado. Lejos de Merlo (a más de 20 km de la plaza por ruta, o en línea recta si OSRM no encontró
+    camino), solo cuánto queda Merlo: con la línea recta, un campo de Santa Rosa del Conlara a 23 km por ruta salía con
+    "Hospital de Merlo 22,9 km"."""
     viaje = viajes[f"{lat},{lng}"]
-    if metros_entre(lat, lng, LUGARES[0][1], LUGARES[0][2]) > 20000:
+    if (viaje[0][0] if viaje[0] else metros_entre(lat, lng, LUGARES[0][1], LUGARES[0][2])) > 20000:
         return [{"lugar": "Villa de Merlo", "km": round(viaje[0][0] / 1000)}] if viaje[0] else []
     return [{"lugar": nombre, "km": round(v[0] / 1000, 1), "min": max(1, round(v[1] / 60))} for (nombre, _, _), v in zip(LUGARES, viaje) if v]
 
@@ -204,8 +206,11 @@ def simplificar(anillo, tolerancia_m=1.0):
 assert len(simplificar([[0, 0], [0.00015, 0], [0.0003, 0], [0.0003, 0.0003], [0, 0.0003], [0, 0]])) == 5
 assert len(simplificar([[0, 0], [0.00015, 0.00003], [0.0003, 0], [0.0003, 0.0003], [0, 0.0003], [0, 0]])) == 6
 
-# Lo que nunca se publica (el catastro tiene todo esto; las fichas y el mapa general no llevan nada)
-PROHIBIDAS = {"nomenclatura", "tributaria", "plano_mensura", "etiqueta", "superficie_catastro", "superficie_catastro_m2"}
+# Lo que nunca se publica: los nombres de resumen.json y los del catastro (NOMBRE trae nomenclatura, partida, plano y
+# superficie; LINK, el id de la parcela). Se comparan en minúscula, y además se busca una nomenclatura en el texto.
+PROHIBIDAS = {"nomenclatura", "tributaria", "partida", "plano_mensura", "etiqueta", "superficie_catastro", "superficie_catastro_m2",
+              "nombre", "link", "catnmc_tri", "catnmc_cat", "catmen_codigo"}
+NOMENCLATURA = re.compile(r"\d{2}-\d{2}-\d{2}-\d{2}-\d{6}-\d{6}|Nom\.")
 
 
 def claves(x):
@@ -216,6 +221,49 @@ def claves(x):
     elif isinstance(x, list):
         for v in x:
             yield from claves(v)
+
+
+def sin_catastro(nombre, dato):
+    malas = PROHIBIDAS & {k.lower() for k in claves(dato)}
+    assert not malas, f"{nombre}: lleva {malas}, que no se publica"
+    assert not NOMENCLATURA.search(json.dumps(dato, ensure_ascii=False)), f"{nombre}: lleva una nomenclatura del catastro"
+
+
+for _mala in ({"mapa": [{"ETIQUETA": "8"}]}, {"CATNMC_TRI": "13-931519"}, {"d": "Nom.Catastral: 00-06-44-07-000000-000007"}, {"d": "00-06-44-07-000000-000007"}):
+    try:
+        sin_catastro("prueba", _mala)
+    except AssertionError:
+        continue
+    raise AssertionError(f"sin_catastro no ve {_mala}")
+sin_catastro("prueba", {"descripcion": "Plano aprobado, nomenclado. Tel 2656-123456", "lados": [{"texto": "19,9 m"}]})
+
+
+def centro(anillo):
+    """El promedio de los vértices tal como vienen (con el que cierra, como castro_satelite.terrenos()): lat, lng."""
+    return sum(q[1] for q in anillo) / len(anillo), sum(q[0] for q in anillo) / len(anillo)
+
+
+def metros_al_borde(lat, lng, anillo):
+    """Distancia en metros de un punto al borde de un anillo [[lng, lat], ...]."""
+    kx = 111320 * math.cos(math.radians(lat))
+    xy = [((q[0] - lng) * kx, (q[1] - lat) * 110540) for q in anillo]
+
+    def al_tramo(a, b):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        t = max(0, min(1, -(a[0] * dx + a[1] * dy) / (dx * dx + dy * dy))) if dx or dy else 0
+        return math.hypot(a[0] + t * dx, a[1] + t * dy)
+    return min(al_tramo(xy[i], xy[i + 1]) for i in range(len(xy) - 1))
+
+
+def mismo_poligono(a, b, tolerancia_m=0.5):
+    """Cada vértice de uno a menos de tolerancia_m de algún vértice del otro, y al revés."""
+    cerca = lambda p, otro: any(metros_entre(p[1], p[0], q[1], q[0]) <= tolerancia_m for q in otro)
+    return all(cerca(p, b) for p in a) and all(cerca(q, a) for q in b)
+
+
+_cuadro = [[0, 0], [0.0003, 0], [0.0003, 0.0003], [0, 0.0003], [0, 0]]  # ~33 m en el ecuador
+assert metros_al_borde(0, 0.00015, _cuadro) < 0.01 and 16 < metros_al_borde(0.00015, 0.00015, _cuadro) < 17
+assert mismo_poligono(_cuadro, [[0.000002, 0], *_cuadro[1:4], [0.000002, 0]]) and not mismo_poligono(_cuadro, _cuadro[:3] + [[0, 0.0004], [0, 0]])
 
 
 def foto(origen, destino, ancho, calidad=72, recorte=None):
@@ -256,22 +304,32 @@ _grafias = {}
 for _p in propiedades:
     _k = ALIAS_ZONA.get(clave_zona(_p["zona"]), clave_zona(_p["zona"]))
     _grafias.setdefault(_k, []).append(_p["zona"] or "")
-ZONA = {z: max(set(v), key=lambda g: (v.count(g), g != g.lower(), "del" in g, g)) for z, v in _grafias.items()}  # g al final: sin empates que dependan del orden del set
+# Entre grafías igual de usadas, la que ya estaba publicada en indice.json (un link con esa zona en el filtro sigue
+# andando, porque el listado la compara tal cual) y después g, para no depender del orden del set
+_publicadas = {x["zona"] for x in json.load(open(SRC / "indice.json"))} if (SRC / "indice.json").exists() else set()
+ZONA = {z: max(set(v), key=lambda g: (v.count(g), g != g.lower(), "del" in g, g in _publicadas, g)) for z, v in _grafias.items()}
 zona_de = lambda z: ZONA[ALIAS_ZONA.get(clave_zona(z), clave_zona(z))]
 assert zona_de("Rincón Del Este") == zona_de("Rincón de Este") == "Rincón del Este"
 assert antiguedad("1 años") == "1 año" and antiguedad("7 años") == "7 años"
-# La forma real de los terrenos, armada por castro_satelite.py (si todavía no se corrió, no hay ninguna)
-FORMAS = json.load(open(FUENTE / "formas.json")) if (FUENTE / "formas.json").exists() else {}
-# El mapa que se mueve de cada ficha, también de castro_satelite.py
+# La forma real de los terrenos (formas.json), el mapa que se mueve de cada ficha (mapas.json) y las celdas calzadas
+# (calces.json) los arma castro_satelite.py
+for _falta in ("formas.json", "mapas.json", "calces.json"):
+    if not (FUENTE / _falta).exists():
+        raise SystemExit(f"falta {FUENTE / _falta}: corré antes scripts/castro_satelite.py")
+FORMAS = json.load(open(FUENTE / "formas.json"))
 MAPAS = json.load(open(FUENTE / "mapas.json"))
+CALCES = json.load(open(FUENTE / "calces.json"))
 # Cuántas propiedades publican exactamente el mismo punto (suele ser el del barrio, no el de la propiedad)
 PUNTOS = Counter((p["lat"], p["lng"]) for p in propiedades)
-VIAJES = rutas([(p["lat"], p["lng"]) for p in propiedades])
+# A cuánto queda y la altura se miden en el centro del lote cuando lo hay (el punto publicado puede estar a 140 m)
+DONDE = {p["id"]: tuple(round(v, 6) for v in centro(MAPAS[p["id"]]["lote"])) if MAPAS[p["id"]]["lote"] else (p["lat"], p["lng"])
+         for p in propiedades}
+VIAJES = rutas(list(DONDE.values()))
 _muestra = {x["id"]: x for x in propiedades if x["id"] in ("633017", "8147479")}
 assert [es_volante(FUENTE / f) for f in _muestra["633017"]["fotos_locales"][:3]] == [True, True, False]
 assert [es_volante(FUENTE / f) for f in _muestra["8147479"]["fotos_locales"][:2]] == [True, False]
 
-indice, errores, con_volante = [], [], 0
+indice, errores, con_volante, FICHAS = [], [], 0, {}
 for p in propiedades:
     s = p.get("superficies") or {}
     ident = p["id"]
@@ -326,14 +384,47 @@ for p in propiedades:
     ficha["mapa"] = {"calce": m["calce"], "celda": m["celda"], "zmax": m["zmax"], "lote": m["lote"], "lados": m["lados"],
                      "zona": None if m["lote"] else {"radio": 400 if compartido else 150, "compartido": compartido},
                      "alrededor": m["alrededor"]}
-    ficha["cercanos"] = cercanos(p["lat"], p["lng"], VIAJES)
-    ficha["altura"] = altura(p["lat"], p["lng"])
-    (PUB / "fichas").mkdir(parents=True, exist_ok=True)
-    (PUB / "fichas" / f"{ident}.json").write_text(json.dumps(ficha, ensure_ascii=False, separators=(",", ":")))
+    ficha["cercanos"] = cercanos(*DONDE[ident], VIAJES)
+    ficha["altura"] = altura(*DONDE[ident])
+    FICHAS[ident] = ficha
     foto(FUENTE / p["fotos_locales"][orden[0]], PUB / "fotos" / f"p-{ident}.webp", 560, 62, (560, 420))
     if p.get("inconsistencias"):
         errores.append(f"- **{p['codigo']}** · {p['titulo'].strip()} — " + "; ".join(p["inconsistencias"]))
 
+# El mapa general: los lotes simplificados y las celdas calzadas (los puntos ya están en indice.json)
+mapa_general = {"calces": CALCES, "lotes": {i: [[round(x, 6), round(y, 6)] for x, y in simplificar(m["lote"])] for i, m in MAPAS.items() if m["lote"]}}
+
+# Autochequeos de los datos de los mapas, antes de escribir nada. Cada uno mide algo por su lado: no repite la cuenta
+# que armó el dato.
+sin_catastro("mapa.json", mapa_general)
+assert set(FORMAS) == {i for i, f in FICHAS.items() if f["mapa"]["lote"]} == set(mapa_general["lotes"]), "los terrenos con lote no son los de formas.json"
+en_indice = Counter((x["lat"], x["lng"]) for x in indice)
+for x in indice:
+    i, f = x["id"], FICHAS[x["id"]]
+    mapa = f["mapa"]
+    sin_catastro(f"ficha {i}", f)
+    assert f["altura"] and 400 <= f["altura"]["m"] <= 2200, f"{i}: altura {f['altura']}"
+    assert f["cercanos"], f"{i}: sin a cuánto queda"
+    # La celda, de nuevo desde el lote o el punto publicado, y su calce desde calces.json
+    assert mapa["celda"] == celda_de(*(centro(mapa["lote"]) if mapa["lote"] else (x["lat"], x["lng"]))), f"{i}: celda {mapa['celda']}"
+    assert mapa["calce"] == CALCES.get(mapa["celda"]), f"{i}: calce {mapa['calce']} en {mapa['celda']}"
+    if mapa["calce"] is None:
+        assert mapa["alrededor"] == [] and mapa["lote"] is None, f"{i}: sin calce pero con lote o trama"
+    if mapa["lote"]:
+        assert mapa["zona"] is None and len(mapa["lados"]) == len(FORMAS[i]["lados"]), f"{i}: los lados no son los de formas.json"
+        for lado in mapa["lados"]:
+            assert metros_al_borde(lado["lat"], lado["lng"], mapa["lote"]) < 0.5, f"{i}: el rótulo {lado['texto']} no cae sobre el borde del lote"
+        assert not any(mismo_poligono(a, mapa["lote"]) for a in mapa["alrededor"]), f"{i}: el lote está repetido en la trama de alrededor"
+        c = centro(mapa["lote"])
+        assert not adentro(*c, mapa["lote"]) or not any(adentro(*c, a) for a in mapa["alrededor"]), f"{i}: una parcela de la trama tapa el lote"
+    else:
+        compartido = en_indice[(x["lat"], x["lng"])] - 1
+        assert mapa["zona"] == {"radio": 400 if compartido else 150, "compartido": compartido}, f"{i}: zona {mapa['zona']}"
+
+(PUB / "fichas").mkdir(parents=True, exist_ok=True)
+for i, f in FICHAS.items():
+    (PUB / "fichas" / f"{i}.json").write_text(json.dumps(f, ensure_ascii=False, separators=(",", ":")))
+(PUB / "mapa.json").write_text(json.dumps(mapa_general, separators=(",", ":")))
 SRC.mkdir(parents=True, exist_ok=True)
 (SRC / "indice.json").write_text(json.dumps(indice, ensure_ascii=False, separators=(",", ":")))
 
@@ -402,7 +493,7 @@ for i, pin in enumerate(PINES):
 # GitHub Pages sirve archivos fijos y la ficha se arma en el navegador, que WhatsApp no ejecuta. Redirige a ?p=ID.
 URL_BASE = "https://matitrova.github.io/paginas/propuestas/castro-inmobiliaria/"
 for p in indice:
-    ficha = json.loads((PUB / "fichas" / f"{p['id']}.json").read_text())
+    ficha = FICHAS[p["id"]]
     precio_txt = (f"USD {p['precio']:,}" if p["moneda"] == "USD" else f"$ {p['precio']:,}").replace(",", ".") if p["precio"] else ""
     titulo = f"{p['titulo']}{' · ' + precio_txt if precio_txt else ''}"
     desc = " · ".join(x for x in [p["tipo"], p["zona"], p["localidad"], "Castro Inmobiliaria"] if x)
@@ -418,11 +509,6 @@ for p in indice:
 <body><script>location.replace("../../?p={p['id']}")</script><a href="../../?p={p['id']}">{esc(p['titulo'])}</a></body></html>
 """)
 
-
-# El mapa general: los lotes simplificados y las celdas calzadas (los puntos ya están en indice.json)
-mapa_general = {"calces": json.load(open(FUENTE / "calces.json")),
-                "lotes": {i: [[round(x, 6), round(y, 6)] for x, y in simplificar(m["lote"])] for i, m in MAPAS.items() if m["lote"]}}
-(PUB / "mapa.json").write_text(json.dumps(mapa_general, separators=(",", ":")))
 
 grupos = {}
 for p in propiedades:
@@ -446,26 +532,9 @@ for (lat, lng), ps in sorted(grupos.items(), key=lambda g: -len(g[1])):
     + "\n".join(compartidos) + "\n"
 )
 
-# Autochequeos de los datos de los mapas
-fichas = {f.stem: json.loads(f.read_text()) for f in (PUB / "fichas").glob("*.json")}
-assert len(fichas) == len(indice), (len(fichas), len(indice))
-for i, f in FORMAS.items():
-    assert fichas[i]["mapa"]["lote"] and len(fichas[i]["mapa"]["lados"]) == len(f["lados"]), f"{i}: el lote o sus lados no coinciden con formas.json"
-assert sum(1 for f in fichas.values() if f["mapa"]["lote"]) == len(FORMAS) == len(mapa_general["lotes"])
-for i, f in fichas.items():
-    mapa = f["mapa"]
-    assert not PROHIBIDAS & set(claves(f)), f"{i}: la ficha tiene datos del catastro que no se publican"
-    assert f["altura"] and 400 <= f["altura"]["m"] <= 2200, f"{i}: altura {f['altura']}"
-    assert f["cercanos"], f"{i}: sin a cuánto queda"
-    assert (mapa["zona"] is None) == bool(mapa["lote"])
-    if mapa["calce"] is None:
-        assert mapa["alrededor"] == [] and mapa["lote"] is None, f"{i}: sin calce pero con lote o trama"
-    if mapa["lote"]:
-        lote = frozenset(map(tuple, mapa["lote"]))
-        assert all(frozenset(map(tuple, a)) != lote for a in mapa["alrededor"]), f"{i}: el lote está repetido en la trama de alrededor"
-assert not PROHIBIDAS & set(claves(mapa_general))
-assert all((z["radio"] == 400) == (z["compartido"] > 0) for z in (f["mapa"]["zona"] for f in fichas.values()) if z)
-
+# Ninguna ficha vieja de una propiedad que ya no está
+assert {f.stem for f in (PUB / "fichas").glob("*.json")} == set(FICHAS), "hay fichas de más en public/"
+fichas = FICHAS
 pesos = sorted((f.stat().st_size, f.stem) for f in (PUB / "fichas").glob("*.json"))
 alturas = [f["altura"]["m"] for f in fichas.values()]
 print(f"fichas: promedio {sum(p for p, _ in pesos) / len(pesos) / 1024:.1f} KB, la más pesada {pesos[-1][0] / 1024:.1f} KB ({pesos[-1][1]});"
