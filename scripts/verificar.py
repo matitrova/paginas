@@ -758,6 +758,12 @@ def castro(pg, nombre, cap):
     mensaje = pg.locator("dialog[open] [data-mensaje]").inner_text()
     if "CHO7876886" not in mensaje or titulo not in mensaje:
         problemas.append(f"{nombre}: el mensaje de WhatsApp no nombra la propiedad: {mensaje[:80]}")
+    # "Mostrar y poder mandar": el botón abre el WhatsApp real de la inmobiliaria con ESE mensaje, y solo si se toca
+    from urllib.parse import parse_qs, urlparse as _url
+    enviar = pg.locator("dialog[open] [data-enviar-whatsapp]")
+    href = enviar.get_attribute("href") if enviar.count() else ""
+    if not href.startswith("https://wa.me/5492665024444?") or parse_qs(_url(href).query).get("text", [""])[0] != pg.evaluate("document.querySelector('dialog[open] [data-mensaje]').firstChild.textContent"):
+        problemas.append(f"{nombre}: el botón para mandar la consulta no abre el WhatsApp de la inmobiliaria con el mismo mensaje: {href[:90]}")
     pg.keyboard.press("Escape")
     llamar = pg.locator("a[href^='tel:']").first.get_attribute("href")
     if llamar != "tel:+542665024444":

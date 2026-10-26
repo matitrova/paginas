@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
-import { esTerreno, NEGOCIO, portada, precio, precioEn, precioPorSuperficie, PROPIEDADES, SITIO, superficie, TELEFONO, URBANIZACIONES, type Propiedad } from "./datos";
+import { esTerreno, NEGOCIO, portada, precio, precioEn, precioPorSuperficie, PROPIEDADES, SITIO, superficie, TELEFONO, URBANIZACIONES, type Propiedad, WHATSAPP } from "./datos";
 import { NOTA_DATOS, PIE } from "./textos";
 
 /** Arma un link a otra pantalla. Cada pantalla es una página común: "atrás" y abrir en otra pestaña andan solos. */
@@ -277,7 +277,7 @@ export function Tarjeta({ p, op }: { p: Propiedad; op?: string }) {
 /** El botón de consulta de las propuestas: no le escribe a nadie, muestra cómo le llegaría el mensaje a la inmobiliaria. */
 export function useConsulta() {
   const [mensaje, setMensaje] = useState<string | null>(null);
-  const vista = <VistaWhatsApp mensaje={mensaje} negocio={NEGOCIO} pagina="castro-inmobiliaria" tipo="propuesta" que="la consulta" alCerrar={() => setMensaje(null)} />;
+  const vista = <VistaWhatsApp mensaje={mensaje} negocio={NEGOCIO} pagina="castro-inmobiliaria" tipo="propuesta" que="la consulta" enviarA={WHATSAPP} alCerrar={() => setMensaje(null)} />;
   return { abrir: setMensaje, vista };
 }
 

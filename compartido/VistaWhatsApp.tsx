@@ -12,10 +12,13 @@ interface Props {
   tipo?: "ejemplo" | "propuesta";
   /** Qué le llega al negocio: "el pedido" a un comercio, "la consulta" a una inmobiliaria. */
   que?: string;
+  /** El WhatsApp del negocio (5492665024444). Si viene, además de mostrar el mensaje se puede mandar: abre el chat
+   *  real con el mensaje listo. Nunca se manda solo: la persona elige tocar el botón. */
+  enviarA?: string;
   alCerrar: () => void;
 }
 
-export default function VistaWhatsApp({ mensaje, negocio, pagina, tipo = "ejemplo", que = "el pedido", alCerrar }: Props) {
+export default function VistaWhatsApp({ mensaje, negocio, pagina, tipo = "ejemplo", que = "el pedido", enviarA, alCerrar }: Props) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const link = quieroUnaAsi(pagina);
 
@@ -44,11 +47,18 @@ export default function VistaWhatsApp({ mensaje, negocio, pagina, tipo = "ejempl
       </div>
       <div className="space-y-3 px-5 py-4">
         <p className="text-sm text-neutral-600">
-          {tipo === "propuesta"
+          {enviarA
+            ? `Todavía no se mandó nada. Si querés, mandalo: se abre el WhatsApp de ${negocio} con el mensaje listo.`
+            : tipo === "propuesta"
             ? "Esto es una propuesta de diseño, así que no se envió nada. En la página real, el cliente toca el botón y el mensaje llega armado al WhatsApp del negocio."
             : "Este sitio es de ejemplo, así que no se envió nada. En tu página, el cliente toca el botón y el mensaje te llega armado, sin que tenga que escribir."}
         </p>
         <div className="flex flex-wrap gap-2">
+          {enviarA && mensaje && (
+            <a href={`https://wa.me/${enviarA}?text=${encodeURIComponent(mensaje)}`} target="_blank" rel="noopener" data-enviar-whatsapp className="rounded-full bg-[#25d366] px-4 py-2.5 text-sm font-semibold text-black">
+              Mandarlo por WhatsApp
+            </a>
+          )}
           {link && tipo === "ejemplo" && (
             <a href={link} target="_blank" rel="noopener" className="rounded-full bg-[#25d366] px-4 py-2.5 text-sm font-semibold text-black">
               Quiero una página así
