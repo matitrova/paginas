@@ -2,24 +2,30 @@
 @source "./";
 @source "../../../compartido";
 
-/* Papel, tinta y el verde de la sierra. Clara a propósito: las otras propuestas
-   son oscuras, y una carta se lee sobre papel. */
+/* Los colores de su marca: el naranja del logo para botones y detalles, y uno más oscuro para
+   letras, porque el naranja del logo sobre blanco no se lee en un texto chico. La letra de los
+   títulos se parece a la del "CASTRO" del logo. */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Newsreader", ui-serif, Georgia, serif;
-  --color-papel: #f7f4ee;
-  --color-papel-hondo: #efeae0;
-  --color-tinta: #1d1b17;
-  --color-suave: #6b655b;
-  --color-sierra: #2f5d46;
+  --font-display: "Marcellus", Georgia, serif;
+  --color-fondo: #fbf9f6;
+  --color-hondo: #f3eee7;
+  --color-tinta: #211c18;
+  --color-suave: #6e665e;
+  --color-naranja: #ff8000;
+  --color-naranja-osc: #b35400;
+  --color-linea: rgb(33 28 24 / 0.1);
   --color-alarma: #b23b2e;
-  --color-linea: rgb(29 27 23 / 0.12);
+}
+
+/* Cada pantalla es un link común: donde el navegador lo sabe hacer, pasa de una a otra sin parpadeo */
+@view-transition {
+  navigation: auto;
 }
 
 html {
-  background: var(--color-papel);
+  background: var(--color-fondo);
   color: var(--color-tinta);
-  scroll-behavior: smooth;
 }
 
 body {
@@ -28,6 +34,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+/* El listado dibuja todas las tarjetas; las que están lejos de la pantalla no se pintan hasta acercarse */
+.tarjeta {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 380px;
+}
+
+.sin-barra {
+  scrollbar-width: none;
+}
+.sin-barra::-webkit-scrollbar {
+  display: none;
 }

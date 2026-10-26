@@ -447,36 +447,231 @@ def extras_indio_mejorada(pg, nombre, cap):
 
 
 def castro(pg, nombre, cap):
-    """Castro Inmobiliaria no entra en propuesta(): no tiene formulario —el contacto es un
-    link directo— y sus fotos salen de su propio sitio, no de sus redes."""
-    pg.goto(f"{BASE}propuestas/castro-inmobiliaria/", wait_until="networkidle")
-    pg.wait_for_timeout(900)
-    cap("00-portada")
+    """El sitio nuevo de Castro Inmobiliaria: 272 propiedades sacadas de su propio sitio. Lo esperado se calcula
+    del mismo índice que usa la página, así que si la página filtra o cuenta mal, esto falla."""
+    import json
+    import re
+    from urllib.parse import parse_qs
+
+    raiz = f"{BASE}propuestas/castro-inmobiliaria/"
+    indice = json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/indice.json").read_text())
+    venta = [x for x in indice if "venta" in x["operacion"]]
+    roto = re.compile(r"\b0 m²|\b\d+(\.\d+)? ?HA\b|NaN|undefined|null|Sin datos|\b0 (dorm|baño)")
+
+    def ir(q, espera=700):
+        pg.goto(raiz + q, wait_until="networkidle")
+        pg.wait_for_timeout(espera)
+        texto = pg.locator("body").inner_text()
+        if (m := roto.search(texto)):
+            problemas.append(f"{nombre}: dato roto a la vista en '{q or 'portada'}': «{m.group(0)}»")
+        textos_afuera(pg, f"{nombre} {q or 'portada'}")
+        return texto
+
+    def resultados():
+        return int(pg.locator("[data-resultados]").get_attribute("data-resultados"))
+
+    # Portada: cartel, aviso de la caída y los números grandes, que tienen que ser los del índice
+    texto = ir("", 1000)
+    cap("01-portada")
     if "noindex" not in (pg.get_attribute("meta[name=robots]", "content") or ""):
         problemas.append(f"{nombre}: falta el noindex")
     cartel = pg.locator("aside[aria-label^='Aviso: propuesta']")
     if not cartel.is_visible() or "No es la página oficial" not in cartel.inner_text():
         problemas.append(f"{nombre}: no se ve el cartel de propuesta")
-    # El gancho es el certificado vencido: sin la fecha, la propuesta no dice nada
-    if "22 de octubre de 2026" not in pg.locator("body").inner_text():
+    if "22 de octubre de 2026" not in texto:
         problemas.append(f"{nombre}: no aparece la fecha en que se les venció el certificado")
+    esperado = {"Casas": sum(x["tipo"] == "Casa" for x in venta), "Terrenos": sum(x["tipo"] == "Terreno" for x in venta),
+                "Alquileres": sum("alquiler" in x["operacion"] for x in indice), "Urbanizaciones": 22}
+    for acceso, n in esperado.items():
+        visto = pg.locator(f"[data-acceso='{acceso}'] span").first.inner_text()
+        if visto != str(n):
+            problemas.append(f"{nombre}: la portada dice {visto} {acceso} y en los datos hay {n}")
+    pg.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    pg.wait_for_timeout(500)
+    if not cartel.is_visible():
+        problemas.append(f"{nombre}: el cartel de propuesta se pierde al bajar")
+    pg.locator("[data-acceso='Terrenos']").click()
+    pg.wait_for_load_state("networkidle")
+    if resultados() != esperado["Terrenos"]:
+        problemas.append(f"{nombre}: al tocar Terrenos el listado muestra {resultados()} y son {esperado['Terrenos']}")
 
-    alto = pg.evaluate("document.body.scrollHeight - innerHeight")
-    for i in range(1, 12):
-        pg.evaluate(f"window.scrollTo(0, {alto * i / 12})")
-        pg.wait_for_timeout(750)
-        cap(f"{i:02d}")
-        if not cartel.is_visible():
-            problemas.append(f"{nombre}: el cartel de propuesta se pierde al bajar")
+    # Listado: cantidades, filtros en la dirección y "atrás" desde una ficha
+    ir("?ver=propiedades")
+    cap("02-listado")
+    if resultados() != len(venta):
+        problemas.append(f"{nombre}: el listado de venta muestra {resultados()} y son {len(venta)}")
+    pg.locator("[data-filtro-tipo='Terreno']").click()
+    pg.wait_for_timeout(300)
+    if resultados() != esperado["Terrenos"] or "tipo=Terreno" not in pg.url:
+        problemas.append(f"{nombre}: filtrar terrenos da {resultados()} (url {pg.url})")
+    pg.select_option("select >> nth=1", "50000-100000")
+    pg.wait_for_timeout(300)
+    precios = [int(x) for x in pg.locator("[data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.precio)")]
+    if not precios or any(not 50000 <= x < 100000 for x in precios):
+        problemas.append(f"{nombre}: el filtro de precio deja pasar {precios[:5]}")
+    pg.reload(wait_until="networkidle")
+    pg.wait_for_timeout(500)
+    if resultados() != len(precios):
+        problemas.append(f"{nombre}: al recargar se pierden los filtros ({resultados()} != {len(precios)})")
 
-    # Las ocho fotos tienen que haber pintado: un src roto deja la tarjeta en alto 0 y no se nota
-    pg.wait_for_timeout(1200)
-    fotos = pg.evaluate("[...document.querySelectorAll('figure img')].map(i => [i.getAttribute('src'), i.naturalWidth, Math.round(i.getBoundingClientRect().height)])")
-    if len(fotos) != 8:
-        problemas.append(f"{nombre}: esperaba las 8 fotos de sus propiedades y hay {len(fotos)}")
-    for src, natural, dibujado in fotos:
-        if not natural or dibujado < 60:
-            problemas.append(f"{nombre}: la foto {src} no se dibujó (natural {natural}, alto {dibujado})")
+    ir("?ver=propiedades&orden=menor")
+    precios = [int(x) for x in pg.locator("[data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.precio)")[:20] if x]
+    if precios != sorted(precios):
+        problemas.append(f"{nombre}: 'menor precio' no ordena: {precios[:8]}")
+    tarjetas = pg.locator("[data-tarjeta]").count()
+    pg.locator("[data-ver-mas]").click()
+    pg.wait_for_timeout(400)
+    if pg.locator("[data-tarjeta]").count() <= tarjetas or "n=" not in pg.url:
+        problemas.append(f"{nombre}: 'Ver más' no suma tarjetas o no queda en la dirección")
+    pg.locator("[data-tarjeta]").nth(40).scroll_into_view_if_needed()
+    pg.wait_for_timeout(300)
+    abierta = pg.locator("[data-tarjeta]").nth(40).get_attribute("data-tarjeta")
+    pg.locator("[data-tarjeta]").nth(40).click()
+    pg.wait_for_load_state("networkidle")
+    if f"p={abierta}" not in pg.url:
+        problemas.append(f"{nombre}: la tarjeta no abre su ficha ({pg.url})")
+    pg.go_back(wait_until="networkidle")
+    pg.wait_for_timeout(800)
+    caja = pg.locator(f"[data-tarjeta='{abierta}']").bounding_box()
+    if "orden=menor" not in pg.url or pg.locator("[data-tarjeta]").count() <= tarjetas or not caja or not 0 <= caja["y"] < pg.viewport_size["height"] - 100:
+        problemas.append(f"{nombre}: al volver de la ficha la tarjeta tocada no queda a la vista (url {pg.url}, tarjeta en {caja and round(caja['y'])})")
+
+    # Lo que encontró la revisión del 26/10: que no vuelva
+    casa = next(x for x in indice if x["cubierta"] and x["construido"] and x["construido"] - x["cubierta"] > 20 and x["tipo"] == "Casa" and "venta" in x["operacion"])
+    ir(f"?ver=propiedades&tipo=Casa&n=200")
+    texto_casa = pg.locator(f"[data-tarjeta='{casa['id']}']").inner_text()
+    if f"{round(casa['cubierta'])} m² cub." not in texto_casa.replace(".", "").replace(" m² cub", " m² cub."):
+        problemas.append(f"{nombre}: la tarjeta {casa['id']} no muestra su superficie cubierta ({casa['cubierta']} m²): {texto_casa[-60:]!r}")
+    texto = ir("?ver=propiedades&tipo=Campo")
+    if "USD 0 el m²" in texto or "USD 1 el m²" in texto or "la ha" not in texto:
+        problemas.append(f"{nombre}: los campos no muestran el precio por hectárea")
+    ir("?ver=propiedades&op=alquiler&orden=menor")
+    precios_alq = pg.locator("[data-tarjeta] p.text-\\[20px\\]").all_inner_texts()
+    if any(a.startswith("USD") and b.startswith("$") for a, b in zip(precios_alq, precios_alq[1:])):
+        problemas.append(f"{nombre}: en alquileres, el orden por precio mezcla dólares y pesos: {precios_alq[:6]}")
+    for q, precio_esperado in [("?ver=propiedades&op=alquiler&tipo=Departamento", "$ 600.000"), ("?ver=propiedades&tipo=Departamento", "USD 78.000")]:
+        ir(q)
+        if precio_esperado not in pg.locator("[data-tarjeta='7665257']").inner_text():
+            problemas.append(f"{nombre}: la 7665257 no muestra {precio_esperado} en {q}")
+    solo_casas = next(z for z in {x["zona"] for x in venta} if z and all(x["tipo"] != "Terreno" for x in venta if x["zona"] == z))
+    ir(f"?ver=propiedades&zona={solo_casas}")
+    pg.locator("[data-filtro-tipo='Terreno']").click()
+    pg.wait_for_timeout(300)
+    if resultados() != esperado["Terrenos"]:
+        problemas.append(f"{nombre}: elegir Terrenos con la zona {solo_casas} (sin terrenos) deja {resultados()} resultados")
+
+    # Fichas con casos difíciles de sus datos
+    for ident, debe, no_debe in [("6601604", "47 ha", "470000"), ("12024296", None, None), ("7665257", "Venta USD 78.000", None)]:
+        texto = ir(f"?p={ident}", 1200)
+        if debe and debe not in texto:
+            problemas.append(f"{nombre}: la ficha {ident} no muestra «{debe}»")
+        if no_debe and no_debe in texto:
+            problemas.append(f"{nombre}: la ficha {ident} muestra «{no_debe}»")
+    texto = ir("?p=7876886", 1500)
+    cap("03-ficha")
+    ficha = json.loads((DIST / "propuestas/castro-inmobiliaria/fichas/7876886.json").read_text())
+    titulo = next(x["titulo"] for x in indice if x["id"] == "7876886")
+    if pg.locator("h1").inner_text().strip() != titulo:
+        problemas.append(f"{nombre}: el título de la ficha no es el publicado")
+    contador = pg.locator("[data-contador]").inner_text()
+    if contador.replace(" ", "") != f"1/{len(ficha['fotos'])}":
+        problemas.append(f"{nombre}: la galería arranca en «{contador}» y tiene {len(ficha['fotos'])} fotos")
+    pg.locator("[data-galeria]").evaluate("e => e.scrollTo({left: e.clientWidth, behavior: 'instant'})")
+    pg.wait_for_timeout(400)
+    if not pg.locator("[data-contador]").inner_text().replace(" ", "").startswith("2/"):
+        problemas.append(f"{nombre}: al deslizar la galería el contador no pasa a 2")
+    if pg.evaluate("[...document.querySelectorAll('[data-galeria] img')].slice(0, 2).every(i => i.complete && i.naturalWidth > 0)") is not True:
+        problemas.append(f"{nombre}: las primeras fotos de la galería no se dibujaron")
+    boton = "[data-barra-contacto] button" if pg.viewport_size["width"] < 768 else "[data-consultar]"
+    pg.locator(boton).click()
+    pg.wait_for_timeout(400)
+    mensaje = pg.locator("[data-mensaje]").inner_text()
+    if "CHO7876886" not in mensaje or titulo not in mensaje:
+        problemas.append(f"{nombre}: el mensaje de WhatsApp no nombra la propiedad: {mensaje[:80]}")
+    pg.keyboard.press("Escape")
+    llamar = pg.locator("a[href^='tel:']").first.get_attribute("href")
+    if llamar != "tel:+542665024444":
+        problemas.append(f"{nombre}: el botón de llamar marca {llamar}")
+    parecidas = pg.locator("[data-parecidas] [data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.tarjeta)")
+    if len(parecidas) != 3 or "7876886" in parecidas:
+        problemas.append(f"{nombre}: las parecidas no son 3 distintas de la propia: {parecidas}")
+
+    # Si el servicio de fotos de ellos falla, la ficha queda con la portada propia y sin fotos rotas.
+    # Página aparte, para que sus errores de carga (esperados) no se cuenten como problemas.
+    otra = pg.context.new_page()
+    otra.route(f"{BASE}**", servir)
+    otra.route("**/static.tokkobroker.com/**", lambda r: r.abort())
+    otra.goto(raiz + "?p=7876886", wait_until="networkidle")
+    otra.wait_for_timeout(1500)
+    rotas = otra.evaluate("[...document.querySelectorAll('[data-galeria] img[src]')].filter(i => !i.naturalWidth).length")
+    visibles = otra.evaluate("[...document.querySelectorAll('[data-galeria] img')].filter(i => i.naturalWidth).length")
+    if rotas or not visibles:
+        problemas.append(f"{nombre}: sin el servicio de fotos quedan {rotas} rotas y {visibles} a la vista")
+    otra.close()
+
+    # Terrenos con su forma real: el dibujo, una medida por lado y nada en los que no tienen forma confirmada
+    con_forma = [x for x in indice if x.get("mini")]
+    if not con_forma:
+        problemas.append(f"{nombre}: ningún terreno tiene la forma dibujada")
+    else:
+        t = con_forma[0]["id"]
+        texto = ir(f"?p={t}", 1500)
+        cap("03b-terreno")
+        forma = json.loads((DIST / f"propuestas/castro-inmobiliaria/fichas/{t}.json").read_text())["forma"]
+        if pg.locator("[data-forma] polygon").count() < 1 or pg.locator("[data-forma] [data-lado]").count() != len(forma["lados"]):
+            problemas.append(f"{nombre}: el terreno {t} no muestra su forma con {len(forma['lados'])} medidas")
+        if not pg.evaluate("[...document.querySelectorAll('[data-forma] img')].every(i => i.complete && i.naturalWidth > 0)"):
+            problemas.append(f"{nombre}: la foto satelital del terreno {t} no se dibujó")
+        afuera = pg.evaluate("""() => { const f = document.querySelector('[data-forma] svg').getBoundingClientRect();
+          return [...document.querySelectorAll('[data-forma] [data-lado]')].filter(e => { const r = e.getBoundingClientRect();
+            return r.left < f.left - 1 || r.right > f.right + 1 || r.top < f.top - 1 || r.bottom > f.bottom + 1 }).map(e => e.textContent) }""")
+        if afuera:
+            problemas.append(f"{nombre}: medidas del terreno {t} que se salen de la foto: {afuera}")
+        if "catastro" not in texto or "mensura" not in texto:
+            problemas.append(f"{nombre}: el terreno {t} no aclara que la forma es del catastro y las medidas según mensura")
+        ir("?p=12024296")
+        if pg.locator("[data-forma]").count():
+            problemas.append(f"{nombre}: un terreno sin forma confirmada (12024296) muestra un dibujo")
+        ir("?ver=propiedades&tipo=Terreno")
+        for ident, tiene in pg.locator("[data-tarjeta]").evaluate_all("es => es.map(e => [e.dataset.tarjeta, !!e.querySelector('[data-mini]')])"):
+            if tiene != bool(next(x for x in indice if x["id"] == ident).get("mini")):
+                problemas.append(f"{nombre}: la tarjeta {ident} {'muestra' if tiene else 'no muestra'} la forma y en los datos {'no ' if tiene else ''}la tiene")
+
+    texto = ir("?p=999")
+    if "ya no está publicada" not in texto:
+        problemas.append(f"{nombre}: una propiedad que no existe no avisa que ya no está publicada")
+
+    # Certificado, urbanizaciones, nosotros y contacto
+    texto = ir("?ver=certificado")
+    cap("04-certificado")
+    if "NET::ERR_CERT_DATE_INVALID" not in texto or not pg.locator("[data-para-el-tecnico]").is_visible():
+        problemas.append(f"{nombre}: la pantalla del certificado no muestra el error o el texto para el técnico")
+    ir("?ver=urbanizaciones")
+    cap("05-urbanizaciones")
+    if pg.locator("[data-urbanizacion]").count() != 22:
+        problemas.append(f"{nombre}: hay {pg.locator('[data-urbanizacion]').count()} urbanizaciones y son 22")
+    sitio = json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/sitio.json").read_text())
+    ids = {x["id"] for x in indice}
+    for u in [x for x in sitio["urbanizaciones"] if x["id"] in ("29734", "61954")]:
+        ir(f"?u={u['id']}")
+        esperadas = len([i for i in u["propiedades"] if i in ids])
+        if pg.locator("[data-tarjeta]").count() != esperadas:
+            problemas.append(f"{nombre}: la urbanización {u['nombre']} muestra {pg.locator('[data-tarjeta]').count()} y tiene {esperadas}")
+    texto = ir("?ver=nosotros", 1000)
+    cap("06-nosotros")
+    if pg.locator("[data-equipo] li").count() != 5 or "Matrícula -" in texto:
+        problemas.append(f"{nombre}: el equipo no son las 5 personas o aparece una matrícula vacía")
+    if pg.evaluate("[...document.querySelectorAll('[data-museo] img, [data-equipo] img')].every(i => (i.scrollIntoView(), true))") and False:
+        pass
+    ir("?ver=contacto")
+    pg.fill("[data-formulario] [name=nombre]", "Prueba")
+    pg.select_option("[data-formulario] [name=motivo]", "Quiero vender o tasar")
+    pg.locator("[data-formulario] button[type=submit]").click()
+    pg.wait_for_timeout(400)
+    mensaje = pg.locator("[data-mensaje]").inner_text()
+    if "Prueba" not in mensaje or "Motivo: Quiero vender o tasar" not in mensaje:
+        problemas.append(f"{nombre}: el formulario de contacto arma mal el mensaje: {mensaje[:80]}")
+    cap("07-contacto")
 
 
 PAGINAS = {
