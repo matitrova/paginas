@@ -57,8 +57,13 @@ CALCES: dict[str, tuple[float, float]] = {
     "c-1625_-3250": (0, 0), "c-1626_-3251": (2.5, 1),
 }
 
-# Los que no se dibujan aunque pasen la regla de abajo, después de mirarlos
-EXCLUIR: set[str] = set()
+# Los que no se dibujan aunque pasen la regla de abajo, después de mirarlos, con el motivo (castro_datos.py lo pasa a la
+# lista de errores para Mauro). Sin forma, la ficha va con la zona aproximada.
+EXCLUIR: dict[str, str] = {
+    "6259603": "ofrece 5 lotes en dos loteos (Valle de Cortaderas: manzana 28 lote 21, manzana 68 lotes 10 y 11, manzana 83 "
+               "lote 4; Altos del Valle: lote 7) con un solo precio y una sola superficie: no se puede saber cuál es la "
+               "parcela del catastro que se dibujaría",
+}
 
 
 def media_aceptable(t):
