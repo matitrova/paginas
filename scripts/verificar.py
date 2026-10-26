@@ -631,9 +631,9 @@ def castro(pg, nombre, cap):
     pg.wait_for_timeout(300)
     if pg.locator("[data-galeria-grande][open]").count():
         problemas.append(f"{nombre}: la galería a pantalla completa no se cierra con Escape")
-    mapa = pg.locator("[data-mapa-embebido]").get_attribute("src") or ""
-    if not re.search(r"q=-3[23]\.\d+,-6[45]\.\d+", mapa):
-        problemas.append(f"{nombre}: la ficha no trae el mapa con su ubicación ({mapa[:80]})")
+    mapa = pg.locator("[data-mapa]").get_attribute("href") or ""
+    if not pg.locator("[data-mapa-ficha]").count() or not re.search(r"destination=-3[23]\.\d+,-6[45]\.\d+", mapa):
+        problemas.append(f"{nombre}: la ficha no trae el mapa y 'Cómo llegar' con su ubicación ({mapa[:80]})")
     if "mailto:" not in (pg.locator("[data-mail]").get_attribute("href") or "") or "CHO7876886" not in (pg.locator("[data-mail]").get_attribute("href") or ""):
         problemas.append(f"{nombre}: falta 'Prefiero que me escriban por mail' con el código de la propiedad")
     pg.locator("[data-guardar='7876886']").first.click()
@@ -679,23 +679,36 @@ def castro(pg, nombre, cap):
     if not con_forma:
         problemas.append(f"{nombre}: ningún terreno tiene la forma dibujada")
     else:
-        t = con_forma[0]["id"]
-        texto = ir(f"?p={t}", 1500)
-        cap("03b-terreno")
-        forma = json.loads((DIST / f"propuestas/castro-inmobiliaria/fichas/{t}.json").read_text())["forma"]
-        if pg.locator("[data-forma] polygon").count() < 1 or pg.locator("[data-forma] [data-lado]").count() != len(forma["lados"]):
-            problemas.append(f"{nombre}: el terreno {t} no muestra su forma con {len(forma['lados'])} medidas")
-        if not pg.evaluate("[...document.querySelectorAll('[data-forma] img')].every(i => i.complete && i.naturalWidth > 0)"):
-            problemas.append(f"{nombre}: la foto satelital del terreno {t} no se dibujó")
-        afuera = pg.evaluate("""() => { const f = document.querySelector('[data-forma] svg').getBoundingClientRect();
-          return [...document.querySelectorAll('[data-forma] [data-lado]')].filter(e => { const r = e.getBoundingClientRect();
-            return r.left < f.left - 1 || r.right > f.right + 1 || r.top < f.top - 1 || r.bottom > f.bottom + 1 }).map(e => e.textContent) }""")
-        if afuera:
-            problemas.append(f"{nombre}: medidas del terreno {t} que se salen de la foto: {afuera}")
-        if "catastro" not in texto or "mensura" not in texto:
-            problemas.append(f"{nombre}: el terreno {t} no aclara que la forma es del catastro y las medidas según mensura")
+        # El lote va dibujado en el mapa de la ficha (castro_mapa lo prueba a fondo con el 7973638): acá, que el primer
+        # terreno con el lote en sus datos lo muestre con una medida por lado, y que uno sin forma no muestre ninguno
+        def mapa_de(ident):
+            return json.loads((DIST / f"propuestas/castro-inmobiliaria/fichas/{ident}.json").read_text()).get("mapa") or {}
+
+        def esperar_mapa():
+            pg.locator("[data-mapa-ficha]").scroll_into_view_if_needed()
+            pg.wait_for_selector("[data-mapa-listo]", timeout=20000)
+
+        con_lote = [x["id"] for x in con_forma if mapa_de(x["id"]).get("lote")]
+        if not con_lote:
+            problemas.append(f"{nombre}: ningún terreno con forma trae el lote para el mapa")
+        else:
+            t = con_lote[0]
+            texto = ir(f"?p={t}", 1500)
+            esperar_mapa()
+            cap("03b-terreno")
+            lados = mapa_de(t)["lados"] or []
+            if pg.locator(".lote").count() != 1 or pg.locator(".lado").count() != len(lados):
+                problemas.append(f"{nombre}: el terreno {t} no muestra su lote con {len(lados)} medidas")
+            afuera = pg.evaluate("""() => { const f = document.querySelector('[data-mapa-ficha]').getBoundingClientRect();
+              return [...document.querySelectorAll('.lado span')].filter(e => { const r = e.getBoundingClientRect();
+                return r.left < f.left - 1 || r.right > f.right + 1 || r.top < f.top - 1 || r.bottom > f.bottom + 1 }).map(e => e.textContent) }""")
+            if afuera:
+                problemas.append(f"{nombre}: medidas del terreno {t} que se salen del mapa: {afuera}")
+            if "catastro" not in texto or "mensura" not in texto:
+                problemas.append(f"{nombre}: el terreno {t} no aclara que la forma es del catastro y las medidas según mensura")
         ir("?p=12024296")
-        if pg.locator("[data-forma]").count():
+        esperar_mapa()
+        if pg.locator("[data-forma], .lote").count():
             problemas.append(f"{nombre}: un terreno sin forma confirmada (12024296) muestra un dibujo")
         ir("?ver=propiedades&tipo=Terreno")
         for ident, tiene in pg.locator("[data-tarjeta]").evaluate_all("es => es.map(e => [e.dataset.tarjeta, !!e.querySelector('[data-mini]')])"):
@@ -753,6 +766,176 @@ def castro(pg, nombre, cap):
         problemas.append(f"{nombre}: el formulario de vender arma mal el mensaje: {mensaje[:90]!r}")
 
 
+def castro_mapa(pg, nombre, cap):
+    """El mapa de cada ficha de Castro (Actualizaciones 10 y 12). Se prueba con el 7973638 porque su foto SÍ se corre
+    (calce 4 m al este y 2 al norte): con calce y sin calce, el lote tiene que quedar en el mismo lugar y la foto
+    correrse justo los píxeles que dan esos metros en ese zoom. Lo esperado sale del JSON de la ficha."""
+    import json
+    import math
+
+    raiz = f"{BASE}propuestas/castro-inmobiliaria/"
+    fichas = DIST / "propuestas/castro-inmobiliaria/fichas"
+    indice = {x["id"]: x for x in json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/indice.json").read_text())}
+    pedidos, fotos = [], []
+    pg.on("request", lambda r: pedidos.append(r.url))
+    pg.on("response", lambda r: "World_Imagery" in r.url and r.status == 200 and fotos.append(r))
+
+    def coma(x):
+        return f"{x:g}".replace(".", ",")
+
+    def superficie(m2):
+        return f"{m2 / 10000:.1f}".rstrip("0").rstrip(".").replace(".", ",") + " ha" if m2 >= 10000 else f"{round(m2):,}".replace(",", ".") + " m²"
+
+    def abrir(ident, extra=""):
+        pedidos.clear()
+        fotos.clear()
+        pg.goto(f"{raiz}?p={ident}{extra}", wait_until="networkidle")
+        pg.locator("[data-mapa-ficha]").scroll_into_view_if_needed()
+        try:
+            pg.wait_for_selector("[data-mapa-listo]", timeout=20000)
+        except Exception:
+            problemas.append(f"{nombre}: el mapa de la ficha {ident}{extra} no terminó de cargar")
+            return False
+        pg.wait_for_timeout(800)
+        return True
+
+    def medir():
+        return pg.evaluate("""() => {
+          // Todo relativo al mapa: si la página quedó scrolleada distinto entre una carga y otra, no cambia nada
+          const m = document.querySelector('[data-mapa-ficha]').getBoundingClientRect();
+          const caja = r => { const b = r.getBoundingClientRect(); return [b.left - m.left, b.top - m.top, b.width, b.height] };
+          const pane = document.querySelector('.leaflet-foto-pane');
+          return { lote: [...document.querySelectorAll('.lote')].map(caja), mapa: [0, 0, m.width, m.height],
+                   calce: pane.dataset.calce, vista: pane.dataset.vista,
+                   tiles: Object.fromEntries([...pane.querySelectorAll('img.leaflet-tile-loaded')].map(i => [i.src, caja(i)])),
+                   lados: [...document.querySelectorAll('.lado span')].map(e => [e.textContent, ...caja(e)]) } }""")
+
+    def pedidos_a_google():
+        return [u for u in pedidos if "google.com/maps" in u or "maps.google" in u or "maps.googleapis" in u]
+
+    # Terreno con forma: el lote, la trama, los lados y el calce
+    t = "7973638"
+    ficha = json.loads((fichas / f"{t}.json").read_text())
+    m = ficha.get("mapa")
+    if not m or not m.get("lote") or not m.get("calce"):
+        problemas.append(f"{nombre}: la ficha {t} no trae el lote y el calce para el mapa")
+        return
+    if not abrir(t, "&calce=0"):
+        return
+    sin = medir()
+    if not abrir(t):
+        return
+    con = medir()
+    cap("mapa-terreno")
+    zoom, lat = (float(x) for x in con["vista"].split(","))
+    mpp = 156543.03392 * math.cos(math.radians(lat)) / 2**zoom
+    esperado = [math.floor(m["calce"][0] / mpp + 0.5), math.floor(-m["calce"][1] / mpp + 0.5)]  # como Math.round
+    if not any(esperado):
+        problemas.append(f"{nombre}: el calce del {t} da 0 píxeles en el zoom {zoom}: el chequeo no probaría nada")
+    if sin["calce"] != "0,0" or con["calce"] != f"{esperado[0]},{esperado[1]}":
+        problemas.append(f"{nombre}: el pane de la foto dice {con['calce']} con calce y {sin['calce']} sin calce; se esperaba {esperado} y 0,0")
+    # Lo que de verdad se movió: las mismas imágenes de la foto, medidas en pantalla con y sin calce
+    comunes = [u for u in con["tiles"] if u in sin["tiles"]]
+    corridas = {(round(con["tiles"][u][0] - sin["tiles"][u][0], 1), round(con["tiles"][u][1] - sin["tiles"][u][1], 1)) for u in comunes}
+    if not comunes or any(abs(dx - esperado[0]) > 0.5 or abs(dy - esperado[1]) > 0.5 for dx, dy in corridas):
+        problemas.append(f"{nombre}: la foto se corrió {sorted(corridas)[:3]} px y tenía que correrse {esperado} ({len(comunes)} imágenes comparadas)")
+    if len(con["lote"]) != 1 or len(sin["lote"]) != 1 or any(abs(a - b) > 0.5 for a, b in zip(con["lote"][0], sin["lote"][0])):
+        problemas.append(f"{nombre}: el lote se mueve con el calce: {sin['lote']} sin calce, {con['lote']} con calce")
+    else:
+        x, y, w, h = con["lote"][0]
+        mx, my, mw, mh = con["mapa"]
+        if max(w, h) <= 80 or x < mx or y < my or x + w > mx + mw or y + h > my + mh:
+            problemas.append(f"{nombre}: el lote mide {round(w)}x{round(h)} px o se sale del mapa ({con['lote'][0]} en {con['mapa']})")
+        afuera = [txt for txt, lx, ly, lw, lh in con["lados"] if lx < mx or ly < my or lx + lw > mx + mw or ly + lh > my + mh]
+        if afuera:
+            problemas.append(f"{nombre}: medidas de los lados que se salen del mapa: {afuera}")
+    if m.get("alrededor") and not pg.locator(".vecina").count():
+        problemas.append(f"{nombre}: no se ve la trama del catastro de alrededor")
+    if [x[0] for x in con["lados"]] != [lado["texto"] for lado in m["lados"] or []]:
+        problemas.append(f"{nombre}: los rótulos de los lados son {[x[0] for x in con['lados']]} y en los datos {[lado['texto'] for lado in m['lados'] or []]}")
+    publicada = superficie(indice[t]["terreno"])
+    if publicada not in pg.locator("[data-superficie]").inner_text():
+        problemas.append(f"{nombre}: no se ve la superficie publicada ({publicada}) junto al mapa")
+    chicas = [(r.url.split("/tile/")[-1], len(r.body())) for r in fotos if len(r.body()) <= 2600]
+    if not fotos or chicas:
+        problemas.append(f"{nombre}: de {len(fotos)} imágenes de la foto satelital, estas son la gris de 'sin datos' de Esri: {chicas[:4]}")
+    esperados = [f"{c['lugar']}: {coma(c['km'])} km · {c['min']} min en auto" if c.get("min") else f"A {coma(c['km'])} km de {c['lugar']}" for c in ficha.get("cercanos") or []]
+    if not esperados or pg.locator("[data-cercano]").all_inner_texts() != esperados:
+        problemas.append(f"{nombre}: 'a cuánto queda' dice {pg.locator('[data-cercano]').all_inner_texts()} y en los datos {esperados}")
+    alt = ficha.get("altura")
+    if alt:
+        pendiente = "zona plana" if alt["pendiente"] == "plana" else f"zona de pendiente {alt['pendiente']}" + (f" hacia el {alt['hacia']}" if alt.get("hacia") else "")
+        texto_alt = f"≈ {alt['m']:,} m sobre el nivel del mar · {pendiente}".replace(",", ".")
+        if not 400 <= alt["m"] <= 2200 or pg.locator("[data-altura]").inner_text().strip() != texto_alt:
+            problemas.append(f"{nombre}: la altura dice «{pg.locator('[data-altura]').inner_text()}» y en los datos es «{texto_alt}»")
+    else:
+        problemas.append(f"{nombre}: la ficha {t} no trae la altura")
+    if pg.locator("iframe").count() or pedidos_a_google():
+        problemas.append(f"{nombre}: la ficha pide a Google Maps: {pedidos_a_google()[:2]}")
+
+    # El atajo "Mapa" (en la barra de arriba en la compu, en la de abajo en el celular) lleva al mapa sin que lo tapen
+    pg.evaluate("window.scrollTo(0, 0)")
+    pg.locator("a[href='#mapa']:visible").click()
+    pg.wait_for_timeout(600)
+    tope = pg.evaluate("Math.max(...['header', '[data-barra-ficha]'].map(s => document.querySelector(s)).filter(e => e && e.offsetParent).map(e => e.getBoundingClientRect().bottom))")
+    arriba = pg.locator("#mapa").bounding_box()["y"]
+    if not tope - 1 <= arriba < pg.viewport_size["height"] / 2:
+        problemas.append(f"{nombre}: el atajo 'Mapa' deja el mapa en y={round(arriba)} y las barras de arriba terminan en {round(tope)}")
+
+    # Satelital / calles
+    pg.locator("[data-fondo='calles']").click()
+    pg.wait_for_timeout(1200)
+    if pg.locator("[data-fondo='calles']").get_attribute("aria-pressed") != "true" or not any("World_Street_Map" in u for u in pedidos):
+        problemas.append(f"{nombre}: el botón 'Calles' no cambia al mapa de calles")
+    pg.locator("[data-fondo='satelital']").click()
+    pg.wait_for_timeout(500)
+
+    # Pantalla completa: un panel fijo debajo de la cinta; en el celular, recién ahí el mapa se arrastra con un dedo
+    tactil = pg.viewport_size["width"] < 768
+    if tactil and "leaflet-grab" in (pg.locator(".leaflet-container").get_attribute("class") or ""):
+        problemas.append(f"{nombre}: en el celular el mapa embebido se arrastra con un dedo (se roba el scroll)")
+    pg.locator("[data-pantalla-completa]").click()
+    pg.wait_for_timeout(700)
+    caja = pg.locator("[data-mapa-ficha]").bounding_box()
+    if abs(caja["y"] - 32) > 1 or abs(caja["height"] - (pg.viewport_size["height"] - 32)) > 1 or abs(caja["width"] - pg.viewport_size["width"]) > 1:
+        problemas.append(f"{nombre}: la pantalla completa del mapa no ocupa la pantalla debajo de la cinta: {caja}")
+    if "leaflet-grab" not in (pg.locator(".leaflet-container").get_attribute("class") or ""):
+        problemas.append(f"{nombre}: en pantalla completa el mapa no se puede arrastrar")
+    cap("mapa-pantalla-completa")
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(500)
+    if pg.locator("[data-mapa-ficha]").bounding_box()["height"] >= pg.viewport_size["height"] - 40:
+        problemas.append(f"{nombre}: Escape no cierra la pantalla completa del mapa")
+
+    # Ver en 3D: nada de MapLibre antes de tocar el botón; después, el mapa o la salida a Google Earth
+    if any("maplibre" in u for u in pedidos):
+        problemas.append(f"{nombre}: se bajó MapLibre antes de tocar 'Ver en 3D'")
+    pg.locator("[data-ver-3d]").click()
+    try:
+        pg.wait_for_selector("[data-mapa-3d] canvas, [data-google-earth]", timeout=30000)
+        if pg.locator("[data-mapa-3d] canvas").count():
+            pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
+        elif "earth.google.com/web/@-3" not in (pg.locator("[data-google-earth]").get_attribute("href") or ""):
+            problemas.append(f"{nombre}: el aviso sin 3D no lleva a Google Earth con la ubicación")
+        pg.wait_for_timeout(1500)
+        cap("mapa-3d")
+    except Exception:
+        problemas.append(f"{nombre}: 'Ver en 3D' no muestra ni el mapa ni el aviso de Google Earth")
+    if pg.locator("[data-mapa-3d] canvas").count() and "Este terreno" not in pg.locator("[data-mapa-3d]").inner_text():
+        problemas.append(f"{nombre}: el 3D no marca 'Este terreno'")
+
+    # Casa: la zona aproximada, sin lote; y un terreno de una zona sin calzar: zona, sin lote ni trama
+    if abrir("7876886"):
+        cap("mapa-casa")
+        if not pg.locator(".zona").count() or pg.locator(".lote").count():
+            problemas.append(f"{nombre}: la casa 7876886 no muestra la zona aproximada o muestra un lote")
+        if pg.locator("iframe").count() or pedidos_a_google():
+            problemas.append(f"{nombre}: la ficha de la casa pide a Google Maps: {pedidos_a_google()[:2]}")
+    if abrir("12024296"):
+        if not pg.locator(".zona").count() or pg.locator(".lote, .vecina, [data-forma]").count():
+            problemas.append(f"{nombre}: el 12024296 (zona sin calzar) tiene que ir solo con la zona aproximada")
+
+
 PAGINAS = {
     "inicio": inicio,
     "cabanas": cabanas,
@@ -766,6 +949,7 @@ PAGINAS = {
     "indio-mejorada": propuesta("cabeza-del-indio-mejorada", "Reservar por WhatsApp", rellenar_indio_mejorada,
                                 ["Cabeza del Indio", "Reserva: Refugio de montaña", "Llegada: sáb 14/11 · Noches: 2", "Personas: 2", "A nombre de: Prueba"], extras_indio_mejorada),
     "castro": castro,
+    "castro-mapa": castro_mapa,
     "hosteria": propuesta("hosteria-vegetariana", "Consultar por WhatsApp", rellenar_hosteria,
                           ["estadía en la Hostería Vegetariana", "Llegada: sáb 14/11", "Salida: lun 16/11", "Personas: 3", "A nombre de: Prueba", "Alergias: Maní"], palabras_hosteria),
 }

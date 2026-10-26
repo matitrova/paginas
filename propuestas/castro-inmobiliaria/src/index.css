@@ -46,3 +46,32 @@ body {
 .sin-barra::-webkit-scrollbar {
   display: none;
 }
+
+/* Mapa de la ficha (Leaflet, src/mapa.ts): los rótulos de los lados van girados sobre cada lado, afuera del lote */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--color-hondo);
+}
+/* Arriba a la derecha van primero los botones de pantalla completa y del norte (MapaFicha.tsx) */
+[data-mapa-ficha] .leaflet-top.leaflet-right {
+  top: 104px;
+}
+.leaflet-container .leaflet-control-attribution {
+  font-size: 10px;
+}
+.lado span,
+.zona-texto span {
+  position: absolute;
+  white-space: nowrap;
+  font: 700 13px/1 var(--font-sans);
+  color: #fff;
+  text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000;
+}
+.zona-texto span {
+  transform: translate(-50%, -50%);
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.62);
+  font-size: 12.5px;
+  text-shadow: none;
+}
