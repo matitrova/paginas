@@ -890,12 +890,22 @@ def castro(pg, nombre, cap):
         return r.width && e && !a.contains(e) && e.closest('[data-pin]') && e.closest('[data-pin]') !== a }).map(a => a.dataset.pin)""")
     if tapadas:
         problemas.append(f"{nombre}: en el mapa de urbanizaciones hay logos tapados por otro: {tapadas}")
-    # Polo Logístico (61814) y Sauzalito (61958) publican el mismo punto: acercando hasta el fondo, su burbuja las lista
+    # Polo Logístico (61814) y Sauzalito (61958) publican el mismo punto: acercando hasta el fondo, su burbuja las lista.
+    # La burbuja se toca con el mouse (locator.click), no por JS: si algo la tapa, no se puede tocar y falla
     for _ in range(8):
-        dos = pg.evaluate("""() => { const b = [...document.querySelectorAll('[data-mapa-urbanizaciones] .burbuja')].find(e => /Polo|Sauzalito/i.test(e.closest('[title]')?.title || ''));
-            if (!b) return 'sin burbuja'; b.click(); return [...document.querySelectorAll('[data-tarjetas-mapa] [data-pin]')].map(a => a.dataset.pin).sort().join(',') }""")
+        burbujas = pg.locator("[data-mapa-urbanizaciones] .burbuja")
+        i = burbujas.evaluate_all("es => es.findIndex(e => /Polo|Sauzalito/i.test(e.closest('[title]')?.title || ''))")
+        if i < 0:
+            dos = "sin burbuja"
+            break
+        try:
+            burbujas.nth(i).click(timeout=5000)
+        except Exception:
+            dos = "su burbuja no se puede tocar"
+            break
         pg.wait_for_timeout(900)
-        if dos not in ("", "sin burbuja") and "," in dos:
+        dos = ",".join(sorted(pg.locator("[data-tarjetas-mapa] [data-pin]").evaluate_all("es => es.map(a => a.dataset.pin)")))
+        if "," in dos:
             break
     if dos != "61814,61958":
         problemas.append(f"{nombre}: las dos urbanizaciones del mismo punto no se pueden elegir desde el mapa ({dos})")
@@ -1229,6 +1239,34 @@ def castro_general(pg, nombre, cap):
     def resultados():
         return int(pg.locator("[data-resultados]").get_attribute("data-resultados"))
 
+    def pisadas(donde):
+        """Marcas que se tapan más de 4 px entre sí (las que se ven dentro del mapa y de la pantalla)."""
+        if x := pg.evaluate("""() => { const m0 = document.querySelector('[data-mapa-general]').getBoundingClientRect();
+            const c = { l: Math.max(m0.left, 0), t: Math.max(m0.top, 0), r: Math.min(m0.right, innerWidth), b: Math.min(m0.bottom, innerHeight) };
+            const ms = [...document.querySelectorAll('[data-mapa-general] .marca-mapa > *')].map(e => [e.innerText.trim(), e.getBoundingClientRect()])
+              .filter(([, r]) => r.right > c.l && r.left < c.r && r.bottom > c.t && r.top < c.b);
+            const out = [];
+            ms.forEach(([ta, a], i) => ms.slice(i + 1).forEach(([tb, b]) => { const w = Math.min(a.right, b.right) - Math.max(a.left, b.left), h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+              if (w > 4 && h > 4) out.push(`${ta} / ${tb}: ${Math.round(w)}x${Math.round(h)}`) }));
+            return out }"""):
+            problemas.append(f"{nombre}: en el mapa {donde} hay marcas que se pisan: {x}")
+
+    def tocar(sel, cual="primera"):
+        """Toca con el mouse (locator.click, como una persona) una marca que se ve dentro del mapa: la más grande o la
+        primera. Si algo la tapa, Playwright no la puede tocar y queda anotado."""
+        marcas = pg.locator(f"[data-mapa-general] {sel}")
+        i = marcas.evaluate_all("""(es, cual) => { const m = es[0]?.closest('[data-mapa-general]').getBoundingClientRect();
+            const ok = es.map((e, i) => [i, e.getBoundingClientRect(), +e.dataset.cantidad]).filter(([, r]) => r.left >= m.left && r.right <= m.right && r.top >= m.top && r.bottom <= m.bottom);
+            if (!ok.length) return -1; return cual === 'grande' ? ok.sort((a, b) => b[2] - a[2])[0][0] : ok[0][0] }""", cual)
+        if i < 0:
+            return None
+        try:
+            marcas.nth(i).click(timeout=5000)
+        except Exception:
+            problemas.append(f"{nombre}: una marca del mapa general ({sel}) no se puede tocar: algo la tapa")
+            return None
+        return marcas.nth(i)
+
     # Portada: no se baja Leaflet hasta llegar al mapa
     pedidos.clear()
     pg.goto(raiz, wait_until="networkidle")
@@ -1240,7 +1278,17 @@ def castro_general(pg, nombre, cap):
         venta = sum(1 for x in json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/indice.json").read_text()) if "venta" in x["operacion"])
         if suma() != venta:
             problemas.append(f"{nombre}: el mapa de la portada suma {suma()} marcas y hay {venta} en venta")
+        pisadas("de la portada")
         cap("10-mapa-portada")
+        # En la portada la rueda del mouse baja la página, no acerca el mapa
+        if not movil:
+            caja = pg.locator("[data-mapa-general]").bounding_box()
+            antes = pg.get_attribute("[data-mapa-general]", "data-zoom")
+            pg.mouse.move(caja["x"] + caja["width"] / 2, caja["y"] + caja["height"] / 2)
+            pg.mouse.wheel(0, -400)
+            pg.wait_for_timeout(700)
+            if pg.get_attribute("[data-mapa-general]", "data-zoom") != antes:
+                problemas.append(f"{nombre}: la rueda del mouse acerca el mapa de la portada (tiene que bajar la página)")
 
     # Listado: el mapa muestra lo mismo que la lista, y cambia con los filtros
     pg.goto(raiz + "?ver=propiedades", wait_until="networkidle")
@@ -1253,42 +1301,40 @@ def castro_general(pg, nombre, cap):
     total = resultados()
     if suma() != total:
         problemas.append(f"{nombre}: el mapa del listado suma {suma()} marcas y la lista tiene {total}")
+    pisadas("del listado")
     cap("11-mapa-listado")
-    # El calce es el de la celda del centro del mapa, en el zoom actual (la foto se corre; las marcas no)
-    pane = pg.locator("[data-mapa-general] [data-vista]").first
-    zoom, lat, lng = (float(x) for x in pane.get_attribute("data-vista").split(","))
-    este, norte = datos["calces"].get(f"c{math.floor(lat / 0.02)}_{math.floor(lng / 0.02)}", (0, 0))
-    mpp = 156543.03392 * math.cos(math.radians(lat)) / 2 ** zoom
-    if pane.get_attribute("data-calce") != f"{round(este / mpp)},{round(-norte / mpp)}":
-        problemas.append(f"{nombre}: la foto del mapa general se corre {pane.get_attribute('data-calce')} y en esa celda y zoom tocaba {round(este / mpp)},{round(-norte / mpp)}")
     # Con un filtro, el mapa cambia (en la compu; en el celular el panel tapa los filtros)
     if not movil:
         pg.locator("[data-filtro-tipo='Terreno']").click()
         pg.wait_for_timeout(1200)
         if suma() != resultados() or resultados() == total:
             problemas.append(f"{nombre}: al filtrar terrenos el mapa suma {suma()} y la lista tiene {resultados()}")
-        # Pasar el mouse por una tarjeta resalta su marca
-        primera = pg.locator("[data-tarjeta]").first
-        ident = primera.get_attribute("data-tarjeta")
-        primera.hover()
-        pg.wait_for_timeout(300)
+        # Pasar el mouse por una tarjeta resalta su marca, y se tiene que ver aunque sea una burbuja (de lejos casi
+        # todas lo son): la primera tarjeta que cae en una burbuja, con el color antes y durante
+        ident = pg.evaluate("""() => { const en = new Set([...document.querySelectorAll('[data-mapa-general] .burbuja')].flatMap(b => b.dataset.pinProp.split(' ')));
+            return [...document.querySelectorAll('[data-tarjeta]')].map(t => t.dataset.tarjeta).find(i => en.has(i)) }""")
+        ident = ident or pg.locator("[data-tarjeta]").first.get_attribute("data-tarjeta")
+        color = f"() => getComputedStyle(document.querySelector('[data-mapa-general] [data-pin-prop~=\"{ident}\"]')).backgroundColor"
+        antes = pg.evaluate(color)
+        pg.locator(f"[data-tarjeta='{ident}']").first.hover()
+        pg.wait_for_timeout(400)
         activa = pg.evaluate("() => [...document.querySelectorAll('[data-mapa-general] .activa')].map(e => e.dataset.pinProp)")
         if not any(ident in (a or "").split() for a in activa):
             problemas.append(f"{nombre}: pasar el mouse por la tarjeta {ident} no resalta su marca en el mapa ({activa})")
+        elif pg.evaluate(color) == antes:
+            problemas.append(f"{nombre}: pasar el mouse por la tarjeta {ident} prende su marca pero no cambia nada que se vea ({antes})")
         pg.mouse.move(5, 5)
     # Tocar una burbuja acerca; de cerca aparecen los lotes y las pastillas; tocar una pastilla abre su tarjeta
     for _ in range(4):
         if pg.locator("[data-mapa-general] .pildora").count():
             break
-        burbuja = pg.locator("[data-mapa-general] .burbuja").first
-        burbuja.evaluate("e => e.click()")
+        tocar(".burbuja", "grande")
         pg.wait_for_timeout(900)
-    pastilla = pg.locator("[data-mapa-general] .pildora").first
-    if not pastilla.count():
-        problemas.append(f"{nombre}: acercando el mapa general nunca aparecen los precios")
+    pastilla = tocar(".pildora")
+    if not pastilla:
+        problemas.append(f"{nombre}: acercando el mapa general nunca aparecen los precios (o no se pueden tocar)")
         return
     ident = pastilla.get_attribute("data-pin-prop")
-    pastilla.evaluate("e => e.click()")
     pg.wait_for_timeout(500)
     link = pg.locator(f"[data-tarjetas-mapa] [data-tarjeta-mapa='{ident}']")
     if not link.count():
@@ -1306,11 +1352,81 @@ def castro_general(pg, nombre, cap):
         for _ in range(6):
             if float(pg.get_attribute("[data-mapa-general]", "data-zoom") or 0) >= 15:
                 break
-            pg.evaluate("""() => { const b = [...document.querySelectorAll('[data-mapa-general] .burbuja')].sort((a, b) => b.dataset.cantidad - a.dataset.cantidad)[0]; b && b.click() }""")
+            tocar(".burbuja", "grande")
             pg.wait_for_timeout(1000)
         if pg.locator("[data-mapa-general] path.lote").count() == 0:
             problemas.append(f"{nombre}: acercando el mapa de terrenos no aparece ningún lote dibujado")
         cap("13-mapa-lotes")
+
+    # El calce es el de la celda del centro del mapa, en el zoom actual (la foto se corre; las marcas no). Se mide de
+    # cerca, acercando con el botón + (no mueve el centro) hasta el 17: más lejos el calce de cualquier celda es menos
+    # de medio píxel, lo esperado da 0,0 y el chequeo no podría fallar. Redondeado como Math.round. En la portada: el
+    # listado de la compu encuadra en la parte de arriba del mapa y su centro cae en una celda sin calce
+    pg.goto(raiz, wait_until="networkidle")
+    pg.locator("[data-mapa-portada]").scroll_into_view_if_needed()
+    if listo("la portada, para el calce"):
+        pane = pg.locator("[data-mapa-general] [data-vista]").first
+        for _ in range(8):
+            if float(pane.get_attribute("data-vista").split(",")[0]) >= 17:
+                break
+            pg.locator("[data-mapa-general] .leaflet-control-zoom-in").click()
+            pg.wait_for_timeout(700)
+        zoom, lat, lng = (float(x) for x in pane.get_attribute("data-vista").split(","))
+        este, norte = datos["calces"].get(f"c{math.floor(lat / 0.02)}_{math.floor(lng / 0.02)}", (0, 0))
+        mpp = 156543.03392 * math.cos(math.radians(lat)) / 2 ** zoom
+        esperado = f"{math.floor(este / mpp + 0.5)},{math.floor(-norte / mpp + 0.5)}"
+        if esperado == "0,0":
+            problemas.append(f"{nombre}: en el centro del mapa general (zoom {zoom:g}) el calce da 0 píxeles: el chequeo del calce no probaría nada")
+        elif pane.get_attribute("data-calce") != esperado:
+            problemas.append(f"{nombre}: la foto del mapa general se corre {pane.get_attribute('data-calce')} y en esa celda y zoom tocaba {esperado}")
+
+    # En la compu, el mapa del costado del listado sí acerca con la rueda (en la portada no: ver arriba)
+    if not movil:
+        pg.goto(raiz + "?ver=propiedades", wait_until="networkidle")
+        if listo("el listado, para la rueda"):
+            antes = float(pg.get_attribute("[data-mapa-general]", "data-zoom"))
+            caja = pg.locator("[data-mapa-general]").bounding_box()
+            pg.mouse.move(caja["x"] + caja["width"] / 2, caja["y"] + (min(caja["y"] + caja["height"], pg.viewport_size["height"]) - caja["y"]) / 2)
+            pg.mouse.wheel(0, -400)
+            pg.wait_for_timeout(900)
+            if float(pg.get_attribute("[data-mapa-general]", "data-zoom")) <= antes:
+                problemas.append(f"{nombre}: la rueda del mouse no acerca el mapa del listado")
+
+    # En la página de una urbanización todas son de la misma zona: las burbujas no repiten el nombre y nada se pisa
+    for u in ("29734", "4060"):
+        pg.goto(raiz + f"?u={u}", wait_until="networkidle")
+        pg.locator("[data-mapa-general]").scroll_into_view_if_needed()
+        if listo(f"la urbanización {u}"):
+            pisadas(f"de la urbanización {u}")
+            if u == "29734" and any("Magdalenas" in t for t in pg.locator("[data-mapa-general] .marca-mapa").all_inner_texts()):
+                problemas.append(f"{nombre}: en el mapa de Las Magdalenas las burbujas repiten el nombre de la urbanización")
+            cap(f"14-mapa-urbanizacion-{u}")
+
+    # Sin mapa.json el mapa se dibuja igual (sin calce ni lotes); sin Leaflet avisa y ofrece recargar, sin errores sueltos.
+    # En otra pestaña: el pedido cortado deja en la consola su propio aviso, que no es un error de la página
+    for corte in ("**/mapa.json", "**/assets/leaflet-src-*.js"):
+        otra = pg.context.new_page()
+        otra.route(f"{BASE}**", servir)
+        otra.route(corte, lambda r: r.abort())
+        errores = []
+        otra.on("pageerror", lambda e, errores=errores: errores.append(str(e)))
+        otra.on("console", lambda m, errores=errores: m.type == "error" and "Failed to load resource" not in m.text and errores.append(m.text))
+        otra.goto(raiz + "?ver=propiedades" + ("&mapa=1" if movil else ""), wait_until="networkidle")
+        otra.wait_for_timeout(1500)
+        if "mapa.json" in corte:
+            dibujado = otra.locator("[data-mapa-general][data-mapa-listo]").count()
+            marcas = otra.evaluate("[...document.querySelectorAll('[data-mapa-general] [data-cantidad]')].reduce((s, e) => s + +e.dataset.cantidad, 0)")
+            if not dibujado or marcas != int(otra.locator("[data-resultados]").get_attribute("data-resultados")):
+                problemas.append(f"{nombre}: sin mapa.json el mapa general no se dibuja ({marcas} marcas)")
+        else:
+            aviso = otra.locator("[data-sin-mapa]")
+            if not aviso.count() or "No se pudo cargar el mapa" not in aviso.inner_text() or not aviso.get_by_role("button", name="Recargar").count():
+                problemas.append(f"{nombre}: si Leaflet no baja, el mapa general no avisa ni ofrece recargar")
+            else:
+                otra.screenshot(path=str(OUT / f"{nombre}-15-mapa-sin-leaflet.png"))
+        if errores:
+            problemas.append(f"{nombre}: con {corte} cortado quedan errores en la consola: {errores[:2]}")
+        otra.close()
 
 
 PAGINAS = {
