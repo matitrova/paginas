@@ -75,3 +75,98 @@ body {
   font-size: 12.5px;
   text-shadow: none;
 }
+
+/* Mapa general (src/MapaGeneral.tsx): burbujas por zona de lejos, pastillas de precio de cerca, logos de urbanizaciones */
+.marca-mapa {
+  overflow: visible;
+}
+.marca-mapa > * {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font: 600 13px/1 var(--font-sans);
+  cursor: pointer;
+}
+.marca-mapa .burbuja {
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: #40251c;
+  color: #fff;
+  box-shadow: 0 6px 18px -6px rgb(0 0 0 / 0.6);
+}
+.marca-mapa .burbuja b {
+  margin-left: 4px;
+  color: #ffb066;
+}
+.marca-mapa .pildora {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: #211c18;
+  box-shadow: 0 4px 12px -4px rgb(0 0 0 / 0.55);
+  transition: transform 0.15s;
+}
+.marca-mapa .pildora.activa,
+.marca-mapa .pildora:hover {
+  background: #40251c;
+  color: #fff;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.leaflet-marker-icon.arriba {
+  z-index: 1000 !important;
+}
+.marca-mapa .logo-urbanizacion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.95);
+  color: #211c18;
+  text-decoration: none;
+  box-shadow: 0 4px 12px -4px rgb(0 0 0 / 0.55);
+  transform: translate(calc(-50% + var(--corrido, 0px)), -50%);
+}
+.marca-mapa .logo-urbanizacion img {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+.popup-mapa .leaflet-popup-content {
+  margin: 10px;
+}
+.tarjetas-mapa {
+  display: grid;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.leaflet-container .tarjetas-mapa a {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 10px;
+  align-items: center;
+  color: #211c18;
+  text-decoration: none;
+  font: 500 13.5px/1.3 var(--font-sans);
+}
+.tarjetas-mapa img {
+  width: 76px;
+  height: 57px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.tarjetas-mapa b {
+  display: block;
+  margin-top: 3px;
+  font-weight: 700;
+}
+.tarjetas-mapa p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #6e665e;
+}
+.zona-tooltip {
+  font: 600 13px/1.2 var(--font-sans);
+}

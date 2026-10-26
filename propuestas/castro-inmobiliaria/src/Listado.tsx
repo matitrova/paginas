@@ -1,5 +1,6 @@
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { ir, Tarjeta, useConsulta } from "./componentes";
+import MapaGeneral from "./MapaGeneral";
 import { contar, esTerreno, porM2, precioEn, PROPIEDADES, TIPOS, type Propiedad } from "./datos";
 
 // Rangos fijos en vez de un deslizador: con 272 propiedades se elige rápido y se entiende de un vistazo
@@ -140,6 +141,31 @@ function useVolverATarjeta() {
 export default function Listado() {
   useVolverATarjeta();
   const consulta = useConsulta();
+  // En la compu el mapa va fijo al costado de la lista; en el celular se abre con el botón "Mapa" a pantalla completa
+  const [esCompu, setEsCompu] = useState(() => matchMedia("(min-width: 1024px)").matches);
+  const [mapaAbierto, setMapaAbierto] = useState(() => new URLSearchParams(location.search).get("mapa") === "1");
+  const [resaltada, setResaltada] = useState<string | null>(null);
+  useEffect(() => {
+    const mq = matchMedia("(min-width: 1024px)");
+    const cambio = () => setEsCompu(mq.matches);
+    mq.addEventListener("change", cambio);
+    return () => mq.removeEventListener("change", cambio);
+  }, []);
+  // El mapa abierto queda en la dirección: al volver de una ficha abierta desde el mapa, vuelve al mapa
+  const abrirMapa = (abierto: boolean) => {
+    setMapaAbierto(abierto);
+    const q = new URLSearchParams(location.search);
+    if (abierto) q.set("mapa", "1");
+    else q.delete("mapa");
+    history.replaceState(null, "", `?${q}`);
+  };
+  useEffect(() => {
+    if (!mapaAbierto || esCompu) return;
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = "";
+    };
+  }, [mapaAbierto, esCompu]);
   const [f, setF] = useState<Filtros>(filtrosDeLaDireccion);
   // Cuántas se ven también queda en la dirección: al volver de una ficha, el navegador encuentra la tarjeta donde estaba
   const [cuantas, setCuantas] = useState(() => Math.max(TANDA, Number(new URLSearchParams(location.search).get("n")) || 0));
@@ -237,21 +263,55 @@ export default function Listado() {
         </button>
       )}
 
-      {lista.length ? (
-        <div onClick={recordarTarjeta} className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {lista.slice(0, cuantas).map((p) => (
-            <Tarjeta key={p.id} p={p} op={op} />
-          ))}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-8">
+        <div>
+          {lista.length ? (
+            <div
+              onClick={recordarTarjeta}
+              onMouseOver={(e) => esCompu && setResaltada((e.target as Element).closest("[data-tarjeta]")?.getAttribute("data-tarjeta") ?? null)}
+              onMouseLeave={() => setResaltada(null)}
+              className="mt-6 grid gap-5 sm:grid-cols-2"
+            >
+              {lista.slice(0, cuantas).map((p) => (
+                <Tarjeta key={p.id} p={p} op={op} />
+              ))}
+            </div>
+          ) : (
+            <p className="mt-10 rounded-2xl bg-hondo p-8 text-center text-[16px] text-suave">No hay propiedades con esos filtros. Probá sacando alguno.</p>
+          )}
+          {lista.length > cuantas && (
+            <div className="mt-8 text-center">
+              <p className="text-[14px] text-suave">Viendo {cuantas} de {lista.length}</p>
+              <button onClick={verMas} data-ver-mas className="mt-3 rounded-full border border-tinta/20 bg-white px-7 py-3.5 text-[15px] font-semibold hover:bg-hondo">
+                Ver {Math.min(TANDA, lista.length - cuantas)} más
+              </button>
+            </div>
+          )}
         </div>
-      ) : (
-        <p className="mt-10 rounded-2xl bg-hondo p-8 text-center text-[16px] text-suave">No hay propiedades con esos filtros. Probá sacando alguno.</p>
+        {/* El mapa va después de la lista en el orden de lectura: con teclado se llega a las tarjetas primero */}
+        {esCompu && (
+          <div className="mt-6">
+            <div className="sticky top-28 h-[calc(100vh-8.5rem)]">
+              <MapaGeneral props={lista} op={op} resaltada={resaltada} className="h-full" />
+            </div>
+          </div>
+        )}
+      </div>
+      {!esCompu && !mapaAbierto && lista.length > 0 && (
+        <button onClick={() => abrirMapa(true)} data-abrir-mapa className="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-full bg-tinta px-5 py-3 font-semibold text-white shadow-[0_12px_30px_-10px_rgb(0_0_0/0.5)]">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" /></svg>
+          Mapa
+        </button>
       )}
-      {lista.length > cuantas && (
-        <div className="mt-8 text-center">
-          <p className="text-[14px] text-suave">Viendo {cuantas} de {lista.length}</p>
-          <button onClick={verMas} data-ver-mas className="mt-3 rounded-full border border-tinta/20 bg-white px-7 py-3.5 text-[15px] font-semibold hover:bg-hondo">
-            Ver {Math.min(TANDA, lista.length - cuantas)} más
-          </button>
+      {!esCompu && mapaAbierto && (
+        <div className="fixed inset-x-0 top-8 bottom-0 z-50 flex flex-col bg-fondo" role="dialog" aria-label="Mapa de las propiedades" data-panel-mapa>
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <p className="text-[15px]"><b>{lista.length}</b> {lista.length === 1 ? "propiedad" : "propiedades"}</p>
+            <button onClick={() => abrirMapa(false)} className="rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] font-semibold" data-cerrar-mapa>
+              Ver la lista
+            </button>
+          </div>
+          <MapaGeneral props={lista} op={op} className="min-h-0 flex-1 rounded-none" arrastrable />
         </div>
       )}
       {consulta.vista}
