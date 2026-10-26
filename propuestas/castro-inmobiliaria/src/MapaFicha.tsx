@@ -13,13 +13,26 @@ export type FichaConMapa = Ficha & { mapa?: MapaDatos; cercanos?: Cercano[]; alt
 /** Una ficha sin datos de mapa se muestra como una propiedad sin forma: zona aproximada y sin trama. */
 const SIN_MAPA: MapaDatos = { calce: null, celda: "", zmax: 17, lote: null, lados: null, zona: { radio: 150, compartido: 0 }, alrededor: [] };
 
-function datosDelMapa(p: Propiedad, ficha: FichaConMapa) {
-  const m = ficha.mapa ?? SIN_MAPA;
+function datosDelMapa(p: Propiedad, mapa?: MapaDatos) {
+  const m = mapa ?? SIN_MAPA;
   const lote = m.lote?.length ? m.lote : null;
   return { m, lote, centro: lote ? centroDe(lote) : ([p.lat, p.lng] as [number, number]), radio: m.zona?.radio ?? 150 };
 }
 
 const coma = (n: number) => String(n).replace(".", ",");
+
+/** Rótulos de lados que se pisan (lados cortos y juntos): se esconde el del lado más corto, que igual está escrito
+ *  debajo del mapa. Se vuelve a mirar en cada zoom, porque al acercarse se separan. */
+function ocultarChoques(rotulos: HTMLElement[]) {
+  const puestos: DOMRect[] = [];
+  for (const r of rotulos) {
+    r.style.visibility = "";
+    const b = r.getBoundingClientRect();
+    const choca = puestos.some((o) => Math.min(b.right, o.right) - Math.max(b.left, o.left) > 1 && Math.min(b.bottom, o.bottom) - Math.max(b.top, o.top) > 1);
+    if (choca) r.style.visibility = "hidden";
+    else puestos.push(b);
+  }
+}
 
 /** Mientras baja el mapa, la imagen fija del lote que ya existía (la foto calzada con el dibujo encima). */
 function Forma({ f }: { f: DatosForma }) {
@@ -43,7 +56,8 @@ function Forma({ f }: { f: DatosForma }) {
 
 const BOTON = "rounded-full px-3 py-1.5 text-[13.5px] font-semibold aria-pressed:bg-tinta aria-pressed:text-white";
 
-export default function MapaFicha({ p, ficha }: { p: Propiedad; ficha: FichaConMapa | null }) {
+/** fallo: no se pudo bajar la ficha; el mapa igual muestra la zona alrededor del punto publicado. */
+export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: FichaConMapa | null; fallo: boolean }) {
   const caja = useRef<HTMLDivElement>(null);
   const control = useRef<{ mapa: Leaflet.Map; fondo: (f: Fondo) => void } | null>(null);
   const [listo, setListo] = useState(false);
@@ -55,8 +69,8 @@ export default function MapaFicha({ p, ficha }: { p: Propiedad; ficha: FichaConM
 
   useEffect(() => {
     const el = caja.current;
-    if (!el || !ficha) return;
-    const { m, lote, centro, radio } = datosDelMapa(p, ficha);
+    if (!el || (!ficha && !fallo)) return;
+    const { m, lote, centro, radio } = datosDelMapa(p, ficha?.mapa);
     let vivo = true; // StrictMode monta dos veces y el import puede volver después de desmontar
     let mapa: Leaflet.Map | undefined;
     const ro = new ResizeObserver(() => mapa?.invalidateSize());
@@ -68,28 +82,40 @@ export default function MapaFicha({ p, ficha }: { p: Propiedad; ficha: FichaConM
           if (!vivo) return;
           const r = crearMapa(L, el, { zmax: m.zmax, dragging: !tactil, minZoom: 15 });
           mapa = r.mapa;
-          if (m.alrededor.length) L.polygon(m.alrededor.map((a) => [aLatLng(a)]), ESTILO_VECINA).addTo(mapa);
+          const trama = m.alrededor.length ? L.polygon(m.alrededor.map((a) => [aLatLng(a)]), ESTILO_VECINA).addTo(mapa) : null;
           let encuadre: Leaflet.LatLngBounds;
+          let rotulos: Leaflet.Marker[] = [];
           if (lote) {
             encuadre = L.polygon(aLatLng(lote), ESTILO_LOTE).addTo(mapa).getBounds().pad(0.35);
-            for (const l of m.lados ?? []) {
+            // Del lado más largo al más corto: si dos rótulos se pisan, queda el del lado más largo
+            const largo = (texto: string) => parseFloat(texto.replace(",", "."));
+            rotulos = [...(m.lados ?? [])].sort((a, b) => largo(b.texto) - largo(a.texto)).map((l) => {
               const html = `<span style="transform:translate(-50%,-50%) translate(${l.afuera[0] * 14}px,${l.afuera[1] * 14}px) rotate(${l.ang}deg)">${l.texto}</span>`;
-              L.marker([l.lat, l.lng], { interactive: false, keyboard: false, icon: L.divIcon({ className: "lado", iconSize: [0, 0], html }) }).addTo(mapa);
-            }
+              return L.marker([l.lat, l.lng], { interactive: false, keyboard: false, icon: L.divIcon({ className: "lado", iconSize: [0, 0], html }) }).addTo(r.mapa);
+            });
           } else {
             L.circle(centro, { ...ESTILO_ZONA, radius: radio }).addTo(mapa);
             if (m.zona?.compartido) L.marker(centro, { interactive: false, keyboard: false, icon: L.divIcon({ className: "zona-texto", iconSize: [0, 0], html: "<span>Ubicación del barrio, no de la propiedad</span>" }) }).addTo(mapa);
             encuadre = L.latLng(centro).toBounds(radio * 2.5);
           }
           mapa.fitBounds(encuadre, { maxZoom: 19, animate: false });
-          mapa.setMaxBounds(L.latLng(centro).toBounds(Math.max(600, radio * 2 + 300)));
+          // Unos 300 m alrededor, o más si el lote o la trama son más grandes: que se pueda ver todo lo dibujado
+          const limite = L.latLng(centro).toBounds(Math.max(600, radio * 2 + 300)).extend(encuadre);
+          if (trama) limite.extend(trama.getBounds());
+          mapa.setMaxBounds(limite.pad(0.1));
+          if (rotulos.length) {
+            const mirar = () => ocultarChoques(rotulos.map((x) => x.getElement()?.firstElementChild as HTMLElement).filter(Boolean));
+            mirar();
+            mapa.on("zoomend", mirar);
+          }
           seguirElCalce(mapa, () => m.calce); // recién ahora, con centro y zoom ya fijados (b71b306)
           r.foto.once("load", () => vivo && setListo(true));
           control.current = { mapa, fondo: r.fondo };
           ro.observe(el);
         });
       },
-      { rootMargin: "300px 0px" },
+      // Recién cuando entra en pantalla: con la señal de Merlo, abrir la ficha no baja el mapa de arriba
+      { rootMargin: "0px" },
     );
     io.observe(el);
     return () => {
@@ -99,7 +125,7 @@ export default function MapaFicha({ p, ficha }: { p: Propiedad; ficha: FichaConM
       mapa?.remove();
       control.current = null;
     };
-  }, [p, ficha, tactil]);
+  }, [p, ficha, fallo, tactil]);
 
   useEffect(() => {
     control.current?.fondo(fondo);
@@ -122,15 +148,18 @@ export default function MapaFicha({ p, ficha }: { p: Propiedad; ficha: FichaConM
       document.documentElement.style.overflow = "";
       removeEventListener("keydown", tecla);
     };
-  }, [grande, tactil]);
+    // listo: si se tocó pantalla completa antes de que bajara el mapa, recién ahora se le puede habilitar el arrastre
+  }, [grande, tactil, listo]);
 
-  const d = ficha && datosDelMapa(p, ficha);
+  const d = ficha || fallo ? datosDelMapa(p, ficha?.mapa) : null;
   const lote = d?.lote ?? null;
   const lados = d?.m.lados ?? [];
   const cercanos = ficha?.cercanos ?? [];
   const altura = ficha?.altura;
   const [lat, lng] = d?.centro ?? [p.lat, p.lng];
   const compartido = !lote && (d?.m.zona?.compartido ?? 0) > 0;
+  // Sin lote no hay un punto exacto: el 3D marca la zona y no dice "este terreno"
+  const etiqueta3d = lote ? (p.tipo === "Terreno" ? "Este terreno" : "Esta propiedad") : compartido ? "Zona del barrio" : "Zona aproximada";
 
   return (
     <section id="mapa" className="mt-9 scroll-mt-28 md:scroll-mt-44">
@@ -156,7 +185,7 @@ export default function MapaFicha({ p, ficha }: { p: Propiedad; ficha: FichaConM
           onClick={() => setGrande(!grande)}
           aria-label={grande ? "Cerrar la pantalla completa" : "Ver el mapa en pantalla completa"}
           data-pantalla-completa
-          className="absolute top-3 right-3 z-10 grid h-10 min-w-10 place-items-center rounded-full bg-white/95 px-2.5 text-[14px] font-semibold shadow"
+          className="absolute top-3 right-3 z-30 grid h-10 min-w-10 place-items-center rounded-full bg-white/95 px-2.5 text-[14px] font-semibold shadow"
         >
           {grande ? (
             "Cerrar"
@@ -171,11 +200,11 @@ export default function MapaFicha({ p, ficha }: { p: Propiedad; ficha: FichaConM
             <text y={12} textAnchor="middle" fontSize={8} fontWeight={700} fill="#fff">N</text>
           </svg>
         </span>
-        {ver3d && <Mapa3D centro={[lat, lng]} lote={lote} radio={d?.radio ?? 150} zmax={d?.m.zmax ?? 17} etiqueta={p.tipo === "Terreno" ? "Este terreno" : "Esta propiedad"} alCerrar={() => setVer3d(false)} />}
+        {ver3d && <Mapa3D centro={[lat, lng]} lote={lote} radio={d?.radio ?? 150} zmax={d?.m.zmax ?? 17} etiqueta={etiqueta3d} alCerrar={() => setVer3d(false)} />}
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
-        <button onClick={() => setVer3d(true)} disabled={!ficha} data-ver-3d className="rounded-2xl border border-linea bg-white px-4 py-1.5 text-left hover:bg-hondo">
+        <button onClick={() => setVer3d(true)} disabled={!d} data-ver-3d className="rounded-2xl border border-linea bg-white px-4 py-1.5 text-left hover:bg-hondo">
           <span className="block text-[14.5px] font-semibold">Ver en 3D</span>
           <span className="block text-[12px] text-suave">Usa unos 3 MB de datos</span>
         </button>
@@ -223,10 +252,12 @@ export default function MapaFicha({ p, ficha }: { p: Propiedad; ficha: FichaConM
           {altura && (
             <div>
               <dt className="text-[13px] font-semibold text-suave">Altura y pendiente</dt>
-              <dd className="mt-1" data-altura>
-                ≈ {miles(altura.m)} m sobre el nivel del mar · {altura.pendiente === "plana" ? "zona plana" : `zona de pendiente ${altura.pendiente}${altura.hacia ? ` hacia el ${altura.hacia}` : ""}`}
+              <dd className="mt-1">
+                <span data-altura>
+                  ≈ {miles(altura.m)} m sobre el nivel del mar · {altura.pendiente === "plana" ? "zona plana" : `zona de pendiente ${altura.pendiente}${altura.hacia ? ` hacia el ${altura.hacia}` : ""}`}
+                </span>
+                <span className="mt-1 block text-[12.5px] text-suave">Aproximado: habla de la zona y no del lote, porque los datos de relieve son de unos 30 m (SRTM).</span>
               </dd>
-              <span className="mt-1 block text-[12.5px] text-suave">Aproximado: habla de la zona, no del lote (relieve SRTM, de unos 30 m).</span>
             </div>
           )}
         </dl>

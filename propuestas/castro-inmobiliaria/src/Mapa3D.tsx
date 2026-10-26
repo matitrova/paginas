@@ -35,7 +35,6 @@ const TEXTOS = {
   "CooperativeGesturesHandler.WindowsHelpText": "Usá Ctrl + la rueda para acercar",
   "CooperativeGesturesHandler.MacHelpText": "Usá ⌘ + la rueda para acercar",
   "Map.Title": "Mapa en 3D",
-  "Marker.Title": "La propiedad",
   "ScaleControl.Meters": "m",
   "ScaleControl.Kilometers": "km",
 };
@@ -55,8 +54,8 @@ export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }
     if (sinWebGL || !seguir || !el) return;
     let vivo = true;
     let mapa: MapLibre.Map | undefined;
-    Promise.all([import("maplibre-gl"), import("maplibre-gl/dist/maplibre-gl.css")]).then(
-      ([modulo]) => {
+    Promise.all([import("maplibre-gl"), import("maplibre-gl/dist/maplibre-gl.css")])
+      .then(([modulo]) => {
         if (!vivo) return;
         const ml = ((modulo as unknown as { default?: ML }).default ?? modulo) as ML;
         const anillo = lote ?? circulo([lat, lng], radio);
@@ -75,8 +74,9 @@ export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }
           // ponytail: el 3D no aplica el calce de la foto (los calces son de 5 m o menos, 1 a 5 px hasta el zoom 17);
           // si hace falta acercarse más, un protocolo propio que corra los tiles
           maxZoom: 17,
-          locale: TEXTOS,
-          cooperativeGestures: matchMedia("(pointer: coarse)").matches,
+          locale: { ...TEXTOS, "Marker.Title": etiqueta },
+          // La rueda del mouse y un dedo siguen moviendo la página; el 3D se mueve con Ctrl/⌘ + rueda o con dos dedos
+          cooperativeGestures: true,
           attributionControl: { compact: true },
           style: {
             version: 8,
@@ -97,16 +97,17 @@ export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }
         // Sin esto MapLibre escribe en la consola cada tile que no llega
         mapa.on("error", () => {});
         mapa.addControl(new ml.NavigationControl({ visualizePitch: true }), "bottom-right");
-        // A esta distancia el lote son pocos píxeles: lo marca un cartel con un palito que baja hasta el lugar
+        // A esta distancia el lote son pocos píxeles: lo marca un cartel con un palito que baja hasta el lugar. Sin
+        // lote no hay un lugar exacto: el cartel va solo, en el medio del círculo, sin palito ni punto
         const cartel = document.createElement("div");
         cartel.className = "flex flex-col items-center";
-        cartel.innerHTML = '<span class="rounded-full bg-naranja-osc px-3 py-1 text-[13px] font-semibold whitespace-nowrap text-white shadow"></span><span class="h-4 w-0.5 bg-white"></span><span class="h-2.5 w-2.5 rounded-full border-2 border-white bg-naranja-osc"></span>';
+        cartel.innerHTML = '<span class="rounded-full bg-naranja-osc px-3 py-1 text-[13px] font-semibold whitespace-nowrap text-white shadow"></span>' + (lote ? '<span class="h-4 w-0.5 bg-white" data-palito></span><span class="h-2.5 w-2.5 rounded-full border-2 border-white bg-naranja-osc"></span>' : "");
         cartel.firstElementChild!.textContent = etiqueta;
-        new ml.Marker({ element: cartel, anchor: "bottom", offset: [0, 4] }).setLngLat([lng, lat]).addTo(mapa);
+        new ml.Marker({ element: cartel, anchor: lote ? "bottom" : "center", offset: lote ? [0, 4] : [0, 0] }).setLngLat([lng, lat]).addTo(mapa);
         mapa.once("idle", () => vivo && setCargando(false));
-      },
-      () => vivo && setFallo(true),
-    );
+      })
+      // También si MapLibre no consigue el WebGL aunque hayWebGL() haya dado bien: el aviso con Google Earth, no "Cargando" para siempre
+      .catch(() => vivo && setFallo(true));
     return () => {
       vivo = false;
       mapa?.remove();

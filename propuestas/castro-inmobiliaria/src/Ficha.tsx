@@ -187,15 +187,24 @@ export default function Ficha({ id }: { id: string }) {
     <article className="pb-28 md:pb-0">
       {/* En la compu, una barra fija con el precio, los atajos y la consulta (en el celular, la barra de abajo) */}
       <div className="sticky top-24 z-30 hidden border-b border-linea bg-fondo/95 backdrop-blur md:block" data-barra-ficha>
+        {/* Con venta y alquiler, un precio debajo del otro; si igual no entran (tablet), se recortan y no empujan los botones */}
         <div className="mx-auto flex max-w-4xl items-center gap-4 px-6 py-2.5">
-          <p className="text-[17px] font-semibold tracking-tight whitespace-nowrap">{precios.join(" · ")}</p>
-          <nav aria-label="Ir a" className="flex gap-0.5 text-[14.5px]">
+          <p className={`min-w-0 font-semibold tracking-tight ${precios.length > 1 ? "text-[14.5px] leading-tight" : "text-[17px]"}`}>
+            {precios.map((x) => (
+              <span key={x} className="block truncate" title={x}>{x}</span>
+            ))}
+          </p>
+          <nav aria-label="Ir a" className="flex shrink-0 gap-0.5 text-[14.5px]">
             {atajos.map((a) => (
               <a key={a.id} href={`#${a.id}`} className="rounded-full px-3 py-1.5 whitespace-nowrap text-tinta/80 hover:bg-hondo">{a.texto}</a>
             ))}
           </nav>
-          <a href={tel} className="ml-auto hidden rounded-full border border-linea px-4 py-2 text-[14.5px] font-semibold whitespace-nowrap hover:bg-hondo lg:inline-block">Llamar</a>
-          <button onClick={() => consulta.abrir(mensaje)} data-consultar className="ml-auto rounded-full bg-[#25d366] px-5 py-2 text-[14.5px] font-semibold whitespace-nowrap text-black hover:brightness-95 lg:ml-0">
+          {/* En la tablet no entra la palabra: va el ícono */}
+          <a href={tel} aria-label="Llamar" className="ml-auto flex shrink-0 items-center rounded-full border border-linea px-2.5 py-2 text-[14.5px] font-semibold whitespace-nowrap hover:bg-hondo lg:px-4">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 lg:hidden" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>
+            <span className="hidden lg:inline">Llamar</span>
+          </a>
+          <button onClick={() => consulta.abrir(mensaje)} data-consultar className="shrink-0 rounded-full bg-[#25d366] px-5 py-2 text-[14.5px] font-semibold whitespace-nowrap text-black hover:brightness-95">
             <span className="hidden lg:inline">Consultar por </span>WhatsApp
           </button>
         </div>
@@ -254,7 +263,7 @@ export default function Ficha({ id }: { id: string }) {
             <Dato etiqueta="Antigüedad" valor={ficha?.antiguedad} />
           </dl>
 
-          <MapaFicha p={p} ficha={ficha} />
+          <MapaFicha p={p} ficha={ficha} fallo={fallo} />
 
           {ficha?.descripcion && (
             <section id="descripcion" className={`mt-10 ${DEBAJO_DE_LAS_BARRAS}`}>
@@ -313,7 +322,7 @@ export default function Ficha({ id }: { id: string }) {
 
       {/* En el celular: los atajos y los dos botones siempre a mano, abajo, sin tapar media pantalla */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-linea bg-white/95 px-3 pt-1 pb-2.5 backdrop-blur md:hidden" data-barra-contacto>
-        <nav aria-label="Ir a" className="grid grid-cols-4 text-center text-[13px] font-medium text-tinta/75">
+        <nav aria-label="Ir a" className="grid auto-cols-fr grid-flow-col text-center text-[13px] font-medium text-tinta/75">
           {atajos.map((a) => (
             <a key={a.id} href={`#${a.id}`} className="py-1.5">{a.texto}</a>
           ))}

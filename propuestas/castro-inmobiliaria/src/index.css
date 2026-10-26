@@ -47,8 +47,9 @@ body {
   display: none;
 }
 
-/* Mapa de la ficha (Leaflet, src/mapa.ts): los rótulos de los lados van girados sobre cada lado, afuera del lote */
-.leaflet-container {
+/* Mapa de la ficha (Leaflet, src/mapa.ts): los rótulos de los lados van girados sobre cada lado, afuera del lote.
+   leaflet.css se carga después (con el mapa) y gana a igual especificidad: por eso el :root delante */
+:root .leaflet-container {
   font-family: var(--font-sans);
   background: var(--color-hondo);
 }
@@ -60,7 +61,7 @@ body {
 .leaflet-map-pane {
   will-change: transform;
 }
-.leaflet-container .leaflet-control-attribution {
+:root .leaflet-container .leaflet-control-attribution {
   font-size: 10px;
 }
 .lado span,

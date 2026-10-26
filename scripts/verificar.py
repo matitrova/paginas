@@ -856,7 +856,7 @@ def castro_mapa(pg, nombre, cap):
             problemas.append(f"{nombre}: medidas de los lados que se salen del mapa: {afuera}")
     if m.get("alrededor") and not pg.locator(".vecina").count():
         problemas.append(f"{nombre}: no se ve la trama del catastro de alrededor")
-    if [x[0] for x in con["lados"]] != [lado["texto"] for lado in m["lados"] or []]:
+    if sorted(x[0] for x in con["lados"]) != sorted(lado["texto"] for lado in m["lados"] or []):
         problemas.append(f"{nombre}: los rótulos de los lados son {[x[0] for x in con['lados']]} y en los datos {[lado['texto'] for lado in m['lados'] or []]}")
     publicada = superficie(indice[t]["terreno"])
     if publicada not in pg.locator("[data-superficie]").inner_text():
@@ -879,6 +879,20 @@ def castro_mapa(pg, nombre, cap):
         problemas.append(f"{nombre}: la ficha pide a Google Maps: {pedidos_a_google()[:2]}")
     if pg.locator("h1").count() != 1 or pg.locator("[data-consultar]").count() != 1:
         problemas.append(f"{nombre}: la ficha tiene {pg.locator('h1').count()} h1 y {pg.locator('[data-consultar]').count()} [data-consultar]; va uno de cada uno")
+
+    # Rótulos de lados que se pisan: en estos lotes chicos pasaba; se esconde el del lado más corto (está escrito abajo)
+    for ident in ["8482685", "4925850"]:
+        if not (json.loads((fichas / f"{ident}.json").read_text()).get("mapa") or {}).get("lados"):
+            problemas.append(f"{nombre}: la ficha {ident} no trae los lados para probar los rótulos que se pisan")
+        elif abrir(ident):
+            r = pg.evaluate("""() => { const bs = [...document.querySelectorAll('.lado span')].filter(e => getComputedStyle(e).visibility !== 'hidden')
+                .map(e => [e.textContent, e.getBoundingClientRect()]); const pisan = [];
+              for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) { const [a, b] = [bs[i][1], bs[j][1]];
+                if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) pisan.push(bs[i][0] + ' / ' + bs[j][0]) }
+              return { visibles: bs.length, pisan } }""")
+            if r["pisan"] or r["visibles"] < 2:
+                problemas.append(f"{nombre}: en el {ident} hay {r['visibles']} rótulos de lados a la vista y se pisan {r['pisan']}")
+    abrir(t)
 
     # El atajo "Mapa" (en la barra de arriba en la compu, en la de abajo en el celular) lleva al mapa sin que lo tapen
     pg.evaluate("window.scrollTo(0, 0)")
@@ -968,6 +982,53 @@ def castro_mapa(pg, nombre, cap):
             problemas.append(f"{nombre}: el 12024296 (zona sin calzar) tiene que ir solo con la zona aproximada")
     if tactil and not mirados:
         problemas.append(f"{nombre}: ningún borde entre tiles quedó en el medio del mapa: el chequeo de costuras no probó nada")
+
+    def ver_3d():
+        pg.locator("[data-ver-3d]").click()
+        try:
+            pg.wait_for_selector("[data-mapa-3d] canvas, [data-google-earth]", timeout=30000)
+            return pg.locator("[data-mapa-3d] canvas").count() > 0
+        except Exception:
+            problemas.append(f"{nombre}: 'Ver en 3D' no muestra ni el mapa ni el aviso de Google Earth")
+
+    # 3D sin lote (12024296, ubicación compartida): sin un punto exacto, ni "Este terreno" ni el palito que baja al lugar
+    zona = (json.loads((fichas / "12024296.json").read_text()).get("mapa") or {}).get("zona") or {}
+    if pg.locator("[data-mapa-ficha]").count() and ver_3d():
+        pg.wait_for_selector("[data-mapa-3d] .maplibregl-marker", timeout=20000)
+        texto = pg.locator("[data-mapa-3d]").inner_text()
+        esperado = "Zona del barrio" if zona.get("compartido") else "Zona aproximada"
+        if esperado not in texto or "Este terreno" in texto or pg.locator("[data-mapa-3d] [data-palito]").count():
+            problemas.append(f"{nombre}: el 3D del 12024296 (sin lote) tiene que decir '{esperado}' sin marcar un punto: dice «{texto[:80]}»")
+        pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
+        pg.wait_for_timeout(1500)
+        cap("mapa-3d-zona")
+
+    # Si MapLibre no consigue el WebGL aunque la prueba previa diga que hay: el aviso con Google Earth, sin errores
+    # en la consola ni "Cargando el 3D" para siempre. Va al final: el script queda puesto en esta página.
+    pg.add_init_script("""const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) {
+      return this.classList.contains('maplibregl-canvas') && /webgl/.test(t) ? null : g.call(this, t, ...a) }""")
+    if abrir("7876886"):
+        pg.locator("[data-ver-3d]").click()
+        try:
+            pg.wait_for_selector("[data-mapa-3d] [data-google-earth]", timeout=30000)
+        except Exception:
+            problemas.append(f"{nombre}: si MapLibre no arranca, el 3D no ofrece Google Earth: «{pg.locator('[data-mapa-3d]').inner_text()[:80]}»")
+
+    # La barra fija de la compu en la tablet, con la ficha de dos precios (la más larga): nada se sale y está "Llamar"
+    if not tactil:
+        dos = next(x.stem for x in sorted(fichas.glob("*.json")) if len(json.loads(x.read_text()).get("operaciones") or []) > 1)
+        for ancho in (768, 1024):
+            pg.set_viewport_size({"width": ancho, "height": 900})
+            pg.goto(f"{raiz}?p={dos}", wait_until="networkidle")
+            r = pg.evaluate("""() => { const b = document.querySelector('[data-barra-ficha] > div').getBoundingClientRect();
+              const w = document.querySelector('[data-barra-ficha] [data-consultar]').getBoundingClientRect();
+              const tel = document.querySelector('[data-barra-ficha] a[href^="tel:"]');
+              return { pagina: document.documentElement.scrollWidth, sale: w.right > b.right - 23, llamar: !!tel && tel.getBoundingClientRect().width > 0 } }""")
+            if r["pagina"] > ancho or r["sale"] or not r["llamar"]:
+                problemas.append(f"{nombre}: a {ancho} px la barra de la ficha {dos} no entra: {r}")
+            if ancho == 1024:
+                cap("barra-1024")
+        pg.set_viewport_size({"width": 1440, "height": 900})
 
 
 PAGINAS = {
