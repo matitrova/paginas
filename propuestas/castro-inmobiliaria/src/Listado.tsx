@@ -73,11 +73,11 @@ export function filtrar(f: Filtros): Propiedad[] {
   return lista.sort((a, b) => b.alta.localeCompare(a.alta));
 }
 
-function Selector({ etiqueta, valor, opciones, alCambiar }: { etiqueta: string; valor: string; opciones: { valor: string; texto: string }[]; alCambiar: (v: string) => void }) {
+function Selector({ nombre, etiqueta, valor, opciones, alCambiar }: { nombre: string; etiqueta: string; valor: string; opciones: { valor: string; texto: string }[]; alCambiar: (v: string) => void }) {
   return (
     <label className="flex min-w-0 flex-col gap-1 text-[12.5px] font-medium text-suave">
       {etiqueta}
-      <select value={valor} onChange={(e) => alCambiar(e.target.value)} className="h-11 min-w-0 rounded-xl border border-linea bg-white px-3 text-[15px] text-tinta">
+      <select name={nombre} value={valor} onChange={(e) => alCambiar(e.target.value)} className="h-11 min-w-0 rounded-xl border border-linea bg-white px-3 text-[15px] text-tinta">
         {opciones.map((o) => (
           <option key={o.valor} value={o.valor}>
             {o.texto}
@@ -201,24 +201,24 @@ export default function Listado() {
       </div>
 
       <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Tipo de propiedad">
-        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
-          Todas <span className="opacity-70">{deLaOperacion.length}</span>
+        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="group shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
+          Todas <span className="opacity-70 group-aria-pressed:opacity-100">{deLaOperacion.length}</span>
         </button>
         {tipos.map(([tipo, n]) => (
-          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
-            {TIPOS[tipo] ?? tipo} <span className="opacity-70">{n}</span>
+          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="group shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
+            {TIPOS[tipo] ?? tipo} <span className="opacity-70 group-aria-pressed:opacity-100">{n}</span>
           </button>
         ))}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Selector etiqueta="Zona" valor={f.zona} alCambiar={(zona) => cambiar({ zona })} opciones={[{ valor: "", texto: "Todas las zonas" }, ...zonas.map(([z, n]) => ({ valor: z, texto: `${z} (${n})` }))]} />
-        <Selector etiqueta="Precio" valor={f.precio} alCambiar={(precio) => cambiar({ precio })} opciones={[{ valor: "", texto: "Cualquier precio" }, ...(op === "venta" ? PRECIOS : PRECIOS_ALQUILER)]} />
+        <Selector nombre="zona" etiqueta="Zona" valor={f.zona} alCambiar={(zona) => cambiar({ zona })} opciones={[{ valor: "", texto: "Todas las zonas" }, ...zonas.map(([z, n]) => ({ valor: z, texto: `${z} (${n})` }))]} />
+        <Selector nombre="precio" etiqueta="Precio" valor={f.precio} alCambiar={(precio) => cambiar({ precio })} opciones={[{ valor: "", texto: "Cualquier precio" }, ...(op === "venta" ? PRECIOS : PRECIOS_ALQUILER)]} />
         {conCasas && !conTerreno && (
-          <Selector etiqueta="Dormitorios" valor={f.dorm} alCambiar={(dorm) => cambiar({ dorm })} opciones={[{ valor: "", texto: "Cualquiera" }, ...[1, 2, 3, 4].map((n) => ({ valor: String(n), texto: `${n} o más` }))]} />
+          <Selector nombre="dorm" etiqueta="Dormitorios" valor={f.dorm} alCambiar={(dorm) => cambiar({ dorm })} opciones={[{ valor: "", texto: "Cualquiera" }, ...[1, 2, 3, 4].map((n) => ({ valor: String(n), texto: `${n} o más` }))]} />
         )}
-        {conTerreno && <Selector etiqueta="Superficie" valor={f.sup} alCambiar={(sup) => cambiar({ sup })} opciones={[{ valor: "", texto: "Cualquiera" }, ...SUPERFICIES]} />}
-        <Selector etiqueta="Ordenar" valor={f.orden} alCambiar={(orden) => cambiar({ orden })} opciones={ORDENES.filter((o) => o.valor !== "m2" || conTerreno)} />
+        {conTerreno && <Selector nombre="sup" etiqueta="Superficie" valor={f.sup} alCambiar={(sup) => cambiar({ sup })} opciones={[{ valor: "", texto: "Cualquiera" }, ...SUPERFICIES]} />}
+        <Selector nombre="orden" etiqueta="Ordenar" valor={f.orden} alCambiar={(orden) => cambiar({ orden })} opciones={ORDENES.filter((o) => o.valor !== "m2" || conTerreno)} />
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-4 border-b border-linea pb-3">
@@ -226,7 +226,7 @@ export default function Listado() {
           <b className="font-semibold">{lista.length}</b> {lista.length === 1 ? "propiedad" : "propiedades"}
         </p>
         {hayFiltros && (
-          <button onClick={() => cambiar({ tipo: "", zona: "", precio: "", dorm: "", sup: "", q: "" })} className="text-[14px] font-semibold text-naranja-osc">
+          <button onClick={() => cambiar({ tipo: "", zona: "", precio: "", dorm: "", sup: "", q: "" })} className="text-[14px] font-semibold text-chocolate underline decoration-chocolate/30 underline-offset-4 hover:decoration-chocolate">
             Limpiar filtros
           </button>
         )}

@@ -2,20 +2,29 @@
 @source "./";
 @source "../../../compartido";
 
-/* Los colores de su marca: el naranja del logo para botones y detalles, y uno más oscuro para
-   letras, porque el naranja del logo sobre blanco no se lee en un texto chico. La letra de los
-   títulos se parece a la del "CASTRO" del logo. */
+/* Cálido serrano: fondo arena, cajas piedra, letra y paneles chocolate, botones terracota. El naranja del logo
+   queda para los lotes y los acentos, nunca para letras (sobre arena da 2,2:1). Contrastes (WCAG, AA pide 4,5):
+   blanco sobre terracota 6,8 · terracota sobre arena 5,8 y sobre piedra 5,1 (4,7 en el punto más oscuro de la
+   textura) · chocolate sobre arena 11,9 y sobre piedra 10,6 · suave sobre arena 5,8, sobre piedra 5,2 (4,7 con la
+   textura) y sobre blanco 6,8 · arena sobre chocolate 11,9 (al 70 %, 6,6; 5,5 con la textura) · naranja sobre
+   chocolate 5,6 (4,6 con la textura). Los links chicos van en chocolate, subrayados.
+   Letras: Newsreader para títulos (itálica para zonas y frases) y Figtree para la interfaz. */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Marcellus", Georgia, serif;
-  --color-fondo: #fbf9f6;
-  --color-hondo: #f3eee7;
-  --color-tinta: #211c18;
-  --color-suave: #6e665e;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Newsreader", Georgia, serif;
+  --color-arena: #f3ece2;
+  --color-piedra: #e7dfd4;
+  --color-chocolate: #40251c;
+  --color-suave: #6b574b;
+  --color-terracota: #9a3e27;
   --color-naranja: #ff8000;
-  --color-naranja-osc: #b35400;
-  --color-linea: rgb(33 28 24 / 0.1);
+  --color-linea: rgb(64 37 28 / 0.14);
   --color-alarma: #b23b2e;
+  /* Los nombres de antes, para Ficha.tsx y Listado.tsx: apuntan a la paleta nueva */
+  --color-fondo: var(--color-arena);
+  --color-hondo: var(--color-piedra);
+  --color-tinta: var(--color-chocolate);
+  --color-naranja-osc: var(--color-terracota);
 }
 
 /* Cada pantalla es un link común: donde el navegador lo sabe hacer, pasa de una a otra sin parpadeo */
@@ -24,8 +33,8 @@
 }
 
 html {
-  background: var(--color-fondo);
-  color: var(--color-tinta);
+  background: var(--color-arena);
+  color: var(--color-chocolate);
 }
 
 body {
@@ -34,10 +43,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* El listado dibuja todas las tarjetas; las que están lejos de la pantalla no se pintan hasta acercarse */
-.tarjeta {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 380px;
+/* Grano suave para los fondos de sección: ruido en SVG (menos de 1 KB cada uno), sin pedir ninguna imagen */
+.textura {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .15 0 0 0 0 .1 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E");
+}
+.textura-clara {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .9 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E");
+}
+
+/* El listado dibuja todas las tarjetas; las que están lejos de la pantalla no se pintan hasta acercarse. En una capa,
+   para que una clase de Tailwind lo pueda apagar (los carruseles de la portada, Portada.tsx) */
+@layer components {
+  .tarjeta {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 400px;
+  }
 }
 
 .sin-barra {
