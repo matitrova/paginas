@@ -129,6 +129,14 @@ export function Tarjeta({ p }: { p: Propiedad }) {
           ))}
         </span>
         {p.fotos > 1 && <span className="absolute right-3 bottom-3 rounded-full bg-black/55 px-2 py-0.5 text-[11.5px] text-white">{p.fotos} fotos</span>}
+        {p.mini && (
+          <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-xl bg-white/95 py-1 pr-2.5 pl-1 text-[11.5px] font-semibold text-tinta" data-mini>
+            <svg viewBox="-12 -12 124 124" className="h-8 w-8" aria-hidden="true">
+              <polygon points={p.mini} fill="rgb(255 128 0 / 0.25)" stroke="#ff8000" strokeWidth={9} strokeLinejoin="round" />
+            </svg>
+            Forma real del lote
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col p-4">
         <p className="text-[20px] font-semibold tracking-tight">{precio(p) ?? "Consultar precio"}</p>

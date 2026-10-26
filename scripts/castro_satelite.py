@@ -36,7 +36,17 @@ WFS = "http://visualcatsl.dyndns.info/geoserver/SanLuis/ows"
 # Cuántos metros hay que correr la foto en cada celda para que calce con el catastro (este, norte).
 # Se calzan a ojo con --hoja: las calles del catastro tienen que caer sobre las calles de la foto.
 # Una celda que no está acá no se dibuja: sin calzar, el lote podría quedar sobre el terreno del vecino.
-CALCES: dict[str, tuple[float, float]] = {}
+CALCES: dict[str, tuple[float, float]] = {
+    # Calzadas el 25/10/2026 por zona, mirando calles, alambrados y casas, y revisadas una por una por otro par de
+    # ojos que midió perfiles de brillo cruzando las calles. c-1620_-3251 queda afuera: sus referencias se
+    # contradicen en unos 5 m y no se puede afirmar que calce.
+    "c-1616_-3251": (2, -2), "c-1616_-3253": (1, 2), "c-1617_-3250": (0, 0), "c-1617_-3251": (0, -2),
+    "c-1617_-3252": (2, 0), "c-1617_-3253": (1.5, 0.5), "c-1617_-3261": (-3, 5), "c-1618_-3249": (0, 0),
+    "c-1618_-3250": (0, -2), "c-1618_-3251": (0, 0), "c-1618_-3252": (4, 2), "c-1618_-3254": (0, 0),
+    "c-1619_-3250": (-3, -3), "c-1619_-3251": (0, 0), "c-1619_-3252": (2, 0), "c-1620_-3250": (0, 0),
+    "c-1621_-3249": (0, -3), "c-1621_-3250": (0, -3), "c-1622_-3250": (2, -3), "c-1622_-3251": (3.5, 0),
+    "c-1625_-3250": (0, 0), "c-1626_-3251": (2.5, 1),
+}
 
 # Los que no se dibujan aunque pasen la regla de abajo, después de mirarlos
 EXCLUIR: set[str] = set()
@@ -148,7 +158,7 @@ def lados(puntos_ll, a_pixel):
         j = quiebres[(k + 1) % len(quiebres)]
         tramo = [m[(i + s) % n] for s in range(((j - i) % n) + 1)]
         largo = sum(math.dist(tramo[s], tramo[s + 1]) for s in range(len(tramo) - 1))
-        if largo < 4:
+        if largo < 8:  # un lado cortito se dibuja igual, pero su rótulo se encima con los de al lado
             continue
         p1, p2 = a_pixel(pts[i][1], pts[i][0]), a_pixel(pts[j][1], pts[j][0])
         mx, my = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2

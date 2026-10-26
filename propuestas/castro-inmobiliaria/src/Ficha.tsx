@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ir, lugar, Tarjeta, tipoTexto, useConsulta } from "./componentes";
-import { esTerreno, pedirFicha, portada, porId, precio, PROPIEDADES, SITIO, superficie, TELEFONO, TIPOS, URBANIZACIONES, type Ficha as DatosFicha, type Propiedad } from "./datos";
+import { esTerreno, pedirFicha, portada, porId, precio, PROPIEDADES, SITIO, superficie, TELEFONO, TIPOS, URBANIZACIONES, type Ficha as DatosFicha, type Forma as DatosForma, type Propiedad } from "./datos";
 
 /** Galería deslizable con el dedo. Las fotos vienen del servicio de fotos de ellos; si alguna no carga, se saca. */
 function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
@@ -42,6 +42,37 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
         </>
       )}
     </div>
+  );
+}
+
+/** El lote con su forma del catastro sobre la foto satelital. La foto está calzada con el catastro zona por zona
+ *  (scripts/castro_satelite.py); el dibujo va en SVG encima para que las medidas se lean nítidas en cualquier pantalla. */
+function Forma({ f }: { f: DatosForma }) {
+  return (
+    <figure className="overflow-hidden rounded-2xl border border-linea bg-white" data-forma>
+      <div className="relative">
+        <img src={f.img} alt="Foto satelital del terreno con su forma dibujada" width={640} height={480} loading="lazy" className="block w-full" />
+        <svg viewBox="0 0 640 480" className="absolute inset-0 h-full w-full" aria-hidden="true">
+          {f.vecinas.map((v) => (
+            <polygon key={v} points={v} fill="none" stroke="rgb(255 255 255 / 0.6)" strokeWidth={1.5} />
+          ))}
+          <polygon points={f.lote} fill="rgb(255 128 0 / 0.22)" stroke="#ff8000" strokeWidth={3.5} strokeLinejoin="round" />
+          {f.lados.map((l) => (
+            <text key={`${l.x},${l.y}`} x={l.x} y={l.y} transform={`rotate(${l.ang} ${l.x} ${l.y})`} textAnchor="middle" dominantBaseline="middle" fontSize={21} fontWeight={700} fill="#fff" stroke="rgb(0 0 0 / 0.75)" strokeWidth={4} paintOrder="stroke" data-lado>
+              {l.texto}
+            </text>
+          ))}
+          <g transform="translate(604 44)">
+            <circle r={24} fill="rgb(0 0 0 / 0.55)" />
+            <path d="M0 -15 L7 4 L0 0 L-7 4 Z" fill="#fff" />
+            <text y={16} textAnchor="middle" fontSize={11} fontWeight={700} fill="#fff">N</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption className="px-4 py-3 text-[13px] leading-snug text-suave">
+        Forma según el catastro de San Luis. Las medidas son aproximadas: las definitivas, según la mensura. Foto satelital: Esri World Imagery.
+      </figcaption>
+    </figure>
   );
 }
 
@@ -150,6 +181,16 @@ export default function Ficha({ id }: { id: string }) {
               <Dato etiqueta="Plantas" valor={ficha?.plantas} />
               <Dato etiqueta="Antigüedad" valor={ficha?.antiguedad} />
             </dl>
+
+            {ficha?.forma && (
+              <section className="mt-9">
+                <h2 className="font-display text-2xl">El lote</h2>
+                <p className="mt-1 text-[15px] text-suave">Así es el terreno, con su forma real y la medida de cada lado.</p>
+                <div className="mt-4">
+                  <Forma f={ficha.forma} />
+                </div>
+              </section>
+            )}
 
             {ficha?.descripcion && (
               <section className="mt-9">

@@ -25,6 +25,15 @@ export interface Propiedad {
   lat: number;
   lng: number;
   fotos: number;
+  /** La silueta del lote del catastro, en una caja de 0 a 100 (solo terrenos con forma confirmada) */
+  mini: string | null;
+}
+
+export interface Forma {
+  img: string;
+  lote: string;
+  vecinas: string[];
+  lados: { x: number; y: number; ang: number; texto: string }[];
 }
 
 export interface Ficha {
@@ -38,6 +47,7 @@ export interface Ficha {
   plantas: number | null;
   antiguedad: string | null;
   operaciones: { operacion: string; precio: string; moneda: string }[];
+  forma: Forma | null;
 }
 
 export const PROPIEDADES = indiceCrudo as Propiedad[];

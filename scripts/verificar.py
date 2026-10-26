@@ -585,6 +585,34 @@ def castro(pg, nombre, cap):
         problemas.append(f"{nombre}: sin el servicio de fotos quedan {rotas} rotas y {visibles} a la vista")
     otra.close()
 
+    # Terrenos con su forma real: el dibujo, una medida por lado y nada en los que no tienen forma confirmada
+    con_forma = [x for x in indice if x.get("mini")]
+    if not con_forma:
+        problemas.append(f"{nombre}: ningún terreno tiene la forma dibujada")
+    else:
+        t = con_forma[0]["id"]
+        texto = ir(f"?p={t}", 1500)
+        cap("03b-terreno")
+        forma = json.loads((DIST / f"propuestas/castro-inmobiliaria/fichas/{t}.json").read_text())["forma"]
+        if pg.locator("[data-forma] polygon").count() < 1 or pg.locator("[data-forma] [data-lado]").count() != len(forma["lados"]):
+            problemas.append(f"{nombre}: el terreno {t} no muestra su forma con {len(forma['lados'])} medidas")
+        if not pg.evaluate("[...document.querySelectorAll('[data-forma] img')].every(i => i.complete && i.naturalWidth > 0)"):
+            problemas.append(f"{nombre}: la foto satelital del terreno {t} no se dibujó")
+        afuera = pg.evaluate("""() => { const f = document.querySelector('[data-forma] svg').getBoundingClientRect();
+          return [...document.querySelectorAll('[data-forma] [data-lado]')].filter(e => { const r = e.getBoundingClientRect();
+            return r.left < f.left - 1 || r.right > f.right + 1 || r.top < f.top - 1 || r.bottom > f.bottom + 1 }).map(e => e.textContent) }""")
+        if afuera:
+            problemas.append(f"{nombre}: medidas del terreno {t} que se salen de la foto: {afuera}")
+        if "catastro" not in texto or "mensura" not in texto:
+            problemas.append(f"{nombre}: el terreno {t} no aclara que la forma es del catastro y las medidas según mensura")
+        ir("?p=12024296")
+        if pg.locator("[data-forma]").count():
+            problemas.append(f"{nombre}: un terreno sin forma confirmada (12024296) muestra un dibujo")
+        ir("?ver=propiedades&tipo=Terreno")
+        for ident, tiene in pg.locator("[data-tarjeta]").evaluate_all("es => es.map(e => [e.dataset.tarjeta, !!e.querySelector('[data-mini]')])"):
+            if tiene != bool(next(x for x in indice if x["id"] == ident).get("mini")):
+                problemas.append(f"{nombre}: la tarjeta {ident} {'muestra' if tiene else 'no muestra'} la forma y en los datos {'no ' if tiene else ''}la tiene")
+
     texto = ir("?p=999")
     if "ya no está publicada" not in texto:
         problemas.append(f"{nombre}: una propiedad que no existe no avisa que ya no está publicada")

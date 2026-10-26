@@ -86,6 +86,8 @@ assert superficie("600.00M2") == 600 and superficie("0.00M2") is None and superf
 assert antiguedad("0 años") is None and antiguedad("-1 años") is None and antiguedad("7 años") == "7 años"
 
 propiedades = json.load(open(FUENTE / "propiedades.json"))
+# La forma real de los terrenos, armada por castro_satelite.py (si todavía no se corrió, no hay ninguna)
+FORMAS = json.load(open(FUENTE / "formas.json")) if (FUENTE / "formas.json").exists() else {}
 _muestra = {x["id"]: x for x in propiedades if x["id"] in ("633017", "8147479")}
 assert [es_volante(FUENTE / f) for f in _muestra["633017"]["fotos_locales"][:3]] == [True, True, False]
 assert [es_volante(FUENTE / f) for f in _muestra["8147479"]["fotos_locales"][:2]] == [True, False]
@@ -121,6 +123,7 @@ for p in propiedades:
         "lat": p["lat"],
         "lng": p["lng"],
         "fotos": len(p["fotos"]),
+        "mini": FORMAS.get(ident, {}).get("mini"),
     })
     ficha = {
         "id": ident,
@@ -133,6 +136,7 @@ for p in propiedades:
         "plantas": entero(p.get("plantas")),
         "antiguedad": antiguedad(p.get("antiguedad")),
         "operaciones": p.get("operaciones") or [],
+        "forma": {k: v for k, v in FORMAS[ident].items() if k != "mini"} if ident in FORMAS else None,
     }
     (PUB / "fichas").mkdir(parents=True, exist_ok=True)
     (PUB / "fichas" / f"{ident}.json").write_text(json.dumps(ficha, ensure_ascii=False, separators=(",", ":")))
