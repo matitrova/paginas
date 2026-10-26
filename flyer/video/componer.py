@@ -1,6 +1,5 @@
 """Arma el video de Facebook: pinta video.html cuadro por cuadro y lo junta con ffmpeg.
-Antes: grabar.py (las tomas) y extraer los cuadros de cada toma:
-  for s in autoshine cabanas casa-tala; do mkdir -p cuadros/$s; ffmpeg -i tomas/$s.webm -vf fps=30 -q:v 3 cuadros/$s/%04d.jpg; done
+Antes: grabar.py, que saca los cuadros de cada toma y anota cuántos son en cuadros/cuadros.js.
 
 Uso:  ../Test1_Inmo/.venv/bin/python flyer/video/componer.py
 Sale: flyer/salida/video-facebook.mp4 (1080x1920, 30 cuadros por segundo, sin sonido)

@@ -90,16 +90,22 @@
   </div>
 </div>
 
+<script src="cuadros/cuadros.js"></script>
 <script>
 // La línea de tiempo entera sale de pintar(t): un cuadro por llamada, sin animaciones sueltas,
 // así cada cuadro del video es exacto y se puede rehacer igual.
-// Cada toma dura lo que grabó grabar.py (1,5 s quieta + 4 tramos de 2 s = 285 cuadros) menos el arranque que se salta
-const CUADROS = 285, SALTA = 0.6, ESCENA = CUADROS / 30 - SALTA, INICIO = 2.6;
+// Cada toma dura lo que grabó grabar.py (lo anota en cuadros/cuadros.js) menos el arranque que se salta
+const CUADROS = window.CUADROS, SALTA = 0.6, INICIO = 2.6;
+let corte = INICIO;
 const ESCENAS = [
   { toma: "autoshine", chip: "cliente", chipTexto: "Cliente · autoshine.com.ar", frase: "Los turnos le llegan directo al WhatsApp." },
   { toma: "cabanas", chip: "ejemplo", chipTexto: "Página de ejemplo", frase: "Consultas de fechas sin pagar comisión." },
   { toma: "casa-tala", chip: "ejemplo", chipTexto: "Página de ejemplo", frase: "La carta en el celular, de día y de noche." },
-].map((e, i) => ({ ...e, desde: INICIO + i * ESCENA, hasta: INICIO + (i + 1) * ESCENA }));
+].map((e) => {
+  const desde = corte;
+  corte += CUADROS[e.toma] / 30 - SALTA;
+  return { ...e, desde, hasta: corte };
+});
 const FIN = ESCENAS[ESCENAS.length - 1].hasta;
 const DURACION = FIN + 3.6;
 const suave = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -133,7 +139,7 @@ async function pintar(t) {
     if (visible) {
       // A velocidad real: arranca casi al final de la portada quieta y sigue con los tramos
       const segundo = SALTA + (t - e.desde);
-      const n = Math.max(1, Math.min(CUADROS, Math.round(segundo * 30)));
+      const n = Math.max(1, Math.min(CUADROS[e.toma], Math.round(segundo * 30)));
       const src = `cuadros/${e.toma}/${String(n).padStart(4, "0")}.jpg`;
       if (!img.src.endsWith(src)) {
         img.src = src;
