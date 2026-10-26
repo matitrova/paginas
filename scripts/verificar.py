@@ -478,8 +478,9 @@ def castro(pg, nombre, cap):
     cartel = pg.locator("aside[aria-label^='Aviso: propuesta']")
     if not cartel.is_visible() or "No es la página oficial" not in cartel.inner_text():
         problemas.append(f"{nombre}: no se ve el cartel de propuesta")
-    if "22 de octubre de 2026" not in texto:
-        problemas.append(f"{nombre}: no aparece la fecha en que se les venció el certificado")
+    # Lo de la caída se lo cuenta Matías en el mensaje: la página se muestra como su sitio real
+    if re.search(r"no abre|certificado|22 de octubre", texto, re.I) or pg.locator("[data-aviso-caida]").count():
+        problemas.append(f"{nombre}: volvió a aparecer el aviso de que su página no anda")
     esperado = {"Casas": sum(x["tipo"] == "Casa" for x in venta), "Terrenos": sum(x["tipo"] == "Terreno" for x in venta),
                 "Alquileres": sum("alquiler" in x["operacion"] for x in indice), "Urbanizaciones": 22}
     for acceso, n in esperado.items():
@@ -642,10 +643,6 @@ def castro(pg, nombre, cap):
         problemas.append(f"{nombre}: una propiedad que no existe no avisa que ya no está publicada")
 
     # Certificado, urbanizaciones, nosotros y contacto
-    texto = ir("?ver=certificado")
-    cap("04-certificado")
-    if "NET::ERR_CERT_DATE_INVALID" not in texto or not pg.locator("[data-para-el-tecnico]").is_visible():
-        problemas.append(f"{nombre}: la pantalla del certificado no muestra el error o el texto para el técnico")
     ir("?ver=urbanizaciones")
     cap("05-urbanizaciones")
     if pg.locator("[data-urbanizacion]").count() != 22:

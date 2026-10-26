@@ -3,8 +3,7 @@
 // al mismo lugar del listado y abrir en otra pestaña los resuelve el navegador.
 import { useEffect } from "react";
 import CintaPropuesta from "../../../compartido/CintaPropuesta";
-import Certificado from "./Certificado";
-import { AvisoCaida, Encabezado, Pie } from "./componentes";
+import { Encabezado, Pie } from "./componentes";
 import { NEGOCIO } from "./datos";
 import Ficha from "./Ficha";
 import Listado from "./Listado";
@@ -13,7 +12,6 @@ import { Contacto, Nosotros, Urbanizacion, Urbanizaciones } from "./Secciones";
 
 const TITULOS: Record<string, string> = {
   propiedades: "Propiedades en Villa de Merlo",
-  certificado: "Su página hoy no abre",
 };
 
 export default function App() {
@@ -32,14 +30,12 @@ export default function App() {
     : ver === "urbanizaciones" ? <Urbanizaciones />
     : ver === "nosotros" ? <Nosotros />
     : ver === "contacto" ? <Contacto />
-    : ver === "certificado" ? <Certificado />
     : <Portada />;
 
   return (
     <div className="pt-8">
       <CintaPropuesta negocio={NEGOCIO} />
       <Encabezado actual={ver} />
-      {ver !== "certificado" && <AvisoCaida />}
       <main>{pantalla}</main>
       <Pie pegado={ver === "nosotros"} abajo={!!p} />
     </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
 import { esTerreno, NEGOCIO, portada, precio, precioEn, precioPorSuperficie, SITIO, superficie, TELEFONO, type Propiedad } from "./datos";
-import { CAIDA, NOTA_DATOS } from "./textos";
+import { NOTA_DATOS } from "./textos";
 
 /** Arma un link a otra pantalla. Cada pantalla es una página común: "atrás" y abrir en otra pestaña andan solos. */
 export function ir(params: Record<string, string | number | undefined | null> = {}) {
@@ -53,16 +53,6 @@ export function Encabezado({ actual }: { actual: string }) {
         </details>
       </div>
     </header>
-  );
-}
-
-/** Arriba de cada pantalla: el gancho de la propuesta. Se va al bajar; el cartel de propuesta sí queda fijo. */
-export function AvisoCaida() {
-  return (
-    <a href={ir({ ver: "certificado" })} data-aviso-caida className="block bg-alarma px-4 py-2.5 text-center text-[13.5px] leading-snug text-white">
-      <b className="font-semibold">Su página hoy no abre</b> desde el {CAIDA.vencio}. Así podría quedar.{" "}
-      <span className="underline underline-offset-2">Qué pasó y cómo arreglarlo →</span>
-    </a>
   );
 }
 
