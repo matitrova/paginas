@@ -58,6 +58,7 @@ export const PROPIEDADES = indiceCrudo as unknown as Propiedad[]; // el JSON no 
 export const SITIO = sitioCrudo;
 export const URBANIZACIONES = sitioCrudo.urbanizaciones;
 export const porId = new Map(PROPIEDADES.map((p) => [p.id, p]));
+export const MARTILLEROS = SITIO.equipo.filter((e) => e.cargo.includes("Martillero")).length;
 
 export const NEGOCIO = "Castro Inmobiliaria";
 

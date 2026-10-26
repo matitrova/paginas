@@ -4,7 +4,9 @@ Playwright sirve los archivos desde el disco. Saca capturas y termina con error 
 Uso:  npm run build && ../Test1_Inmo/.venv/bin/python scripts/verificar.py [carpeta-de-capturas] [página]
       (la carpeta va primero; la página, por ejemplo "castro", es el segundo argumento)
 """
+import ast
 import mimetypes
+import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -446,8 +448,9 @@ def extras_indio_mejorada(pg, nombre, cap):
     pg.wait_for_timeout(400)
 
 
-# Las mismas erratas de su sitio que corrige scripts/castro_datos.py
-ERRATAS_CASTRO = {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación"}
+# Las erratas de su sitio que corrige scripts/castro_datos.py, leídas de su código sin ejecutarlo (importarlo corre todo
+# el armado de datos): una sola lista. Si cambia de forma, esto rompe en vez de comparar sin corregir.
+ERRATAS_CASTRO = ast.literal_eval(re.search(r"for mal, bien in (\{.*?\})\.items\(\)", (Path(__file__).resolve().parent / "castro_datos.py").read_text()).group(1))
 
 
 def normalizar(s):
@@ -513,12 +516,21 @@ def castro_portada(pg, nombre, indice, sitio):
     los terrenos con su forma y la fachada fuera de la portada."""
     venta = [x for x in indice if "venta" in x["operacion"]]
     claves = castro_numeros(pg, nombre, "la portada", indice, sitio)
-    if not {"venta", "forma"} <= claves or sum(c.startswith("zona:") for c in claves) < 5:
+    if not {"venta", "forma", "terrenos", "equipo", "martilleros"} <= claves or sum(c.startswith("zona:") for c in claves) < 5:
         problemas.append(f"{nombre}: a la portada le faltan los números del titular o de las zonas: {sorted(claves)}")
-    # El celular primero: el buscador y "Explorar el mapa" se ven sin bajar
-    abajo = pg.evaluate("Math.max(...['[data-buscador] button[type=submit]', '[data-explorar]'].map(s => document.querySelector(s)?.getBoundingClientRect().bottom ?? 1e9))")
-    if abajo > pg.viewport_size["height"]:
-        problemas.append(f"{nombre}: los botones de la primera pantalla terminan en {abajo:.0f} px y la pantalla mide {pg.viewport_size['height']}")
+    # El celular primero: el buscador y "Explorar el mapa" se ven sin bajar y sin el WhatsApp encima, también con la
+    # barra de Safari (390x664), en un iPhone SE (375x667) y en un Android angosto (360x740)
+    tam = pg.viewport_size
+    for w, h in [(tam["width"], tam["height"])] + ([(375, 667), (390, 664), (360, 740)] if tam["width"] < 768 else []):
+        pg.set_viewport_size({"width": w, "height": h})
+        pg.wait_for_timeout(200)
+        *botones, wa = pg.evaluate("""['[data-buscador] button[type=submit]', '[data-explorar]', '[data-whatsapp-flotante]']
+          .map(s => { const r = document.querySelector(s)?.getBoundingClientRect(); return r && [r.left, r.top, r.right, r.bottom].map(Math.round) })""")
+        tapados = [b for b in botones if b and wa and b[0] < wa[2] and wa[0] < b[2] and b[1] < wa[3] and wa[1] < b[3]]
+        if None in botones or max(b[3] for b in botones) > h or tapados:
+            problemas.append(f"{nombre}: en {w}x{h} los botones de la primera pantalla terminan en {[b and b[3] for b in botones]} "
+                             f"o el WhatsApp ({wa}) tapa {tapados}")
+    pg.set_viewport_size(tam)
     if pg.locator("img[src*=imagcontact]").count():
         problemas.append(f"{nombre}: la fachada volvió a la portada (va solo en Contacto)")
     # Las últimas que entraron son las de alta más reciente, y cada una dice su fecha
@@ -560,6 +572,13 @@ def castro(pg, nombre, cap):
 
     def resultados():
         return int(pg.locator("[data-resultados]").get_attribute("data-resultados"))
+
+    # Las imágenes que trae la rama de datos (castro_satelite.py): si se publica sin ellas, la portada y las tarjetas
+    # de los terrenos con forma quedan rotas, y casi todas cargan recién al bajar, así que no se notaría
+    fotos = DIST / "propuestas/castro-inmobiliaria/fotos"
+    if faltan := [f for f in ["portada-mapa-800.webp", "portada-mapa-1600.webp", *(f"lote-tarjeta-{x['id']}.webp" for x in indice if x.get("mini"))]
+                  if not (fotos / f).is_file()]:
+        problemas.append(f"{nombre}: faltan {len(faltan)} imágenes de la rama de datos en dist/, por ejemplo {faltan[:3]}")
 
     # Portada: cartel, aviso de la caída y los números, que tienen que ser los del índice
     sitio = json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/sitio.json").read_text())
@@ -605,9 +624,13 @@ def castro(pg, nombre, cap):
     frases = frases_de_castro(sitio)
     if len(frases) < 20:
         problemas.append(f"{nombre}: solo {len(frases)} frases de su sitio para comparar: el chequeo de textos no probaría nada")
-    for q in ["", "?ver=nosotros", "?ver=vender", "?ver=urbanizaciones", "?ver=contacto"]:
+    # Y los números de cada pantalla, que tienen que estar (el pie, en todas, dice publicadas y urbanizaciones)
+    numeros = {"": {"venta", "forma"}, "?ver=nosotros": {"publicadas", "urbanizaciones"}, "?ver=vender": {"martilleros"},
+               "?ver=urbanizaciones": {"urbanizaciones", "urbanizaciones_con"}, "?ver=contacto": set()}
+    for q, deben in numeros.items():
         pagina = normalizar(ir(q))
-        castro_numeros(pg, nombre, f"'{q or 'portada'}'", indice, sitio)
+        if faltan := (deben | {"publicadas", "urbanizaciones"}) - castro_numeros(pg, nombre, f"'{q or 'portada'}'", indice, sitio):
+            problemas.append(f"{nombre}: a '{q or 'portada'}' le faltan los números marcados {sorted(faltan)}")
         if copiadas := [f for f in frases if f in pagina]:
             problemas.append(f"{nombre}: '{q or 'portada'}' repite {len(copiadas)} frases de su sitio, por ejemplo «{copiadas[0][:90]}»")
 

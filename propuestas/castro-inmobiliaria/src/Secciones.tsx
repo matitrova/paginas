@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ir, linkPropiedad, MapaUrbanizaciones, Tarjeta, Titulo, useConsulta, useGuardadas } from "./componentes";
-import { porId, precio, PROPIEDADES, SITIO, TELEFONO, URBANIZACIONES } from "./datos";
+import { MARTILLEROS, porId, precio, PROPIEDADES, SITIO, TELEFONO, URBANIZACIONES } from "./datos";
 import { CONTACTO, NOSOTROS, URBANIZACIONES_TXT, VENDER } from "./textos";
 import { Descripcion, nombreLindo } from "./Ficha";
 
@@ -131,13 +131,16 @@ export function Nosotros() {
 
       <section className="mx-auto mt-16 max-w-6xl px-5 sm:px-6">
         <Titulo chico={NOSOTROS.equipoChico}>{NOSOTROS.equipo}</Titulo>
+        {/* En el celular (2 columnas) la primera persona ocupa el renglón con la foto a un lado: 5 sin una suelta al final */}
         <ul className="mt-7 grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-5" data-equipo>
           {equipo.map((e) => (
-            <li key={e.nombre}>
+            <li key={e.nombre} className="max-sm:first:col-span-2 max-sm:first:grid max-sm:first:grid-cols-2 max-sm:first:items-end max-sm:first:gap-x-5">
               <img src={e.foto} alt={e.nombre} loading="lazy" className="aspect-[4/5] w-full rounded-2xl bg-piedra object-cover object-top" />
-              <p className="font-display mt-3 text-[1.2rem] leading-tight">{e.nombre}</p>
-              <p className="mt-1 text-[13.5px] leading-snug text-suave">{e.cargo.replace(/\.$/, "")}</p>
-              {/^\d+$/.test(e.matricula) && <p className="mt-1 text-[13.5px] text-suave">Matrícula {e.matricula} CMCPSL</p>}
+              <div>
+                <p className="font-display mt-3 text-[1.2rem] leading-tight">{e.nombre}</p>
+                <p className="mt-1 text-[13.5px] leading-snug text-suave">{e.cargo.replace(/\.$/, "")}</p>
+                {/^\d+$/.test(e.matricula) && <p className="mt-1 text-[13.5px] text-suave">Matrícula {e.matricula} CMCPSL</p>}
+              </div>
             </li>
           ))}
         </ul>
@@ -261,7 +264,6 @@ export function Vender() {
   };
   const campo = "mt-1 h-12 w-full rounded-xl border border-chocolate/60 bg-arena px-3.5 text-[16px]";
   const cambiar = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
-  const martilleros = SITIO.equipo.filter((e) => e.cargo.includes("Martillero")).length;
   return (
     <>
       <section className="mx-auto grid max-w-6xl gap-10 px-5 pt-8 sm:px-6 md:grid-cols-2">
@@ -269,7 +271,7 @@ export function Vender() {
           <Titulo chico={VENDER.chico} h1>{VENDER.titulo}</Titulo>
           <p className="mt-4 max-w-md text-[17px] leading-relaxed">{VENDER.bajada}</p>
           <h2 className="font-display mt-10 text-[1.7rem]">{VENDER.pasosTitulo}</h2>
-          <ol className="mt-4 border-l-2 border-terracota/40 pl-5" data-pasos>
+          <ol className="mt-4 ml-3.5 border-l-2 border-terracota/40 pl-5" data-pasos>
             {VENDER.pasos.map((paso, i) => (
               <li key={paso} className="relative py-2.5 text-[16px]">
                 <span className="absolute top-1/2 -left-[2.05rem] grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-terracota text-[13px] font-semibold text-white">{i + 1}</span>
@@ -320,7 +322,7 @@ export function Vender() {
           {VENDER.razones.map((r, i) => (
             <li key={r.titulo} className="border-t-2 border-terracota pt-4">
               <h3 className="font-display text-[1.35rem] leading-tight">
-                {i === 1 ? <><span data-dato="martilleros">{martilleros}</span> {r.titulo}</> : r.titulo}
+                {i === 1 ? <><span data-dato="martilleros">{MARTILLEROS}</span> {r.titulo}</> : r.titulo}
               </h3>
               <p className="mt-2 text-[15px] leading-relaxed text-suave">{r.texto}</p>
             </li>

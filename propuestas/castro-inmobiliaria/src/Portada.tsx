@@ -1,26 +1,32 @@
 import { useState } from "react";
 import { ir, Tarjeta, Titulo } from "./componentes";
-import { contar, PROPIEDADES, SITIO, TIPOS, type Propiedad } from "./datos";
+import { contar, MARTILLEROS, PROPIEDADES, SITIO, TIPOS, type Propiedad } from "./datos";
 import { PORTADA as T, VENDER } from "./textos";
 
 const venta = PROPIEDADES.filter((p) => p.operacion.includes("venta"));
 const conForma = venta.filter((p) => p.mini);
+const terrenos = venta.filter((p) => p.tipo === "Terreno").length;
 // De la más nueva a la más vieja según la fecha en que la cargaron (no sus destacadas)
 const nuevas = [...venta].sort((a, b) => b.alta.localeCompare(a.alta));
 const ULTIMAS = nuevas.slice(0, 6);
 const FORMA = nuevas.filter((p) => p.mini && !ULTIMAS.includes(p)).slice(0, 6);
 const TIPOS_VENTA = contar(venta, (p) => p.tipo);
 const ZONAS = contar(venta, (p) => p.zona).slice(0, 12);
-const MARTILLEROS = SITIO.equipo.filter((e) => e.cargo.includes("Martillero")).length;
 
-const fecha = (alta: string) => new Date(`${alta}T12:00:00`).toLocaleDateString("es-AR", { day: "numeric", month: "long" });
+/** "15 de octubre", y con el año si no es el de hoy. */
+function fecha(alta: string) {
+  const d = new Date(`${alta}T12:00:00`);
+  return d.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+}
 
-/** Tipo y zona, y al listado con eso elegido. Las zonas que se ofrecen son las que tienen de ese tipo. */
+/** Tipo y zona, y al listado con eso elegido. Las zonas que se ofrecen son las que tienen de ese tipo. En el celular,
+ *  sin rótulos a la vista (cada lista arranca diciendo qué es). "Buscar" y "Explorar el mapa" van en un renglón: así la
+ *  primera pantalla del celular entra con la barra de Safari y sin el WhatsApp encima. */
 function Buscador() {
   const [tipo, setTipo] = useState("");
   const [zona, setZona] = useState("");
   const zonas = contar(venta.filter((p) => !tipo || p.tipo === tipo), (p) => p.zona);
-  const campo = "mt-1 h-12 w-full min-w-0 rounded-xl border-0 bg-arena px-3 text-[16px] text-chocolate";
+  const campo = "h-12 w-full min-w-0 rounded-xl border-0 bg-arena px-3 text-[16px] text-chocolate sm:mt-1";
   return (
     <form
       data-buscador
@@ -28,10 +34,10 @@ function Buscador() {
         e.preventDefault();
         location.href = ir({ ver: "propiedades", tipo, zona });
       }}
-      className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+      className="mt-5 grid grid-cols-2 gap-2.5"
     >
       <label className="min-w-0 text-[12.5px] font-medium text-arena/80">
-        Qué buscás
+        <span className="max-sm:sr-only">Qué buscás</span>
         <select
           name="tipo"
           value={tipo}
@@ -41,14 +47,14 @@ function Buscador() {
           }}
           className={campo}
         >
-          <option value="">Todo</option>
+          <option value="">Todos los tipos</option>
           {TIPOS_VENTA.map(([t, n]) => (
             <option key={t} value={t}>{`${TIPOS[t] ?? t} (${n})`}</option>
           ))}
         </select>
       </label>
       <label className="min-w-0 text-[12.5px] font-medium text-arena/80">
-        Dónde
+        <span className="max-sm:sr-only">Dónde</span>
         <select name="zona" value={zona} onChange={(e) => setZona(e.target.value)} className={campo}>
           <option value="">Todas las zonas</option>
           {zonas.map(([z, n]) => (
@@ -56,9 +62,15 @@ function Buscador() {
           ))}
         </select>
       </label>
-      <button type="submit" className="col-span-2 h-12 rounded-xl bg-terracota px-6 text-[16px] font-semibold text-white hover:brightness-110 sm:col-span-1">
+      <button type="submit" className="h-12 rounded-xl bg-terracota px-6 text-[16px] font-semibold text-white hover:brightness-110">
         {T.buscar}
       </button>
+      <a href={ir({ ver: "propiedades", mapa: 1 })} data-explorar className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-arena/40 text-[15px] font-semibold hover:bg-arena/10 sm:gap-2 sm:text-[16px]">
+        <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 max-[359px]:hidden" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true">
+          <path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z M9 4v13.5 M15 6.5V20" />
+        </svg>
+        {T.explorar}
+      </a>
     </form>
   );
 }
@@ -66,7 +78,9 @@ function Buscador() {
 /** Una fila de tarjetas: en el celular se desliza de costado, en la compu es una grilla. */
 function Fila({ lista, fechas = false }: { lista: Propiedad[]; fechas?: boolean }) {
   return (
-    <ul data-libre className="sin-barra -mx-5 mt-6 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto px-5 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 lg:grid-cols-3">
+    // Sin content-visibility: en el carrusel, las tarjetas de afuera quedaban con su alto falso (400 px) y estiraban el
+    // renglón, con un hueco abajo de las que se ven
+    <ul data-libre className="sin-barra -mx-5 mt-6 flex [&_.tarjeta]:[content-visibility:visible] snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto px-5 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-10 sm:overflow-visible sm:px-0 lg:grid-cols-3">
       {lista.map((p) => (
         <li key={p.id} className="w-[80%] shrink-0 snap-start sm:w-auto">
           {fechas && (
@@ -94,37 +108,32 @@ export default function Portada() {
   return (
     <>
       {/* Primera pantalla: la foto satelital con los lotes, el titular con los números y el buscador. En el celular,
-          el buscador y "Explorar el mapa" entran sin bajar. */}
-      <section className="textura-clara grid bg-chocolate text-arena md:min-h-[540px] md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <div className="px-5 pt-5 pb-8 sm:px-6 md:py-14 md:pr-10 md:pl-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
+          el buscador y "Explorar el mapa" entran sin bajar. En la tablet, apilado como en el celular: en dos columnas
+          no entraban las listas. */}
+      <section className="textura-clara grid bg-chocolate text-arena lg:min-h-[540px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <div className="px-5 pt-5 pb-8 sm:px-6 sm:pt-8 lg:py-14 lg:pr-10 lg:pl-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
           <p className="text-[12px] font-semibold tracking-[0.18em] text-arena/75 uppercase">{T.lugar}</p>
-          <h1 className="font-display mt-3 text-[1.9rem] leading-[1.08] tracking-[-0.01em] text-balance sm:text-[2.9rem]">
+          <h1 className="font-display mt-2 text-[1.8rem] leading-[1.08] tracking-[-0.01em] text-balance sm:text-[2.9rem]">
             <span data-dato="venta">{venta.length}</span> {T.enVenta}
             <span className="sr-only"> · </span>
             <span className="mt-1 block text-naranja italic">
               <span data-dato="forma">{conForma.length}</span> {T.conForma}
             </span>
           </h1>
-          {/* Su eslogan, chico y entre comillas: es de ellos */}
-          <p className="font-display mt-3 text-[15px] text-arena/75 italic">“{SITIO.inicio.titular.replace(/\s*\n\s*/g, " ")}”</p>
           <Buscador />
-          <a href={ir({ ver: "propiedades", mapa: 1 })} data-explorar className="mt-2.5 flex h-12 items-center justify-center gap-2 rounded-xl border border-arena/40 text-[16px] font-semibold hover:bg-arena/10">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z M9 4v13.5 M15 6.5V20" />
-            </svg>
-            {T.explorar}
-          </a>
+          {/* Su eslogan, chico y entre comillas: es de ellos */}
+          <p className="font-display mt-5 text-[15px] text-arena/75 italic">“{SITIO.inicio.titular.replace(/\s*\n\s*/g, " ")}”</p>
         </div>
-        <div className="relative order-first md:order-none">
+        <div className="relative order-first lg:order-none">
           <img
             src="./fotos/portada-mapa-800.webp"
             srcSet="./fotos/portada-mapa-800.webp 800w, ./fotos/portada-mapa-1600.webp 1600w"
-            sizes="(min-width: 768px) 55vw, 100vw"
+            sizes="(min-width: 1024px) 55vw, 100vw"
             alt="Foto satelital de un barrio de Merlo con los terrenos en venta dibujados en naranja"
             width={1600}
             height={1000}
             fetchPriority="high"
-            className="aspect-[16/9] w-full object-cover object-right-bottom md:absolute md:inset-0 md:aspect-auto md:h-full"
+            className="aspect-[2/1] w-full object-cover object-right-bottom lg:absolute lg:inset-0 lg:aspect-auto lg:h-full"
           />
           {/* La atribución de la foto también viene dibujada en la esquina, pero en el celular queda ilegible */}
           <p className="absolute right-0 bottom-0 bg-chocolate px-2 py-0.5 text-[11px] text-arena">Foto: Esri, Maxar, Earthstar Geographics</p>
@@ -132,16 +141,13 @@ export default function Portada() {
       </section>
 
       <section className="mx-auto mt-14 max-w-6xl px-5 sm:px-6" data-ultimas>
-        <div className="flex items-end justify-between gap-4">
+        {/* El link arriba, como en "Terrenos con su forma real": abajo del carrusel quedaba lejos de la tarjeta a la vista
+            cuando otra del renglón es más alta */}
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
           <Titulo chico={T.ultimasChico}>{T.ultimas}</Titulo>
-          <span className="hidden sm:block">
-            <VerTodas href={ir({ ver: "propiedades" })}>{T.verUltimas}</VerTodas>
-          </span>
+          <VerTodas href={ir({ ver: "propiedades" })}>{T.verUltimas}</VerTodas>
         </div>
         <Fila lista={ULTIMAS} fechas />
-        <p className="mt-5 sm:hidden">
-          <VerTodas href={ir({ ver: "propiedades" })}>{T.verUltimas}</VerTodas>
-        </p>
       </section>
 
       <section className="textura mt-16 bg-piedra py-14" data-con-forma>
@@ -151,7 +157,10 @@ export default function Portada() {
               <Titulo chico={T.formaChico}>{T.forma}</Titulo>
               <p className="mt-3 text-[16px] leading-relaxed">{T.formaTexto}</p>
             </div>
-            <VerTodas href={ir({ ver: "propiedades", tipo: "Terreno" })}>{T.verTerrenos}</VerTodas>
+            {/* Todos los terrenos, con forma o sin: el listado no filtra por forma */}
+            <VerTodas href={ir({ ver: "propiedades", tipo: "Terreno" })}>
+              Ver los <span data-dato="terrenos">{terrenos}</span> terrenos
+            </VerTodas>
           </div>
           <Fila lista={FORMA} />
         </div>

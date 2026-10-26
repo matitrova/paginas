@@ -25,7 +25,6 @@ export const PORTADA = {
   formaChico: "Del catastro de San Luis",
   forma: "Terrenos con su forma real",
   formaTexto: "Cada lote dibujado sobre la foto satelital, con la medida de sus lados.",
-  verTerrenos: "Ver los terrenos",
   zonasChico: "Por zona",
   zonas: "¿Dónde buscás?",
   venderChico: "Vender o tasar",
@@ -49,7 +48,7 @@ export const NOSOTROS = {
   museoChico: "Museo de La Firma",
   museo: "Una inmobiliaria que también es museo",
   museoTextos: [
-    "Guillermo Castro colecciona autógrafos, y convirtió la oficina en un museo con miles de firmas de figuras argentinas y de todo el mundo. Lo presentan como la primera inmobiliaria temática del país.",
+    "Guillermo Castro colecciona autógrafos, y convirtió la oficina en un museo con miles de firmas de figuras argentinas y de todo el mundo. Es la primera inmobiliaria temática del país.",
     "Hay objetos firmados por Freddie Mercury, Diego Maradona, Nicole Kidman, Lionel Messi, Ringo Starr, Elton John y Miley Cyrus; camisetas de equipos de fútbol, guantes de boxeo de campeones mundiales y sombreros de artistas. Además de la colección fija, organiza actividades y eventos.",
   ],
   museoVisita: "Se visita en la oficina: Pbro. Becerra 436, Villa de Merlo.",

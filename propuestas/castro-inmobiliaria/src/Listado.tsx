@@ -201,12 +201,12 @@ export default function Listado() {
       </div>
 
       <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Tipo de propiedad">
-        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
-          Todas <span className="opacity-70">{deLaOperacion.length}</span>
+        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="group shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
+          Todas <span className="opacity-70 group-aria-pressed:opacity-100">{deLaOperacion.length}</span>
         </button>
         {tipos.map(([tipo, n]) => (
-          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
-            {TIPOS[tipo] ?? tipo} <span className="opacity-70">{n}</span>
+          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="group shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
+            {TIPOS[tipo] ?? tipo} <span className="opacity-70 group-aria-pressed:opacity-100">{n}</span>
           </button>
         ))}
       </div>
@@ -226,7 +226,7 @@ export default function Listado() {
           <b className="font-semibold">{lista.length}</b> {lista.length === 1 ? "propiedad" : "propiedades"}
         </p>
         {hayFiltros && (
-          <button onClick={() => cambiar({ tipo: "", zona: "", precio: "", dorm: "", sup: "", q: "" })} className="text-[14px] font-semibold text-naranja-osc">
+          <button onClick={() => cambiar({ tipo: "", zona: "", precio: "", dorm: "", sup: "", q: "" })} className="text-[14px] font-semibold text-chocolate underline decoration-chocolate/30 underline-offset-4 hover:decoration-chocolate">
             Limpiar filtros
           </button>
         )}
