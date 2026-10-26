@@ -4,10 +4,16 @@ Entrada: ~/castro-datos (propiedades.json, urbanizaciones.json, institucional.js
 No va al repo: son 1,3 GB. Sale:
   propuestas/castro-inmobiliaria/src/datos/indice.json      lo que necesitan la portada y el listado
   propuestas/castro-inmobiliaria/src/datos/sitio.json       urbanizaciones, equipo, museo y contacto
-  public/propuestas/castro-inmobiliaria/fichas/<id>.json    la ficha completa, se pide al abrirla
+  public/propuestas/castro-inmobiliaria/fichas/<id>.json    la ficha completa, se pide al abrirla; con su mapa
+                                                            (de ~/castro-datos/mapas.json, que arma castro_satelite.py),
+                                                            a cuánto queda de la plaza, la terminal y el hospital, y la
+                                                            altura y la pendiente de la zona
+  public/propuestas/castro-inmobiliaria/mapa.json           los lotes simplificados y los calces, para el mapa general
   public/propuestas/castro-inmobiliaria/fotos/p-<id>.webp   una foto chica por propiedad, recortada a 4:3
   public/propuestas/castro-inmobiliaria/fotos/*.webp         equipo, museo, urbanizaciones y el logo
   ~/castro-datos/errores_de_carga.md                         lo que no cierra en sus datos, para Mauro
+Guarda lo que pide afuera: ~/castro-datos/rutas.json (OSRM) y ~/castro-datos/terrarium/ (relieve).
+Antes hay que correr castro_satelite.py.
 Las galerías completas no se copian: se ven desde el servicio de fotos de ellos (static.tokkobroker.com).
 
 Los datos van tal cual los publican, salvo dos cosas que se muestran mal en su sitio:
@@ -18,11 +24,18 @@ Los datos van tal cual los publican, salvo dos cosas que se muestran mal en su s
 Uso:  ../Test1_Inmo/.venv/bin/python scripts/castro_datos.py [carpeta-de-datos]
 """
 import json
+import math
 import re
 import sys
+import time
+import urllib.request
+from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 
 from PIL import Image, ImageOps
+
+from castro_satelite import mundo
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTE = Path(sys.argv[1] if len(sys.argv) > 1 else Path.home() / "castro-datos")
@@ -80,6 +93,129 @@ def clave_zona(z):
 # Variantes que el agrupado solo no junta (escritas distinto, no solo con otra mayúscula)
 ALIAS_ZONA = {"rincon de este": "rincon del este", "santa rosa de conlara": "santa rosa del conlara"}
 
+UA = "castro-propuesta/1.0 (matitrova13 at gmail)"
+# A cuánto queda: los lugares salen de OpenStreetMap (buscados en Nominatim el 26/10/2026; centro del área o el nodo):
+#   Plaza de Merlo: way 145821661, "Plaza Márquez de Sobremonte", -32.342700, -65.013678
+#   Terminal: node 505820708, "Terminal Omnibus Merlo", Ruta Provincial 1, -32.350158, -65.016442. La "Terminal de
+#     Ómnibus locales" de al lado de la plaza (node 2726154850) es la vieja: sus paradas dicen "Vieja Terminal de Merlo".
+#   Hospital: way 731766514, "Hospital Madre Catalina Rodríguez", El Ceibo y Ruta 1, -32.352941, -65.016397. En OSM
+#     figura como landuse=residential (con emergency=yes); hay además un amenity=hospital sin nombre (node 2725909561)
+#     en Las Magdalenas, que no se usa.
+LUGARES = [("Plaza de Merlo", -32.342700, -65.013678), ("Terminal de ómnibus", -32.350158, -65.016442),
+           ("Hospital de Merlo", -32.352941, -65.016397)]
+
+
+def metros_entre(lat1, lng1, lat2, lng2):
+    return math.hypot((lng2 - lng1) * 111320 * math.cos(math.radians(lat1)), (lat2 - lat1) * 110540)
+
+
+def rutas(puntos):
+    """Metros y segundos en auto de cada punto a los LUGARES, con el servicio table del OSRM de demostración: pocos
+    pedidos (90 puntos cada uno), uno por segundo. Se guardan en rutas.json y no se vuelven a pedir."""
+    archivo = FUENTE / "rutas.json"
+    guardadas = json.loads(archivo.read_text()) if archivo.exists() else {}
+    faltan = [pt for pt in dict.fromkeys(puntos) if f"{pt[0]},{pt[1]}" not in guardadas]
+    for i in range(0, len(faltan), 90):
+        tanda = faltan[i:i + 90]
+        coords = ";".join(f"{lng},{lat}" for lat, lng in tanda + [(la, ln) for _, la, ln in LUGARES])
+        n = len(tanda)
+        url = (f"https://router.project-osrm.org/table/v1/driving/{coords}?sources={';'.join(map(str, range(n)))}"
+               f"&destinations={';'.join(str(n + k) for k in range(len(LUGARES)))}&annotations=duration,distance")
+        r = json.loads(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=90).read())
+        assert r["code"] == "Ok", r.get("message")
+        for k, (lat, lng) in enumerate(tanda):
+            guardadas[f"{lat},{lng}"] = [[d, s] if d is not None else None for d, s in zip(r["distances"][k], r["durations"][k])]
+        archivo.write_text(json.dumps(guardadas))
+        time.sleep(1.1)
+    return guardadas
+
+
+def cercanos(lat, lng, viajes):
+    """En auto, aproximado. Lejos de Merlo (más de 20 km en línea recta de la plaza), solo cuánto queda Merlo."""
+    viaje = viajes[f"{lat},{lng}"]
+    if metros_entre(lat, lng, LUGARES[0][1], LUGARES[0][2]) > 20000:
+        return [{"lugar": "Villa de Merlo", "km": round(viaje[0][0] / 1000)}] if viaje[0] else []
+    return [{"lugar": nombre, "km": round(v[0] / 1000, 1), "min": max(1, round(v[1] / 60))} for (nombre, _, _), v in zip(LUGARES, viaje) if v]
+
+
+@lru_cache(maxsize=None)
+def terrarium(x, y):
+    """Un pedacito del relieve (Terrarium, z14: ~8 m por píxel, de datos SRTM de ~30 m)."""
+    archivo = FUENTE / f"terrarium/14/{x}/{y}.png"
+    if not archivo.exists():
+        archivo.parent.mkdir(parents=True, exist_ok=True)
+        url = f"https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/{x}/{y}.png"
+        archivo.write_bytes(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=60).read())
+        time.sleep(0.05)
+    return Image.open(archivo).convert("RGB")
+
+
+def elevacion(lat, lng):
+    """Metros sobre el nivel del mar: (R*256 + G + B/256) - 32768, interpolado entre los cuatro píxeles de alrededor."""
+    px, py = (v - 0.5 for v in mundo(lat, lng, 14))
+    x0, y0 = math.floor(px), math.floor(py)
+    fx, fy = px - x0, py - y0
+
+    def h(x, y):
+        r, g, b = terrarium(x // 256, y // 256).getpixel((x % 256, y % 256))
+        return r * 256 + g + b / 256 - 32768
+    return (h(x0, y0) * (1 - fx) + h(x0 + 1, y0) * fx) * (1 - fy) + (h(x0, y0 + 1) * (1 - fx) + h(x0 + 1, y0 + 1) * fx) * fy
+
+
+RUMBOS = ["norte", "noreste", "este", "sureste", "sur", "suroeste", "oeste", "noroeste"]
+
+
+def hacia(sube_este, sube_norte):
+    """Para dónde baja el terreno (al revés de para dónde sube), en 8 rumbos."""
+    return RUMBOS[round(math.degrees(math.atan2(-sube_este, -sube_norte)) / 45) % 8]
+
+
+assert hacia(1, 0) == "oeste" and hacia(0, -1) == "norte" and hacia(-1, -1) == "noreste" and hacia(0.2, 1) == "sur"
+
+
+def altura(lat, lng):
+    """La altura en el punto y la pendiente de la zona, con muestras a 50 m al norte, sur, este y oeste (~100 m): se
+    habla de la zona y no del lote, porque el relieve es de ~30 m."""
+    d_lat, d_lng = 50 / 110540, 50 / (111320 * math.cos(math.radians(lat)))
+    sube_este = (elevacion(lat, lng + d_lng) - elevacion(lat, lng - d_lng)) / 100
+    sube_norte = (elevacion(lat + d_lat, lng) - elevacion(lat - d_lat, lng)) / 100
+    pendiente = math.hypot(sube_este, sube_norte) * 100
+    tipo = "plana" if pendiente < 3 else "suave" if pendiente < 8 else "marcada" if pendiente <= 15 else "fuerte"
+    return {"m": int(round(elevacion(lat, lng), -1)), "pendiente": tipo, "hacia": None if tipo == "plana" else hacia(sube_este, sube_norte)}
+
+
+def simplificar(anillo, tolerancia_m=1.0):
+    """Douglas-Peucker en metros (para el mapa general, que no necesita cada quiebre de menos de 1 m)."""
+    lat0 = anillo[0][1]
+    m = [((p[0] - anillo[0][0]) * 111320 * math.cos(math.radians(lat0)), (p[1] - lat0) * 110540) for p in anillo]
+
+    def dist(p, a, b):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        return abs(dx * (a[1] - p[1]) - dy * (a[0] - p[0])) / math.hypot(dx, dy) if dx or dy else math.dist(p, a)
+
+    def rdp(i, j):
+        k, lejos = max(((k, dist(m[k], m[i], m[j])) for k in range(i + 1, j)), key=lambda kd: kd[1], default=(None, 0))
+        return rdp(i, k)[:-1] + rdp(k, j) if lejos > tolerancia_m else [i, j]
+    return [anillo[i] for i in rdp(0, len(anillo) - 1)]
+
+
+# Un cuadrado de ~33 m con un vértice de más en un lado (se va) y uno corrido 3 m (queda)
+assert len(simplificar([[0, 0], [0.00015, 0], [0.0003, 0], [0.0003, 0.0003], [0, 0.0003], [0, 0]])) == 5
+assert len(simplificar([[0, 0], [0.00015, 0.00003], [0.0003, 0], [0.0003, 0.0003], [0, 0.0003], [0, 0]])) == 6
+
+# Lo que nunca se publica (el catastro tiene todo esto; las fichas y el mapa general no llevan nada)
+PROHIBIDAS = {"nomenclatura", "tributaria", "plano_mensura", "etiqueta", "superficie_catastro", "superficie_catastro_m2"}
+
+
+def claves(x):
+    if isinstance(x, dict):
+        for k, v in x.items():
+            yield k
+            yield from claves(v)
+    elif isinstance(x, list):
+        for v in x:
+            yield from claves(v)
+
 
 def foto(origen, destino, ancho, calidad=72, recorte=None):
     """recorte=(ancho, alto) recorta al centro: las fotos de Tokko son cuadradas y la tarjeta es 4:3."""
@@ -119,12 +255,17 @@ _grafias = {}
 for _p in propiedades:
     _k = ALIAS_ZONA.get(clave_zona(_p["zona"]), clave_zona(_p["zona"]))
     _grafias.setdefault(_k, []).append(_p["zona"] or "")
-ZONA = {z: max(set(v), key=lambda g: (v.count(g), g != g.lower(), "del" in g)) for z, v in _grafias.items()}
+ZONA = {z: max(set(v), key=lambda g: (v.count(g), g != g.lower(), "del" in g, g)) for z, v in _grafias.items()}  # g al final: sin empates que dependan del orden del set
 zona_de = lambda z: ZONA[ALIAS_ZONA.get(clave_zona(z), clave_zona(z))]
 assert zona_de("Rincón Del Este") == zona_de("Rincón de Este") == "Rincón del Este"
 assert antiguedad("1 años") == "1 año" and antiguedad("7 años") == "7 años"
 # La forma real de los terrenos, armada por castro_satelite.py (si todavía no se corrió, no hay ninguna)
 FORMAS = json.load(open(FUENTE / "formas.json")) if (FUENTE / "formas.json").exists() else {}
+# El mapa que se mueve de cada ficha, también de castro_satelite.py
+MAPAS = json.load(open(FUENTE / "mapas.json"))
+# Cuántas propiedades publican exactamente el mismo punto (suele ser el del barrio, no el de la propiedad)
+PUNTOS = Counter((p["lat"], p["lng"]) for p in propiedades)
+VIAJES = rutas([(p["lat"], p["lng"]) for p in propiedades])
 _muestra = {x["id"]: x for x in propiedades if x["id"] in ("633017", "8147479")}
 assert [es_volante(FUENTE / f) for f in _muestra["633017"]["fotos_locales"][:3]] == [True, True, False]
 assert [es_volante(FUENTE / f) for f in _muestra["8147479"]["fotos_locales"][:2]] == [True, False]
@@ -179,6 +320,13 @@ for p in propiedades:
         "operaciones": p.get("operaciones") or [],
         "forma": {k: v for k, v in FORMAS[ident].items() if k != "mini"} if ident in FORMAS else None,
     }
+    m = MAPAS[ident]
+    compartido = PUNTOS[(p["lat"], p["lng"])] - 1
+    ficha["mapa"] = {"calce": m["calce"], "celda": m["celda"], "zmax": m["zmax"], "lote": m["lote"], "lados": m["lados"],
+                     "zona": None if m["lote"] else {"radio": 400 if compartido else 150, "compartido": compartido},
+                     "alrededor": m["alrededor"]}
+    ficha["cercanos"] = cercanos(p["lat"], p["lng"], VIAJES)
+    ficha["altura"] = altura(p["lat"], p["lng"])
     (PUB / "fichas").mkdir(parents=True, exist_ok=True)
     (PUB / "fichas" / f"{ident}.json").write_text(json.dumps(ficha, ensure_ascii=False, separators=(",", ":")))
     foto(FUENTE / p["fotos_locales"][orden[0]], PUB / "fotos" / f"p-{ident}.webp", 560, 62, (560, 420))
@@ -215,9 +363,7 @@ for archivo in ("museoentera.jpg", "camisetasmuseo.jpg", "articulos.jpg", "fondo
         destino = f"fotos/museo-{origen.stem}.webp"
         foto(origen, PUB / destino, 1200)
         museo.append(destino)
-# La imagen que aparece al compartir el link (WhatsApp no toma webp ni rutas relativas: va jpg y la dirección entera)
-_og = ImageOps.fit(ImageOps.exif_transpose(Image.open(FUENTE / "fotos/sitio/imagcontact.jpg")).convert("RGB"), (1200, 630), Image.LANCZOS)
-_og.save(PUB / "fotos" / "og.jpg", "JPEG", quality=82)
+# La imagen que aparece al compartir el link (fotos/og.jpg) la arma castro_satelite.py: la foto satelital con los lotes
 for archivo in ("fondonos.jpg", "imagcontact.jpg"):
     foto(FUENTE / "fotos/sitio" / archivo, PUB / "fotos" / f"{Path(archivo).stem}.webp", 1600)
 for archivo in ("logo.png", "logofooter.png", "favicon.png"):
@@ -272,9 +418,59 @@ for p in indice:
 """)
 
 
+# El mapa general: los lotes simplificados y las celdas calzadas (los puntos ya están en indice.json)
+mapa_general = {"calces": json.load(open(FUENTE / "calces.json")),
+                "lotes": {i: [[round(x, 6), round(y, 6)] for x, y in simplificar(m["lote"])] for i, m in MAPAS.items() if m["lote"]}}
+(PUB / "mapa.json").write_text(json.dumps(mapa_general, separators=(",", ":")))
+
+grupos = {}
+for p in propiedades:
+    grupos.setdefault((p["lat"], p["lng"]), []).append(p)
+compartidos = []
+for (lat, lng), ps in sorted(grupos.items(), key=lambda g: -len(g[1])):
+    if len(ps) > 1:
+        # "Barrio Los Troncos" y "Los Troncos", o "Country Club Chumamaya" y "Chumamaya", son el mismo lugar
+        zonas = {clave_zona(zona_de(p["zona"])) for p in ps}
+        distintas = any(a not in b and b not in a for a in zonas for b in zonas)
+        compartidos.append(f"- **{lat}, {lng}** ({len(ps)}): " + "; ".join(f"**{p['codigo']}** {p['titulo'].strip()} ({zona_de(p['zona'])})" for p in ps)
+                           + (" — **figuran en zonas distintas: conviene revisar cuál está bien ubicada**" if distintas else ""))
+
 (FUENTE / "errores_de_carga.md").write_text(
     "# Lo que no cierra en los datos que publica Castro Inmobiliaria\n\n"
     "Sacado de su propio sitio el 25/10/2026. En la propuesta no se muestra ningún dato roto; esto es para pasárselo a Mauro.\n\n"
-    + "\n".join(errores) + "\n"
+    + "\n".join(errores) + "\n\n"
+    "## Propiedades que publican el mismo punto\n\n"
+    "Varias propiedades con exactamente la misma ubicación: suele ser un punto del barrio y no el de cada propiedad. En la "
+    "propuesta se muestran con una zona aproximada más grande que lo aclara.\n\n"
+    + "\n".join(compartidos) + "\n"
 )
+
+# Autochequeos de los datos de los mapas
+fichas = {f.stem: json.loads(f.read_text()) for f in (PUB / "fichas").glob("*.json")}
+assert len(fichas) == len(indice), (len(fichas), len(indice))
+for i, f in FORMAS.items():
+    assert fichas[i]["mapa"]["lote"] and len(fichas[i]["mapa"]["lados"]) == len(f["lados"]), f"{i}: el lote o sus lados no coinciden con formas.json"
+assert sum(1 for f in fichas.values() if f["mapa"]["lote"]) == len(FORMAS) == len(mapa_general["lotes"])
+for i, f in fichas.items():
+    mapa = f["mapa"]
+    assert not PROHIBIDAS & set(claves(f)), f"{i}: la ficha tiene datos del catastro que no se publican"
+    assert f["altura"] and 400 <= f["altura"]["m"] <= 2200, f"{i}: altura {f['altura']}"
+    assert f["cercanos"], f"{i}: sin a cuánto queda"
+    assert (mapa["zona"] is None) == bool(mapa["lote"])
+    if mapa["calce"] is None:
+        assert mapa["alrededor"] == [] and mapa["lote"] is None, f"{i}: sin calce pero con lote o trama"
+    if mapa["lote"]:
+        lote = frozenset(map(tuple, mapa["lote"]))
+        assert all(frozenset(map(tuple, a)) != lote for a in mapa["alrededor"]), f"{i}: el lote está repetido en la trama de alrededor"
+assert not PROHIBIDAS & set(claves(mapa_general))
+assert all((z["radio"] == 400) == (z["compartido"] > 0) for z in (f["mapa"]["zona"] for f in fichas.values()) if z)
+
+pesos = sorted((f.stat().st_size, f.stem) for f in (PUB / "fichas").glob("*.json"))
+alturas = [f["altura"]["m"] for f in fichas.values()]
+print(f"fichas: promedio {sum(p for p, _ in pesos) / len(pesos) / 1024:.1f} KB, la más pesada {pesos[-1][0] / 1024:.1f} KB ({pesos[-1][1]});"
+      f" mapa.json {(PUB / 'mapa.json').stat().st_size / 1024:.1f} KB")
+print(sum(1 for f in fichas.values() if f["mapa"]["lote"]), "con lote;", sum(1 for f in fichas.values() if f["mapa"]["zona"]), "con zona;",
+      sum(1 for f in fichas.values() if f["mapa"]["alrededor"]), "con trama;", sum(1 for f in fichas.values() if f["mapa"]["calce"] is None), "sin calce;",
+      sum(n for n in PUNTOS.values() if n > 1), "comparten punto en", len(compartidos), "grupos; alturas de", min(alturas), "a", max(alturas), "m;",
+      Counter(f["altura"]["pendiente"] for f in fichas.values()), ";", sum(1 for f in fichas.values() if f["cercanos"][0]["lugar"] == "Villa de Merlo"), "lejos de Merlo")
 print(con_volante, "con volante (la portada es la primera foto de verdad);", len(indice), "propiedades,", len(urbanizaciones), "urbanizaciones,", len(equipo), "personas,", len(museo), "fotos del museo,", len(errores), "con errores de carga")

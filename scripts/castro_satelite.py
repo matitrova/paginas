@@ -5,8 +5,16 @@ Esri World Imagery, pegando sus pedacitos (el servicio que arma una imagen enter
 foto está corrida hasta 25 m respecto del catastro, distinto en cada zona: se corrige moviendo LA FOTO, nunca el
 lote (CALCES, en metros, por celda de 0,02° como en MojonApp). El catastro es el dato; la foto es el fondo.
 
-Sale public/propuestas/castro-inmobiliaria/fotos/lote-<id>.webp (640x480) y ~/castro-datos/formas.json con el
-dibujo encima en píxeles de esa imagen (lote, vecinos, rótulos de los lados), que castro_datos.py pasa a la ficha.
+Sale:
+  public/propuestas/castro-inmobiliaria/fotos/lote-<id>.webp (640x480) y ~/castro-datos/formas.json con el dibujo
+    encima en píxeles de esa imagen (lote, vecinos, rótulos de los lados), que castro_datos.py pasa a la ficha;
+  ~/castro-datos/mapas.json, para el mapa que se mueve de cada ficha (las 272): celda, calce, zoom máximo con foto,
+    el lote y sus lados en lat/lng (los mismos terrenos de formas.json) y la trama del catastro de alrededor, sin
+    calles ni datos de las parcelas (catastro/<id>-alrededor.geojson guarda lo que devolvió el catastro);
+  ~/castro-datos/calces.json, los CALCES de abajo para el navegador;
+  fotos/lote-tarjeta-<id>.webp (560x420), el lote pintado sobre la foto, para la tarjeta del listado;
+  fotos/portada-mapa-800.webp y -1600.webp (16:10) y fotos/og.jpg (1200x630): el barrio con más terrenos con forma,
+    con esos lotes pintados, para la portada y para la vista previa del link.
 
 Uso:
   ../Test1_Inmo/.venv/bin/python scripts/castro_satelite.py                      todos los terrenos que entran
@@ -83,8 +91,8 @@ def metros_por_pixel(lat, z):
     return 156543.03392 * math.cos(math.radians(lat)) / 2**z
 
 
-def tile(z, x, y):
-    """Un pedacito de foto, guardado para no volver a pedirlo. None si Esri no tiene foto ahí (gris de 2.521 B)."""
+def bytes_de_tile(z, x, y):
+    """Un pedacito de foto tal cual llega, guardado para no volver a pedirlo."""
     archivo = TILES / str(z) / str(x) / f"{y}.jpg"
     if not archivo.exists():
         archivo.parent.mkdir(parents=True, exist_ok=True)
@@ -92,16 +100,28 @@ def tile(z, x, y):
         pedido = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (propuesta Castro Inmobiliaria)"})
         archivo.write_bytes(urllib.request.urlopen(pedido, timeout=30).read())
         time.sleep(0.05)
-    datos = archivo.read_bytes()
+    return archivo.read_bytes()
+
+
+def tile(z, x, y):
+    """Un pedacito de foto. None si Esri no tiene foto ahí (gris de 2.521 B)."""
+    datos = bytes_de_tile(z, x, y)
     return None if len(datos) < 3000 else Image.open(io.BytesIO(datos)).convert("RGB")
 
 
-def foto(lat, lng, ancho_m, z, corrimiento=(0.0, 0.0)):
-    """La foto centrada en (lat, lng), ancho_m metros de ancho, corrida corrimiento=(este, norte) metros.
+def zoom_maximo(lat, lng):
+    """18 si Esri tiene foto de verdad en z18 en ese punto; si no 17 (la gris de "Map data not yet available" pesa
+    ~2.521 B y cualquier foto real, más de 2.600)."""
+    x, y = mundo(lat, lng, 18)
+    return 18 if len(bytes_de_tile(18, int(x // 256), int(y // 256))) > 2600 else 17
+
+
+def foto(lat, lng, ancho_m, z, corrimiento=(0.0, 0.0), tam=(ANCHO, ALTO)):
+    """La foto centrada en (lat, lng), ancho_m metros de ancho, corrida corrimiento=(este, norte) metros, de tam píxeles.
     Devuelve la imagen y la función que lleva un punto lat/lng a píxeles de ESA imagen, sin corrimiento:
     el dibujo se ubica por el catastro, que no se mueve."""
     mpp = metros_por_pixel(lat, z)
-    w_px, h_px = ancho_m / mpp, ancho_m * ALTO / ANCHO / mpp
+    w_px, h_px = ancho_m / mpp, ancho_m * tam[1] / tam[0] / mpp
     cx, cy = mundo(lat, lng, z)
     x0, y0 = cx - w_px / 2, cy - h_px / 2  # la ventana que manda el dibujo
     este, norte = corrimiento
@@ -120,8 +140,8 @@ def foto(lat, lng, ancho_m, z, corrimiento=(0.0, 0.0)):
     if gris:
         return None, None
     ox, oy = fx0 - tx0 * 256, fy0 - ty0 * 256
-    imagen = lienzo.crop((round(ox), round(oy), round(ox + w_px), round(oy + h_px))).resize((ANCHO, ALTO), Image.LANCZOS)
-    escala = ANCHO / w_px
+    imagen = lienzo.crop((round(ox), round(oy), round(ox + w_px), round(oy + h_px))).resize(tam, Image.LANCZOS)
+    escala = tam[0] / w_px
 
     def a_pixel(plat, plng):
         px, py = mundo(plat, plng, z)
@@ -135,9 +155,11 @@ def anillo(geometria):
     return c[0][0] if geometria["type"] == "MultiPolygon" else c[0]
 
 
-def lados(puntos_ll, a_pixel):
-    """Cada lado del lote en metros, juntando los tramos casi rectos (el catastro parte lados en dos).
-    Devuelve los rótulos ya ubicados en la imagen: afuera del lado, girados para que se lean derechos."""
+def lados(puntos_ll):
+    """Cada lado del lote en metros, juntando los tramos casi rectos (el catastro parte lados en dos). Un rótulo por
+    lado de 8 m o más: el punto medio en lat/lng, el ángulo para que el texto se lea derecho en pantalla (Web Mercator,
+    y hacia abajo, entre -90 y 90; no cambia con el zoom) y hacia dónde queda afuera (unitario, del centro del lote
+    hacia el lado, en pantalla)."""
     pts = [tuple(p) for p in puntos_ll]
     if pts[0] == pts[-1]:
         pts = pts[:-1]
@@ -152,7 +174,8 @@ def lados(puntos_ll, a_pixel):
         giro = abs((d2 - d1 + math.pi) % (2 * math.pi) - math.pi)
         if giro > math.radians(5):
             quiebres.append(i)
-    centro = a_pixel(sum(p[1] for p in pts) / n, sum(p[0] for p in pts) / n)
+    pantalla = [mundo(p[1], p[0], 20) for p in pts]
+    centro = mundo(sum(p[1] for p in pts) / n, sum(p[0] for p in pts) / n, 20)
     rotulos = []
     for k, i in enumerate(quiebres):
         j = quiebres[(k + 1) % len(quiebres)]
@@ -160,7 +183,7 @@ def lados(puntos_ll, a_pixel):
         largo = sum(math.dist(tramo[s], tramo[s + 1]) for s in range(len(tramo) - 1))
         if largo < 8:  # un lado cortito se dibuja igual, pero su rótulo se encima con los de al lado
             continue
-        p1, p2 = a_pixel(pts[i][1], pts[i][0]), a_pixel(pts[j][1], pts[j][0])
+        p1, p2 = pantalla[i], pantalla[j]
         mx, my = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
         ang = math.degrees(math.atan2(p2[1] - p1[1], p2[0] - p1[0]))
         if ang > 90:
@@ -170,13 +193,27 @@ def lados(puntos_ll, a_pixel):
         # Hacia afuera: del centro del lote hacia el medio del lado
         dx, dy = mx - centro[0], my - centro[1]
         d = math.hypot(dx, dy) or 1
-        rotulos.append({"x": round(mx + dx / d * 13, 1), "y": round(my + dy / d * 13, 1), "ang": round(ang, 1),
+        rotulos.append({"lat": round((pts[i][1] + pts[j][1]) / 2, 6), "lng": round((pts[i][0] + pts[j][0]) / 2, 6),
+                        "ang": round(ang, 1), "afuera": [round(dx / d, 3), round(dy / d, 3)],
                         "texto": f"{largo:.1f} m".replace(".", ",") if largo < 100 else f"{round(largo)} m"})
     return rotulos
 
 
-assert len(lados([[0, 0], [0.0003, 0], [0.0006, 0], [0.0006, 0.0003], [0, 0.0003], [0, 0]], lambda la, ln: (ln * 1e5, -la * 1e5))) == 4, \
-    "un rectángulo con un vértice de más en un lado tiene que dar 4 lados"
+def en_pixeles(rotulos, a_pixel):
+    """Los rótulos de lados() ubicados en una imagen: 13 px afuera del lado."""
+    salida = []
+    for r in rotulos:
+        x, y = a_pixel(r["lat"], r["lng"])
+        salida.append({"x": round(x + r["afuera"][0] * 13, 1), "y": round(y + r["afuera"][1] * 13, 1), "ang": r["ang"], "texto": r["texto"]})
+    return salida
+
+
+# Un rectángulo (en el ecuador) con un vértice de más en el lado de abajo: 4 lados, cada uno con su punto medio,
+# acostado o parado, y afuera apuntando para su lado (en pantalla la y crece hacia abajo, o sea al sur)
+_rect = {(r["lat"], r["lng"]): r for r in lados([[0, 0], [0.0003, 0], [0.0006, 0], [0.0006, 0.0003], [0, 0.0003], [0, 0]])}
+assert set(_rect) == {(0, 0.0003), (0.00015, 0.0006), (0.0003, 0.0003), (0.00015, 0)}, _rect
+assert [[round(v) for v in _rect[k]["afuera"]] for k in [(0, 0.0003), (0.00015, 0.0006), (0.0003, 0.0003), (0.00015, 0)]] == [[0, 1], [1, 0], [0, -1], [-1, 0]], _rect
+assert all(abs(r["ang"]) in (0, 90) for r in _rect.values()) and _rect[(0, 0.0003)]["texto"] == "66,8 m" and _rect[(0.00015, 0)]["texto"] == "33,2 m", _rect
 
 
 def terrenos():
@@ -193,14 +230,14 @@ def terrenos():
         lat = sum(p[1] for p in pts) / len(pts)
         lng = sum(p[0] for p in pts) / len(pts)
         yield {"id": t["id"], "confianza": t["confianza"], "lat": lat, "lng": lng, "puntos": pts, "vecinas": [anillo(v["geometry"]) for v in vecinas],
-               "celda": celda_de(lat, lng), "titulo": props[t["id"]]["titulo"]}
+               "celda": celda_de(lat, lng), "titulo": props[t["id"]]["titulo"], "lote_id": lote.get("id")}
 
 
-def encuadre(t):
-    """Ancho de la foto en metros y zoom: el lote ocupa más o menos un tercio, y nunca menos de 160 m de contexto."""
+def encuadre(t, factor=2.6, minimo=160):
+    """Ancho de la foto en metros y zoom: el lote ocupa más o menos 1/factor, y nunca menos de minimo m de contexto."""
     xs = [(p[0] - t["lng"]) * 111320 * math.cos(math.radians(t["lat"])) for p in t["puntos"]]
     ys = [(p[1] - t["lat"]) * 110540 for p in t["puntos"]]
-    ancho_m = max(2.6 * max(max(xs) - min(xs), (max(ys) - min(ys)) * ANCHO / ALTO), 160)
+    ancho_m = max(factor * max(max(xs) - min(xs), (max(ys) - min(ys)) * ANCHO / ALTO), minimo)
     z = 18
     while ancho_m / metros_por_pixel(t["lat"], z) > 1400:
         z -= 1
@@ -208,12 +245,117 @@ def encuadre(t):
 
 
 def parcelas_alrededor(lat, lng, radio_m=160):
-    """Todas las parcelas del catastro alrededor (también las calles), para calzar la foto."""
+    """Todas las parcelas del catastro alrededor (también las calles): (id, anillo, es_calle)."""
     dlat, dlng = radio_m / 110540, radio_m / (111320 * math.cos(math.radians(lat)))
     q = (f"{WFS}?service=WFS&version=1.0.0&request=GetFeature&typeName=SanLuis:GIS_PARCELAS_VV&outputFormat=application/json"
          f"&srsName=EPSG:4326&BBOX={lng - dlng},{lat - dlat},{lng + dlng},{lat + dlat},EPSG:4326")
     datos = json.loads(urllib.request.urlopen(q, timeout=60).read())
-    return [(anillo(f["geometry"]), "CALLE" in str(f["properties"].get("NOMBRE", "")).upper()) for f in datos.get("features", [])]
+    return [(f.get("id"), anillo(f["geometry"]), "TIPO PARCELA: CALLE" in str(f["properties"].get("NOMBRE", "")).upper())
+            for f in datos.get("features", [])]
+
+
+def alrededor(ident, lat, lng):
+    """La trama del catastro a ~150 m: (id, anillo) de cada parcela, sin calles y sin ningún dato de la parcela.
+    Se guarda en catastro/<id>-alrededor.geojson y no se vuelve a pedir. Si el catastro no contesta, las vecinas que
+    ya se habían bajado (solo los terrenos que se cruzaron con el catastro), o nada; eso no se guarda."""
+    archivo = FUENTE / f"catastro/{ident}-alrededor.geojson"
+    if not archivo.exists():
+        try:
+            parcelas = parcelas_alrededor(lat, lng, 150)
+        except Exception as e:  # el servidor del catastro se cae seguido
+            respaldo = FUENTE / f"catastro/{ident}-vecinas.geojson"
+            print(f"  el catastro no contestó para {ident} ({e}); va {'-vecinas' if respaldo.exists() else 'sin trama'}")
+            vecinas = json.load(open(respaldo)).get("features", []) if respaldo.exists() else []
+            return [(f.get("id"), anillo(f["geometry"])) for f in vecinas], "respaldo"
+        archivo.write_text(json.dumps({"type": "FeatureCollection", "features": [
+            {"type": "Feature", "id": fid, "geometry": {"type": "Polygon", "coordinates": [ring]}, "properties": {}}
+            for fid, ring, calle in parcelas if not calle]}))
+        time.sleep(0.3)
+    return [(f["id"], f["geometry"]["coordinates"][0]) for f in json.load(open(archivo))["features"]], "catastro"
+
+
+def seis(anillo_ll):
+    return [[round(p[0], 6), round(p[1], 6)] for p in anillo_ll]
+
+
+def foto_que_haya(lat, lng, ancho_m, z, corrimiento, tam=(ANCHO, ALTO)):
+    """foto() en el zoom más alto (desde z y hasta 15) en el que Esri tiene foto en toda la ventana."""
+    while z >= 15:
+        img, a_pixel = foto(lat, lng, ancho_m, z, corrimiento, tam)
+        if img is not None:
+            return img, a_pixel
+        z -= 1
+    return None, None
+
+
+def pintar(img, anillos_px, borde=2, fino=3):
+    """Lotes con borde blanco y relleno naranja (#FF8000 al 45 %). Se dibujan a fino x y se achican, para que el borde
+    salga suave."""
+    capa = Image.new("RGBA", (img.width * fino, img.height * fino), (0, 0, 0, 0))
+    d = ImageDraw.Draw(capa)
+    for poly in anillos_px:
+        pts = [(x * fino, y * fino) for x, y in poly]
+        d.polygon(pts, fill=(255, 128, 0, 115))
+        d.line(pts + [pts[0]], fill=(255, 255, 255, 255), width=borde * fino, joint="curve")
+    return Image.alpha_composite(img.convert("RGBA"), capa.resize(img.size, Image.LANCZOS)).convert("RGB")
+
+
+def atribucion(img, texto="Esri, Maxar, Earthstar Geographics"):
+    """La atribución de la foto, chica, abajo a la derecha."""
+    from PIL import ImageFont
+    letra = ImageFont.load_default(size=max(10, round(img.width / 110)))
+    d = ImageDraw.Draw(img, "RGBA")
+    x0, y0, x1, y1 = d.textbbox((0, 0), texto, font=letra)
+    aire = round(letra.size * 0.4)
+    izq, arriba = img.width - (x1 - x0) - 2 * aire, img.height - (y1 - y0) - 2 * aire
+    d.rectangle((izq, arriba, img.width, img.height), fill=(0, 0, 0, 120))
+    d.text((izq + aire - x0, arriba + aire - y0), texto, font=letra, fill=(255, 255, 255, 235))
+    return img
+
+
+def tarjeta(t):
+    """fotos/lote-tarjeta-<id>.webp: el lote pintado sobre la foto calzada, más cerca que en la ficha."""
+    ancho_m, z = encuadre(t, 2.0, 120)
+    img, a_pixel = foto_que_haya(t["lat"], t["lng"], ancho_m, z, CALCES[t["celda"]], (560, 420))
+    assert img is not None, f"sin foto para la tarjeta de {t['id']}"
+    pintar(img, [[a_pixel(p[1], p[0]) for p in t["puntos"]]]).save(SALIDA / f"lote-tarjeta-{t['id']}.webp", "WEBP", quality=68, method=6)
+
+
+def portada(dibujados):
+    """La foto de la primera pantalla y de la vista previa del link: la ventana de 800 x 500 m que junta más terrenos
+    con forma de una misma celda, para que un solo calce sirva para toda la foto. Se pintan los lotes de esa celda."""
+    ancho_m, alto_m, margen = 800, 500, 15
+    kx = lambda lat: 111320 * math.cos(math.radians(lat))
+
+    def sin_salirse(celda, lat, lng, alto=alto_m):
+        """Corre el centro para que la ventana no se salga de la celda (la de al lado tiene otro calce)."""
+        fila, col = (int(v) for v in celda[1:].split("_"))
+        m_lat, m_lng = alto / 2 / 110540, ancho_m / 2 / kx(lat)
+        return (min(max(lat, fila * GRADOS_POR_CELDA + m_lat), (fila + 1) * GRADOS_POR_CELDA - m_lat),
+                min(max(lng, col * GRADOS_POR_CELDA + m_lng), (col + 1) * GRADOS_POR_CELDA - m_lng))
+
+    def enteros(celda, lat, lng):
+        """Los lotes de la celda que entran enteros en la ventana."""
+        return [t for t in dibujados if t["celda"] == celda and all(
+            abs(q[0] - lng) * kx(lat) <= ancho_m / 2 - margen and abs(q[1] - lat) * 110540 <= alto_m / 2 - margen for q in t["puntos"])]
+
+    centro = max(dibujados, key=lambda c: len(enteros(c["celda"], *sin_salirse(c["celda"], c["lat"], c["lng"]))))
+    grupo = enteros(centro["celda"], *sin_salirse(centro["celda"], centro["lat"], centro["lng"]))
+    medio = ((min(t["lat"] for t in grupo) + max(t["lat"] for t in grupo)) / 2, (min(t["lng"] for t in grupo) + max(t["lng"] for t in grupo)) / 2)
+    de_la_celda = [t for t in dibujados if t["celda"] == centro["celda"]]
+    calce = CALCES[centro["celda"]]
+    for tam, og in [((1600, 1000), False), ((1200, 630), True)]:
+        lat, lng = sin_salirse(centro["celda"], *medio, ancho_m * tam[1] / tam[0])
+        img, a_pixel = foto_que_haya(lat, lng, ancho_m, 18, calce, tam)
+        assert img is not None, "sin foto para la portada"
+        img = pintar(img, [[a_pixel(p[1], p[0]) for p in t["puntos"]] for t in de_la_celda], borde=2 if tam[0] < 1600 else 3)
+        if og:
+            atribucion(img).save(SALIDA / "og.jpg", "JPEG", quality=82, optimize=True)
+            continue
+        for ancho in (1600, 800):
+            chica = img.resize((ancho, ancho * 10 // 16), Image.LANCZOS) if ancho != img.width else img.copy()
+            atribucion(chica).save(SALIDA / f"portada-mapa-{ancho}.webp", "WEBP", quality=70, method=6)
+    print(f"portada: {len(grupo)} terrenos con forma enteros a la vista, celda {centro['celda']}, centro {medio[0]:.6f},{medio[1]:.6f}")
 
 
 def hoja(celda, salida, pruebas):
@@ -229,7 +371,7 @@ def hoja(celda, salida, pruebas):
         if img is None:
             raise SystemExit(f"Esri no tiene foto en z{z} para {celda}")
         d = ImageDraw.Draw(img)
-        for anillo_ll, es_calle in parcelas:
+        for _, anillo_ll, es_calle in parcelas:
             d.line([a_pixel(p[1], p[0]) for p in anillo_ll], fill=(255, 80, 80) if es_calle else (255, 255, 0), width=1)
         d.line([a_pixel(p[1], p[0]) for p in t["puntos"]], fill=(0, 255, 255), width=3)
         d.rectangle((0, 0, 210, 22), fill=(0, 0, 0))
@@ -245,16 +387,13 @@ def hoja(celda, salida, pruebas):
 
 
 def todos():
-    formas, sin_calce, sin_foto = {}, [], []
+    formas, sin_calce, sin_foto, dibujados = {}, [], [], {}
     for t in terrenos():
         if t["celda"] not in CALCES:
             sin_calce.append(t["id"])
             continue
         ancho_m, z = encuadre(t)
-        img, a_pixel = foto(t["lat"], t["lng"], ancho_m, z, CALCES[t["celda"]])
-        while img is None and z > 15:
-            z -= 1
-            img, a_pixel = foto(t["lat"], t["lng"], ancho_m, z, CALCES[t["celda"]])
+        img, a_pixel = foto_que_haya(t["lat"], t["lng"], ancho_m, z, CALCES[t["celda"]])
         if img is None:
             sin_foto.append(t["id"])
             continue
@@ -267,12 +406,38 @@ def todos():
             "img": f"fotos/lote-{t['id']}.webp",
             "lote": " ".join(f"{x:.1f},{y:.1f}" for x, y in poly),
             "vecinas": [" ".join(f"{a_pixel(p[1], p[0])[0]:.1f},{a_pixel(p[1], p[0])[1]:.1f}" for p in v) for v in t["vecinas"]],
-            "lados": lados(t["puntos"], a_pixel),
+            "lados": en_pixeles(lados(t["puntos"]), a_pixel),
             # La silueta sola, en una caja de 0 a 100, para la miniatura de la tarjeta
             "mini": " ".join(f"{(x - min(xs)) / lado * 100:.1f},{(y - min(ys)) / lado * 100:.1f}" for x, y in poly),
         }
+        dibujados[t["id"]] = t
+        tarjeta(t)
     (FUENTE / "formas.json").write_text(json.dumps(formas, ensure_ascii=False))
+    (FUENTE / "calces.json").write_text(json.dumps({c: list(v) for c, v in CALCES.items()}))
     print(len(formas), "terrenos dibujados;", len(sin_calce), "sin calce todavía:", sin_calce[:12], ";", len(sin_foto), "sin foto:", sin_foto)
+    portada(list(dibujados.values()))
+
+    # El mapa que se mueve de cada ficha: el lote solo en los mismos terrenos de formas.json, y la trama solo donde la
+    # foto está calzada (en el resto va una zona aproximada, que arma castro_datos.py)
+    mapas, respaldos = {}, 0
+    for p in json.load(open(FUENTE / "propiedades.json")):
+        t = dibujados.get(p["id"])
+        lat, lng = (t["lat"], t["lng"]) if t else (p["lat"], p["lng"])
+        celda = celda_de(lat, lng)
+        parcelas, de_donde = alrededor(p["id"], lat, lng)
+        respaldos += de_donde == "respaldo"
+        propio = t["lote_id"] if t else None
+        mapas[p["id"]] = {
+            "calce": list(CALCES[celda]) if celda in CALCES else None,
+            "celda": celda,
+            "zmax": zoom_maximo(lat, lng),
+            "lote": seis(t["puntos"]) if t else None,
+            "lados": lados(t["puntos"]) if t else None,
+            "alrededor": [seis(r) for fid, r in parcelas if fid != propio] if celda in CALCES else [],
+        }
+    (FUENTE / "mapas.json").write_text(json.dumps(mapas))
+    print(len(mapas), "mapas de ficha;", sum(1 for m in mapas.values() if m["alrededor"]), "con trama;", respaldos, "con el respaldo de -vecinas;",
+          sum(m["zmax"] == 17 for m in mapas.values()), "con zoom máximo 17")
 
 
 if __name__ == "__main__":
