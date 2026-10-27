@@ -58,7 +58,8 @@ export function useGuardadas() {
 
 const CORAZON = "M12 20.5s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8c0 5.5-7.5 10.1-7.5 10.1z";
 
-export function BotonGuardar({ id, className = "" }: { id: string; className?: string }) {
+/** El corazón de las tarjetas; con texto, un botón con el corazón y la palabra (la ficha le da su forma). */
+export function BotonGuardar({ id, className = "", texto }: { id: string; className?: string; texto?: string }) {
   const { ids, alternar } = useGuardadas();
   const guardada = ids.includes(id);
   return (
@@ -69,13 +70,14 @@ export function BotonGuardar({ id, className = "" }: { id: string; className?: s
         alternar(id);
       }}
       aria-pressed={guardada}
-      aria-label={guardada ? "Sacar de guardadas" : "Guardar esta propiedad"}
+      aria-label={texto ? undefined : guardada ? "Sacar de guardadas" : "Guardar esta propiedad"}
       data-guardar={id}
-      className={`grid h-10 w-10 place-items-center rounded-full bg-arena/95 shadow-sm transition hover:scale-105 ${className}`}
+      className={texto ? className : `grid h-10 w-10 place-items-center rounded-full bg-arena/95 shadow-sm transition hover:scale-105 ${className}`}
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
         <path d={CORAZON} fill={guardada ? "var(--color-terracota)" : "none"} stroke={guardada ? "var(--color-terracota)" : "var(--color-chocolate)"} strokeWidth={1.8} strokeLinejoin="round" />
       </svg>
+      {texto}
     </button>
   );
 }
@@ -94,11 +96,11 @@ const LLAMAR = `tel:+54${TELEFONO.replace(/\D/g, "")}`;
 export function Encabezado({ actual }: { actual: string }) {
   const { ids } = useGuardadas();
   const guardadas = ids.length > 0 && (
-    <a href={ir({ ver: "guardadas" })} data-link-guardadas className="flex items-center gap-1.5 rounded-full border border-linea px-3 py-2 text-[14px] font-semibold whitespace-nowrap hover:bg-piedra">
+    <a href={ir({ ver: "guardadas" })} data-link-guardadas aria-label={`Guardadas (${ids.length})`} className="flex items-center gap-1.5 rounded-full border border-linea px-3 py-2 text-[14px] font-semibold whitespace-nowrap hover:bg-piedra">
       <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
         <path d={CORAZON} fill="var(--color-terracota)" />
       </svg>
-      <span className="hidden sm:inline">Guardadas</span> {ids.length}
+      <span className="hidden sm:inline lg:hidden xl:inline">Guardadas</span> {ids.length}
     </a>
   );
   return (
@@ -110,18 +112,19 @@ export function Encabezado({ actual }: { actual: string }) {
             Castro <i className="text-suave">Inmobiliaria</i>
           </span>
         </a>
-        <nav className="ml-auto hidden items-center gap-1 xl:flex">
+        {/* El menú entero desde 1024 px: entra con menos aire entre los links y, con guardadas, solo el corazón y el número */}
+        <nav className="ml-auto hidden items-center gap-1 lg:flex">
           {MENU.map((m) => (
-            <a key={m.ver} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="px-2.5 py-2 text-[15px] font-medium whitespace-nowrap text-chocolate/85 decoration-terracota decoration-2 underline-offset-[6px] hover:underline aria-[current=page]:text-chocolate aria-[current=page]:underline">
+            <a key={m.ver} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="px-1.5 py-2 text-[15px] font-medium whitespace-nowrap xl:px-2.5 text-chocolate/85 decoration-terracota decoration-2 underline-offset-[6px] hover:underline aria-[current=page]:text-chocolate aria-[current=page]:underline">
               {m.texto}
             </a>
           ))}
         </nav>
-        <span className="ml-auto xl:ml-1">{guardadas}</span>
-        <a href={LLAMAR} className="hidden rounded-full bg-terracota px-4 py-2 text-[15px] font-semibold whitespace-nowrap text-white hover:brightness-110 xl:inline-block">
+        <span className="ml-auto lg:ml-1">{guardadas}</span>
+        <a href={LLAMAR} className="hidden rounded-full bg-terracota px-4 py-2 text-[15px] font-semibold whitespace-nowrap text-white hover:brightness-110 lg:inline-block">
           {TELEFONO}
         </a>
-        <details className="relative xl:hidden">
+        <details className="relative lg:hidden">
           <summary className="flex h-10 cursor-pointer list-none items-center rounded-full border border-chocolate/30 px-4 text-[15px] font-medium">Menú</summary>
           <nav className="absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl border border-linea bg-arena py-2 shadow-[0_24px_50px_-20px_rgb(64_37_28/0.45)]">
             {MENU.map((m) => (
@@ -153,7 +156,7 @@ export function Pie({ pegado = false }: { pegado?: boolean }) {
           <div>
             <img src="./fotos/logofooter.png" alt="Castro Inmobiliaria" className="h-11 w-auto" />
             <p className="font-display mt-6 max-w-md text-[1.55rem] leading-snug">
-              {PIE.desde} Hoy, <span data-dato="publicadas">{PROPIEDADES.length}</span> propiedades publicadas y{" "}
+              {PIE.desde} <span data-dato="publicadas">{PROPIEDADES.length}</span> propiedades publicadas y{" "}
               <span data-dato="urbanizaciones">{URBANIZACIONES.length}</span> urbanizaciones.
             </p>
           </div>

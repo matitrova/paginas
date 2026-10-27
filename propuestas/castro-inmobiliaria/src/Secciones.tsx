@@ -38,7 +38,7 @@ export function Urbanizaciones() {
               <div className="pt-3">
                 <h2 className="font-display text-[1.4rem] leading-tight">{nombreLindo(u.nombre)}</h2>
                 <p className="mt-1 text-[13.5px] text-suave">{u.acceso.replace(/^Acceso:\s*/, "")}</p>
-                <p className="mt-2 text-[14px] font-semibold text-terracota">{n ? `${n} ${n === 1 ? "propiedad" : "propiedades"}` : "Sin propiedades publicadas hoy"}</p>
+                <p className="mt-2 text-[14px] font-semibold text-terracota">{n ? `${n} ${n === 1 ? "propiedad" : "propiedades"}` : "Sin propiedades publicadas"}</p>
               </div>
             </a>
           );
@@ -60,8 +60,8 @@ export function Urbanizacion({ id }: { id: string }) {
     <article className="mx-auto max-w-6xl px-5 pt-6 sm:px-6">
       <a href={ir({ ver: "urbanizaciones" })} className="text-[13.5px] text-suave hover:text-tinta">← Urbanizaciones</a>
       <div className="mt-4 grid gap-8 md:grid-cols-2">
-        <div className="content-start md:sticky md:top-28">
-          {(u.fotos[1] ?? u.fotos[0]) && <img src={u.fotos[1] ?? u.fotos[0]} alt={nombreLindo(u.nombre)} className="w-full rounded-2xl object-cover" />}
+        <div className="md:sticky md:top-28 md:self-start">
+          {(u.fotos[1] ?? u.fotos[0]) && <img src={u.fotos[1] ?? u.fotos[0]} alt={nombreLindo(u.nombre)} className="w-full rounded-2xl object-cover" data-foto-urbanizacion />}
         </div>
         <div>
           <div className="flex items-center gap-4">
@@ -94,7 +94,7 @@ export function Urbanizacion({ id }: { id: string }) {
         </div>
       </div>
       <section id="propiedades" className="mt-14 scroll-mt-28">
-        <h2 className="font-display text-2xl sm:text-3xl">{props.length ? `Propiedades en ${nombreLindo(u.nombre)}` : "Hoy no tiene propiedades publicadas"}</h2>
+        <h2 className="font-display text-2xl sm:text-3xl">{props.length ? `Propiedades en ${nombreLindo(u.nombre)}` : "No tiene propiedades publicadas"}</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {props.map((p) => (
             <Tarjeta key={p.id} p={p} />
@@ -119,7 +119,7 @@ export function Nosotros() {
           <Titulo chico={NOSOTROS.chico} h1>{NOSOTROS.titulo}</Titulo>
           <p className="mt-5 text-[17px] leading-relaxed">{NOSOTROS.texto}</p>
           <p className="mt-3 text-[17px] leading-relaxed">
-            Hoy publicamos <span data-dato="publicadas">{PROPIEDADES.length}</span> propiedades y trabajamos con{" "}
+            Publicamos <span data-dato="publicadas">{PROPIEDADES.length}</span> propiedades y trabajamos con{" "}
             <span data-dato="urbanizaciones">{URBANIZACIONES.length}</span> urbanizaciones. {NOSOTROS.oficina}
           </p>
         </div>
@@ -136,7 +136,7 @@ export function Nosotros() {
               <div>
                 <p className="font-display mt-3 text-[1.2rem] leading-tight">{e.nombre}</p>
                 <p className="mt-1 text-[13.5px] leading-snug text-suave">{e.cargo.replace(/\.$/, "")}</p>
-                {/^\d+$/.test(e.matricula) && <p className="mt-1 text-[13.5px] text-suave">Matrícula {e.matricula} CMCPSL</p>}
+                {/^\d+$/.test(e.matricula) && <p className="mt-1 text-[13.5px] text-suave">Matrícula {e.matricula}</p>}
               </div>
             </li>
           ))}

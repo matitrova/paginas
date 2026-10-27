@@ -11,7 +11,7 @@ import Portada from "./Portada";
 import { Contacto, Guardadas, Nosotros, Urbanizacion, Urbanizaciones, Vender } from "./Secciones";
 
 const TITULOS: Record<string, string> = {
-  propiedades: "Propiedades en Villa de Merlo",
+  propiedades: "Propiedades en Merlo y la zona",
 };
 
 /** El mensaje del botón flotante dice qué se estaba mirando. */
@@ -44,10 +44,11 @@ export default function App() {
     : <Portada />;
 
   return (
-    <div className="pt-8">
+    // Al menos el alto de la pantalla: en una página corta (Guardadas vacía) el pie llega hasta abajo
+    <div className="flex min-h-dvh flex-col pt-8">
       <CintaPropuesta negocio={NEGOCIO} />
       <Encabezado actual={ver} />
-      <main>{pantalla}</main>
+      <main className="flex-1">{pantalla}</main>
       <Pie pegado={ver === "nosotros"} />
       {!p && <WhatsAppFlotante mensaje={() => mensajeFlotante(ver, u)} />}
     </div>

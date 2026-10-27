@@ -35,7 +35,7 @@ export const PORTADA = {
   vender: "¿Cuánto vale tu propiedad?",
   venderTexto: "Te damos una tasación profesional y, si la vendés con nosotros, sale en portales y en Instagram, Facebook, TikTok y Mercado Libre.",
   venderBoton: "Pedir una tasación",
-  anios: "Más de 40 años trabajando en la Villa de Merlo y alrededores.",
+  anios: "Más de 40 años trabajando en Merlo y la zona.",
   museo: "La oficina es también un museo: miles de autógrafos que juntó Guillermo Castro, de Maradona y Messi a Freddie Mercury.",
   verMuseo: "Conocer el museo",
   equipo: "El equipo",
@@ -45,14 +45,14 @@ export const PORTADA = {
 export const NOSOTROS = {
   chico: "Nosotros",
   titulo: "Una inmobiliaria de Merlo desde 1985",
-  texto: "Más de 40 años en el mercado inmobiliario de la Villa de Merlo y alrededores.",
+  texto: "Más de 40 años vendiendo y tasando en Merlo y la zona.",
   oficina: "La oficina está en Pbro. Becerra 436 y es también el Museo de La Firma.",
   equipoChico: "El equipo",
   equipo: "Quién te atiende",
   museoChico: "Museo de La Firma",
   museo: "Una inmobiliaria que también es museo",
   museoTextos: [
-    "Guillermo Castro colecciona autógrafos, y convirtió la oficina en un museo con miles de firmas de figuras argentinas y de todo el mundo. Es la primera inmobiliaria temática del país.",
+    "Guillermo Castro colecciona autógrafos, y convirtió la oficina en un museo con miles de firmas de figuras argentinas y de todo el mundo. Fue la primera del país en hacerlo: una inmobiliaria temática.",
     "Hay objetos firmados por Freddie Mercury, Diego Maradona, Nicole Kidman, Lionel Messi, Ringo Starr, Elton John y Miley Cyrus; camisetas de equipos de fútbol, guantes de boxeo de campeones mundiales y sombreros de artistas. Además de la colección fija, organiza actividades y eventos.",
   ],
   museoVisita: "Se visita en la oficina: Pbro. Becerra 436, Villa de Merlo.",
@@ -80,7 +80,7 @@ export const VENDER = {
 
 export const URBANIZACIONES_TXT = {
   chico: "Urbanizaciones",
-  conPropiedades: "con propiedades publicadas hoy. Tocá una para ver qué hay.",
+  conPropiedades: "con propiedades publicadas. Tocá una para ver qué hay.",
 };
 
 export const CONTACTO = {

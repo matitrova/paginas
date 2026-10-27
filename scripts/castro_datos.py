@@ -36,7 +36,7 @@ from pathlib import Path
 from PIL import Image, ImageOps
 
 sys.dont_write_bytecode = True  # que importar castro_satelite no deje scripts/__pycache__ en el repo
-from castro_satelite import adentro, celda_de, mundo  # noqa: E402
+from castro_satelite import EXCLUIR, adentro, celda_de, mundo  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTE = Path(sys.argv[1] if len(sys.argv) > 1 else Path.home() / "castro-datos")
@@ -91,8 +91,16 @@ def clave_zona(z):
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", "", z)).strip()
 
 
-# Variantes que el agrupado solo no junta (escritas distinto, no solo con otra mayúscula)
-ALIAS_ZONA = {"rincon de este": "rincon del este", "santa rosa de conlara": "santa rosa del conlara"}
+# Variantes que el agrupado solo no junta (escritas distinto, no solo con otra mayúscula). Solo el mismo lugar escrito de
+# otra forma: "Piedra Blanca Arriba" o "Pantanillo este" no son "Piedra Blanca" ni "El Pantanillo"
+ALIAS_ZONA = {"rincon de este": "rincon del este", "santa rosa de conlara": "santa rosa del conlara",
+              "ruta n 5": "ruta n5", "ruta 5": "ruta n5", "pantanillo": "el pantanillo", "barrio los troncos": "los troncos",
+              # "Centro, Villa de Merlo" sin la coma; y la errata del galpón, que en su descripción está "ubicado en el Polo
+              # Logístico", el mismo que la urbanización ("Ubicado en Urbanización Polo Logístico", dice el aviso de sus lotes)
+              "centro villa de merlo": "centro", "polo logistco": "polo logistico productivo merlo"}
+# Pueden ser el mismo lugar, pero lo publicado no alcanza para asegurarlo: no se juntan, van a errores_de_carga.md para Mauro
+A_CONFIRMAR = [("Ruta 1", "Ruta Provincial 1"), ("Chumamaya", "Country Club Chumamaya"), ("Las Cascadas", "Country Las Cascadas", "Las Cascadas Golf"),
+               ("Santa Rosa", "Santa Rosa del Conlara"), ("Solares", "Solares del Valle")]
 
 UA = "castro-propuesta/1.0 (matitrova13 at gmail)"
 # A cuánto queda: los lugares salen de OpenStreetMap (buscados en Nominatim el 26/10/2026; centro del área o el nodo):
@@ -303,12 +311,24 @@ _grafias = {}
 for _p in propiedades:
     _k = ALIAS_ZONA.get(clave_zona(_p["zona"]), clave_zona(_p["zona"]))
     _grafias.setdefault(_k, []).append(_p["zona"] or "")
-# Entre grafías igual de usadas, la que ya estaba publicada en indice.json (un link con esa zona en el filtro sigue
-# andando, porque el listado la compara tal cual) y después g, para no depender del orden del set
+# Entre grafías igual de usadas: la que coincide con el nombre de una urbanización (como la escribe nombreLindo de
+# Ficha.tsx), la de más palabras con mayúscula ("Piedra Blanca Abajo", no "Piedra blanca Abajo"), la que ya estaba
+# publicada en indice.json (un link con esa zona en el filtro sigue andando: el listado la compara tal cual) y después g,
+# para no depender del orden del set
 _publicadas = {x["zona"] for x in json.load(open(SRC / "indice.json"))} if (SRC / "indice.json").exists() else set()
-ZONA = {z: max(set(v), key=lambda g: (v.count(g), g != g.lower(), "del" in g, g in _publicadas, g)) for z, v in _grafias.items()}
+_lindo = lambda n: " ".join(w if i and w in ("de", "la", "las", "los", "del", "y") else w[:1].upper() + w[1:] for i, w in enumerate(n.lower().split()))
+_urbanizaciones = {_lindo(u["nombre"]) for u in json.load(open(FUENTE / "urbanizaciones.json"))}
+_mayusculas = lambda g: sum(w[:1].isupper() for w in g.split())
+ZONA = {z: max(set(v), key=lambda g: (v.count(g), g in _urbanizaciones, g != g.lower(), "del" in g, _mayusculas(g), g in _publicadas, g))
+        for z, v in _grafias.items()}
 zona_de = lambda z: ZONA[ALIAS_ZONA.get(clave_zona(z), clave_zona(z))]
 assert zona_de("Rincón Del Este") == zona_de("Rincón de Este") == "Rincón del Este"
+assert zona_de("Ruta 5") == zona_de("Ruta Nº 5") == zona_de("Ruta N°5") == "Ruta N°5" and zona_de("Pantanillo") == "El Pantanillo"
+assert zona_de("Barrio Los Troncos") == "Los Troncos" and zona_de("Pantanillo este") != zona_de("Pantanillo")
+assert zona_de("Centro Villa de Merlo") == "Centro" and zona_de("Polo Logístco") == "Polo Logístico Productivo Merlo"
+assert zona_de("Piedra blanca Abajo") == "Piedra Blanca Abajo" and zona_de("Estancia el Carril") == "Estancia El Carril"
+assert zona_de("Jardines de La Plaza") == "Jardines de la Plaza", "en un empate gana el nombre de la urbanización"
+assert all(len({zona_de(z) for z in g}) == len(g) and all(z in ZONA.values() for z in g) for g in A_CONFIRMAR), "A_CONFIRMAR desactualizado"
 assert antiguedad("1 años") == "1 año" and antiguedad("7 años") == "7 años"
 # La forma real de los terrenos (formas.json), el mapa que se mueve de cada ficha (mapas.json) y las celdas calzadas
 # (calces.json) los arma castro_satelite.py
@@ -316,6 +336,7 @@ for _falta in ("formas.json", "mapas.json", "calces.json"):
     if not (FUENTE / _falta).exists():
         raise SystemExit(f"falta {FUENTE / _falta}: corré antes scripts/castro_satelite.py")
 FORMAS = json.load(open(FUENTE / "formas.json"))
+assert all(i not in FORMAS for i in EXCLUIR), "un terreno de EXCLUIR quedó con forma: corré castro_satelite.py"
 MAPAS = json.load(open(FUENTE / "mapas.json"))
 CALCES = json.load(open(FUENTE / "calces.json"))
 # Cuántas propiedades publican exactamente el mismo punto (suele ser el del barrio, no el de la propiedad)
@@ -472,9 +493,10 @@ sitio = {
     "pie": inst["pie"],
     "contacto": {k: inst[k] for k in ("direccion", "telefono", "whatsapp", "email", "redes", "corredor_y_matricula", "colegio", "oficina_lat", "oficina_lng", "razon_social", "cuit", "afip_data_fiscal")},
 }
-# Tres errores de tipeo de sus textos, corregidos: el resto va tal cual lo escribieron
+# Errores de tipeo de sus textos, corregidos: el resto va tal cual lo escribieron
 _texto = json.dumps(sitio, ensure_ascii=False, indent=1)
-for mal, bien in {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación"}.items():
+# (en una sola línea: scripts/verificar.py lee este diccionario con una expresión regular)
+for mal, bien in {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación", "Cincurvanlación": "Circunvalación", "Libertar": "Libertador"}.items():
     assert mal in _texto, mal
     _texto = _texto.replace(mal, bien)
 (SRC / "sitio.json").write_text(_texto)
@@ -519,7 +541,19 @@ for (lat, lng), ps in sorted(grupos.items(), key=lambda g: -len(g[1])):
     "## Propiedades que publican el mismo punto\n\n"
     "Varias propiedades con exactamente la misma ubicación: suele ser un punto del barrio y no el de cada propiedad. En la "
     "propuesta se muestran con una zona aproximada más grande que lo aclara.\n\n"
-    + "\n".join(compartidos) + "\n"
+    + "\n".join(compartidos) + "\n\n"
+    "## Terrenos que no se dibujan\n\n"
+    "El catastro tiene una parcela que coincide, pero el aviso no deja asegurar que sea esa. En la propuesta van con la zona "
+    "aproximada, sin forma.\n\n"
+    + "\n".join(f"- **{p['codigo']}** · {p['titulo'].strip()} — {EXCLUIR[p['id']]}" for p in propiedades if p["id"] in EXCLUIR) + "\n\n"
+    "## Zonas escritas de varias formas\n\n"
+    "En los títulos, el mismo lugar figura escrito de distintas maneras. En la propuesta se agrupan con la forma más usada.\n\n"
+    + "\n".join(f"- **{ZONA[k]}**: " + ", ".join(f"«{g}» ({v.count(g)})" for g in sorted(set(v), key=lambda g: (-v.count(g), g)))
+                for k, v in sorted(_grafias.items(), key=lambda x: ZONA[x[0]]) if len(set(v)) > 1) + "\n\n"
+    "## Zonas que pueden ser el mismo lugar, a confirmar\n\n"
+    "Parecen el mismo lugar, pero con lo publicado no se puede asegurar. En la propuesta van separadas; si son el mismo, se "
+    "juntan.\n\n"
+    + "\n".join("- " + " / ".join(f"«{z}» ({sum(zona_de(p['zona']) == z for p in propiedades)})" for z in g) for g in A_CONFIRMAR) + "\n"
 )
 
 # Ninguna ficha vieja de una propiedad que ya no está
