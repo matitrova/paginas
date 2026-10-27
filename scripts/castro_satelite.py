@@ -417,7 +417,13 @@ def portada(dibujados):
 def hoja(celda, salida, pruebas):
     candidatos = [t for t in terrenos() if t["celda"] == celda]
     if not candidatos:
-        raise SystemExit(f"no hay terrenos en {celda}")
+        # Zona sin terrenos con forma (solo casas): se calza alrededor del punto publicado de cualquier propiedad de la celda
+        props = [p for p in json.load(open(FUENTE / "propiedades.json")) if p.get("lat") and celda_de(float(p["lat"]), float(p["lng"])) == celda]
+        if not props:
+            raise SystemExit(f"no hay propiedades en {celda}")
+        p = props[0]
+        lat, lng = float(p["lat"]), float(p["lng"])
+        candidatos = [{"id": p["id"], "lat": lat, "lng": lng, "titulo": p["titulo"], "puntos": [[lng - 1e-5, lat], [lng + 1e-5, lat], [lng, lat + 1e-5], [lng - 1e-5, lat]]}]
     t = candidatos[0]
     ancho_m, z = 260, 18
     parcelas = parcelas_alrededor(t["lat"], t["lng"])
