@@ -123,6 +123,20 @@ body {
   margin-left: 4px;
   color: #ffb066;
 }
+/* La tarjeta del listado que tiene el mouse encima prende su marca, también cuando es una burbuja (de lejos, casi
+   todas lo son). Terracota: el blanco encima da 6,8:1. El translate es el de .marca-mapa > *, para no correrla */
+.marca-mapa .burbuja {
+  transition: transform 0.15s, background 0.15s;
+}
+.marca-mapa .burbuja.activa,
+.marca-mapa .burbuja:hover {
+  background: var(--color-terracota);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.marca-mapa .burbuja.activa b,
+.marca-mapa .burbuja:hover b {
+  color: #fff;
+}
 .marca-mapa .pildora {
   padding: 7px 10px;
   border-radius: 999px;
@@ -150,7 +164,6 @@ body {
   color: #211c18;
   text-decoration: none;
   box-shadow: 0 4px 12px -4px rgb(0 0 0 / 0.55);
-  transform: translate(calc(-50% + var(--corrido, 0px)), -50%);
 }
 .marca-mapa .logo-urbanizacion img {
   width: 30px;
@@ -214,4 +227,20 @@ body {
   color: #fff;
   font-size: 11px;
   text-align: center;
+}
+/* La esquina redondeada (24 px) de los mapas generales se comía la F de "Foto:" */
+[data-mapa-general] .leaflet-control-attribution,
+[data-mapa-urbanizaciones] .leaflet-control-attribution {
+  padding-left: 16px;
+}
+/* En el celular el botón flotante de WhatsApp (abajo a la derecha, unos 145 px) tapaba el final de la atribución.
+   En el panel del mapa del listado no hace falta: el panel tapa el botón */
+@media (max-width: 767px) {
+  [data-mapa-general] .leaflet-control-attribution,
+  [data-mapa-urbanizaciones] .leaflet-control-attribution {
+    max-width: calc(100vw - 210px);
+  }
+  [data-panel-mapa] .leaflet-control-attribution {
+    max-width: none;
+  }
 }

@@ -292,7 +292,7 @@ export default function Listado() {
         {esCompu && (
           <div className="mt-6">
             <div className="sticky top-28 h-[calc(100vh-8.5rem)]">
-              <MapaGeneral props={lista} op={op} resaltada={resaltada} className="h-full" />
+              <MapaGeneral props={lista} op={op} resaltada={resaltada} className="h-full" costado />
             </div>
           </div>
         )}
