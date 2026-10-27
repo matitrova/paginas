@@ -883,6 +883,8 @@ def castro(pg, nombre, cap):
         problemas.append(f"{nombre}: el mapa de urbanizaciones llega a {alcanzables} de 22 ({len(pines)} logos) o algún logo no lleva a su página")
     if not pg.evaluate("[...document.querySelectorAll('[data-mapa-urbanizaciones] [data-pin] img')].every(i => i.naturalWidth > 0)"):
         problemas.append(f"{nombre}: algún logo del mapa de urbanizaciones no se dibujó")
+    if x := pg.evaluate(MARCAS_CORTADAS, "[data-mapa-urbanizaciones]"):
+        problemas.append(f"{nombre}: en el mapa de urbanizaciones hay marcas cortadas por el borde: {x}")
     # Las dos que publican el mismo punto (61814 y 61958) se tienen que poder tocar las dos: en el centro de cada logo
     # tiene que estar ese logo y no el otro
     tapadas = pg.evaluate("""() => [...document.querySelectorAll('[data-mapa-urbanizaciones] [data-pin]')].filter(a => {
@@ -1211,6 +1213,15 @@ def castro_mapa(pg, nombre, cap):
     castro_general(pg, nombre, cap)
 
 
+# Las marcas de un mapa que quedan a medias en su borde (con el número que asoma de un logo): se ven rotas. Las que
+# quedan afuera del todo están bien, se ven al arrastrar
+MARCAS_CORTADAS = """(sel) => { const c = document.querySelector(sel), m = c.getBoundingClientRect();
+    return [...c.querySelectorAll('.marca-mapa > *')].map(e => { const rs = [e, ...e.querySelectorAll('*')].map(x => x.getBoundingClientRect()).filter(r => r.width);
+      const l = Math.min(...rs.map(r => r.left)), r = Math.max(...rs.map(r => r.right)), t = Math.min(...rs.map(r => r.top)), b = Math.max(...rs.map(r => r.bottom));
+      const seVe = l < m.right && r > m.left && t < m.bottom && b > m.top, entera = l >= m.left - 1 && r <= m.right + 1 && t >= m.top - 1 && b <= m.bottom + 1;
+      return seVe && !entera ? (e.innerText.trim() || e.dataset.pin) : null }).filter(Boolean) }"""
+
+
 def castro_general(pg, nombre, cap):
     """El mapa de todas las propiedades (Actualización 11): en el listado, con los mismos filtros; en la portada, sin
     bajar Leaflet hasta llegar a él. La suma de las marcas (una burbuja cuenta todas las que junta) tiene que dar la
@@ -1251,6 +1262,10 @@ def castro_general(pg, nombre, cap):
             return out }"""):
             problemas.append(f"{nombre}: en el mapa {donde} hay marcas que se pisan: {x}")
 
+    def cortadas(donde):
+        if x := pg.evaluate(MARCAS_CORTADAS, "[data-mapa-general]"):
+            problemas.append(f"{nombre}: en el mapa {donde} hay marcas cortadas por el borde: {x}")
+
     def tocar(sel, cual="primera"):
         """Toca con el mouse (locator.click, como una persona) una marca que se ve dentro del mapa: la más grande o la
         primera. Si algo la tapa, Playwright no la puede tocar y queda anotado."""
@@ -1279,6 +1294,7 @@ def castro_general(pg, nombre, cap):
         if suma() != venta:
             problemas.append(f"{nombre}: el mapa de la portada suma {suma()} marcas y hay {venta} en venta")
         pisadas("de la portada")
+        cortadas("de la portada")
         cap("10-mapa-portada")
         # En la portada la rueda del mouse baja la página, no acerca el mapa
         if not movil:
@@ -1290,61 +1306,66 @@ def castro_general(pg, nombre, cap):
             if pg.get_attribute("[data-mapa-general]", "data-zoom") != antes:
                 problemas.append(f"{nombre}: la rueda del mouse acerca el mapa de la portada (tiene que bajar la página)")
 
+    def de_la_marca_a_la_ficha():
+        """Tocar una burbuja acerca; de cerca aparecen los lotes y las pastillas; tocar una pastilla abre su tarjeta, y
+        la tarjeta lleva a la ficha. En una función para que lo que no se pudo tocar no saltee los chequeos de abajo."""
+        for _ in range(4):
+            if pg.locator("[data-mapa-general] .pildora").count():
+                break
+            tocar(".burbuja", "grande")
+            pg.wait_for_timeout(900)
+        pastilla = tocar(".pildora")
+        if not pastilla:
+            problemas.append(f"{nombre}: acercando el mapa general nunca aparecen los precios (o no se pueden tocar)")
+            return
+        ident = pastilla.get_attribute("data-pin-prop")
+        pg.wait_for_timeout(500)
+        link = pg.locator(f"[data-tarjetas-mapa] [data-tarjeta-mapa='{ident}']")
+        if not link.count():
+            problemas.append(f"{nombre}: tocar la pastilla de {ident} no abre su tarjeta")
+            return
+        cap("12-mapa-tarjeta")
+        link.click()
+        pg.wait_for_load_state("networkidle")
+        if f"p={ident}" not in pg.url:
+            problemas.append(f"{nombre}: la tarjeta del mapa no lleva a la ficha {ident} ({pg.url})")
+
     # Listado: el mapa muestra lo mismo que la lista, y cambia con los filtros
     pg.goto(raiz + "?ver=propiedades", wait_until="networkidle")
     if movil:
         pg.locator("[data-abrir-mapa]").click()
         if "mapa=1" not in pg.url:
             problemas.append(f"{nombre}: abrir el mapa no queda en la dirección ({pg.url})")
-    if not listo("el listado"):
-        return
-    total = resultados()
-    if suma() != total:
-        problemas.append(f"{nombre}: el mapa del listado suma {suma()} marcas y la lista tiene {total}")
-    pisadas("del listado")
-    cap("11-mapa-listado")
-    # Con un filtro, el mapa cambia (en la compu; en el celular el panel tapa los filtros)
-    if not movil:
-        pg.locator("[data-filtro-tipo='Terreno']").click()
-        pg.wait_for_timeout(1200)
-        if suma() != resultados() or resultados() == total:
-            problemas.append(f"{nombre}: al filtrar terrenos el mapa suma {suma()} y la lista tiene {resultados()}")
-        # Pasar el mouse por una tarjeta resalta su marca, y se tiene que ver aunque sea una burbuja (de lejos casi
-        # todas lo son): la primera tarjeta que cae en una burbuja, con el color antes y durante
-        ident = pg.evaluate("""() => { const en = new Set([...document.querySelectorAll('[data-mapa-general] .burbuja')].flatMap(b => b.dataset.pinProp.split(' ')));
-            return [...document.querySelectorAll('[data-tarjeta]')].map(t => t.dataset.tarjeta).find(i => en.has(i)) }""")
-        ident = ident or pg.locator("[data-tarjeta]").first.get_attribute("data-tarjeta")
-        color = f"() => getComputedStyle(document.querySelector('[data-mapa-general] [data-pin-prop~=\"{ident}\"]')).backgroundColor"
-        antes = pg.evaluate(color)
-        pg.locator(f"[data-tarjeta='{ident}']").first.hover()
-        pg.wait_for_timeout(400)
-        activa = pg.evaluate("() => [...document.querySelectorAll('[data-mapa-general] .activa')].map(e => e.dataset.pinProp)")
-        if not any(ident in (a or "").split() for a in activa):
-            problemas.append(f"{nombre}: pasar el mouse por la tarjeta {ident} no resalta su marca en el mapa ({activa})")
-        elif pg.evaluate(color) == antes:
-            problemas.append(f"{nombre}: pasar el mouse por la tarjeta {ident} prende su marca pero no cambia nada que se vea ({antes})")
-        pg.mouse.move(5, 5)
-    # Tocar una burbuja acerca; de cerca aparecen los lotes y las pastillas; tocar una pastilla abre su tarjeta
-    for _ in range(4):
-        if pg.locator("[data-mapa-general] .pildora").count():
-            break
-        tocar(".burbuja", "grande")
-        pg.wait_for_timeout(900)
-    pastilla = tocar(".pildora")
-    if not pastilla:
-        problemas.append(f"{nombre}: acercando el mapa general nunca aparecen los precios (o no se pueden tocar)")
-        return
-    ident = pastilla.get_attribute("data-pin-prop")
-    pg.wait_for_timeout(500)
-    link = pg.locator(f"[data-tarjetas-mapa] [data-tarjeta-mapa='{ident}']")
-    if not link.count():
-        problemas.append(f"{nombre}: tocar la pastilla de {ident} no abre su tarjeta")
-        return
-    cap("12-mapa-tarjeta")
-    link.click()
-    pg.wait_for_load_state("networkidle")
-    if f"p={ident}" not in pg.url:
-        problemas.append(f"{nombre}: la tarjeta del mapa no lleva a la ficha {ident} ({pg.url})")
+    if listo("el listado"):
+        total = resultados()
+        if suma() != total:
+            problemas.append(f"{nombre}: el mapa del listado suma {suma()} marcas y la lista tiene {total}")
+        pisadas("del listado")
+        cortadas("del listado")
+        cap("11-mapa-listado")
+        # Con un filtro, el mapa cambia (en la compu; en el celular el panel tapa los filtros)
+        if not movil:
+            pg.locator("[data-filtro-tipo='Terreno']").click()
+            pg.wait_for_timeout(1200)
+            if suma() != resultados() or resultados() == total:
+                problemas.append(f"{nombre}: al filtrar terrenos el mapa suma {suma()} y la lista tiene {resultados()}")
+            # Pasar el mouse por una tarjeta resalta su marca, y se tiene que ver aunque sea una burbuja (de lejos casi
+            # todas lo son): la primera tarjeta que cae en una burbuja, con el color antes y durante
+            ident = pg.evaluate("""() => { const en = new Set([...document.querySelectorAll('[data-mapa-general] .burbuja')].flatMap(b => b.dataset.pinProp.split(' ')));
+                return [...document.querySelectorAll('[data-tarjeta]')].map(t => t.dataset.tarjeta).find(i => en.has(i)) }""")
+            ident = ident or pg.locator("[data-tarjeta]").first.get_attribute("data-tarjeta")
+            color = f"() => getComputedStyle(document.querySelector('[data-mapa-general] [data-pin-prop~=\"{ident}\"]')).backgroundColor"
+            antes = pg.evaluate(color)
+            pg.locator(f"[data-tarjeta='{ident}']").first.hover()
+            pg.wait_for_timeout(400)
+            activa = pg.evaluate("() => [...document.querySelectorAll('[data-mapa-general] .activa')].map(e => e.dataset.pinProp)")
+            if not any(ident in (a or "").split() for a in activa):
+                problemas.append(f"{nombre}: pasar el mouse por la tarjeta {ident} no resalta su marca en el mapa ({activa})")
+            elif pg.evaluate(color) == antes:
+                problemas.append(f"{nombre}: pasar el mouse por la tarjeta {ident} prende su marca pero no cambia nada que se vea ({antes})")
+            pg.mouse.move(5, 5)
+        de_la_marca_a_la_ficha()
+
     # De cerca, los lotes dibujados son los de mapa.json
     pg.goto(raiz + "?ver=propiedades&tipo=Terreno" + ("&mapa=1" if movil else ""), wait_until="networkidle")
     if listo("los terrenos"):
@@ -1398,6 +1419,7 @@ def castro_general(pg, nombre, cap):
         pg.locator("[data-mapa-general]").scroll_into_view_if_needed()
         if listo(f"la urbanización {u}"):
             pisadas(f"de la urbanización {u}")
+            cortadas(f"de la urbanización {u}")
             if u == "29734" and any("Magdalenas" in t for t in pg.locator("[data-mapa-general] .marca-mapa").all_inner_texts()):
                 problemas.append(f"{nombre}: en el mapa de Las Magdalenas las burbujas repiten el nombre de la urbanización")
             cap(f"14-mapa-urbanizacion-{u}")

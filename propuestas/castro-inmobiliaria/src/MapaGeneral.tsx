@@ -96,9 +96,44 @@ function precioCorto(p: Propiedad, op?: string) {
   return `${signo} ${n}`;
 }
 
-/** Ancho aproximado en pantalla de una marca con ese texto: letra de 13 px (medido: 6,5 px por letra, 7,5 por número)
- *  más el relleno, 26 px en una burbuja y 20 en una pastilla. Mejor que sobre a que falte: si falta, se pisan. */
-const anchoDe = (texto: string, relleno: number) => relleno + texto.length * 7;
+/** Ancho en pantalla de una marca con ese texto: el texto medido con la misma letra (600 13px de --font-sans) más el
+ *  relleno, 26 px en una burbuja y 20 en una pastilla. Mientras la letra no bajó, 7,5 px por letra: lo más ancho que se
+ *  midió es "USD 800", y mejor que sobre a que falte, porque si falta se pisan. */
+let lienzo: CanvasRenderingContext2D | null = null;
+function anchoDe(texto: string, relleno: number) {
+  lienzo ??= document.createElement("canvas").getContext("2d");
+  if (!lienzo || !document.fonts.check("600 13px Figtree")) return relleno + texto.length * 7.5;
+  lienzo.font = `600 13px ${getComputedStyle(document.documentElement).getPropertyValue("--font-sans")}`;
+  return relleno + lienzo.measureText(texto).width;
+}
+
+/** En el primer encuadre, una marca a medias en el borde se ve rota. Se corre el mapa sin cambiar el zoom (así no se
+ *  rearman las marcas) lo menos posible para que ninguna quede a medias: que entre entera o que salga del todo, sin
+ *  sacar a ninguna de las que se ven enteras. Si no hay cómo, queda como está. Se mide lo dibujado (con el número que
+ *  asoma de un logo), no un ancho estimado. */
+function sinCortadas(mapa: Leaflet.Map, caja: HTMLElement) {
+  const m = caja.getBoundingClientRect();
+  const cajas = [...caja.querySelectorAll(".marca-mapa > *")].map((e) => {
+    const rs = [e, ...e.querySelectorAll("*")].map((x) => x.getBoundingClientRect()).filter((r) => r.width);
+    return {
+      x: [Math.min(...rs.map((r) => r.left)) - m.left, Math.max(...rs.map((r) => r.right)) - m.left],
+      y: [Math.min(...rs.map((r) => r.top)) - m.top, Math.max(...rs.map((r) => r.bottom)) - m.top],
+    };
+  });
+  // En un eje. A medias: cruza un borde o queda a menos de `g` px de él por dentro. Las candidatas son los
+  // corrimientos que dejan a alguna justo afuera (a 1 px) o justo adentro (a 6 px), y se elige la más cerca de 0
+  const correr = (v: number[][], largo: number) => {
+    const aMedias = (s: number, g: number) => v.some(([lo, hi]) => (lo + s < g && hi + s > 0) || (lo + s < largo && hi + s > largo - g));
+    if (!aMedias(0, 0)) return 0;
+    const enteras = v.filter(([lo, hi]) => lo >= 0 && hi <= largo);
+    const [a, b] = [Math.max(-Infinity, ...enteras.map(([lo]) => -lo)), Math.min(Infinity, ...enteras.map(([, hi]) => largo - hi))];
+    const vale = (s: number) => s >= a && s <= b && !aMedias(s, 5);
+    return v.flatMap(([lo, hi]) => [-hi - 1, 6 - lo, largo - 6 - hi, largo - lo + 1]).filter(vale).sort((x, y) => Math.abs(x) - Math.abs(y))[0] ?? 0;
+  };
+  const sx = correr(cajas.filter((c) => c.y[1] > 0 && c.y[0] < m.height).map((c) => c.x), m.width);
+  const sy = correr(cajas.filter((c) => c.x[1] + sx > 0 && c.x[0] + sx < m.width).map((c) => c.y), m.height);
+  if (sx || sy) mapa.panBy([-sx, -sy], { animate: false });
+}
 
 const marca = (L: L, latlng: Leaflet.LatLngExpression, html: string, titulo: string) =>
   L.marker(latlng, { keyboard: false, title: titulo, riseOnHover: true, icon: L.divIcon({ className: "marca-mapa", iconSize: [0, 0], html }) });
@@ -293,6 +328,8 @@ export default function MapaGeneral({ props, op, resaltada, lugarVacio, classNam
       mapa.fitBounds([[la1, ln1], [la2, ln2]], { paddingTopLeft: [56, 40], paddingBottomRight: [56, 40 + oculto], maxZoom: 15, animate: false });
     } else if (lugarVacio) mapa.setView([lugarVacio.lat, lugarVacio.lng], 15, { animate: false });
     dibujar();
+    // El margen no alcanza para las que el recorte del 5% deja justo afuera del encuadre
+    if (!vista && caja.current) sinCortadas(mapa, caja.current);
     caja.current?.setAttribute("data-total", String(conPunto.length));
 
     return () => {
@@ -340,7 +377,8 @@ export function MapaUrbanizaciones({ cantidades, className = "h-[64vh]" }: { can
     type Urb = (typeof urbs)[number];
     // En un mapa angosto (el celular) va solo el logo con la cantidad; con nombre no entraría casi ninguno
     const compacto = (caja.current?.clientWidth ?? 1000) < 640;
-    const ancho = (x: Urb, chico: boolean) => (chico ? 46 : 48 + (x.nombre.length + (x.n ? 4 : 0)) * 7.4); // en px aproximados
+    // Con nombre: 4 de relleno, el logo de 30, 6 de espacio, el texto y 10 de relleno. Compacto: el logo de 36 y el borde
+    const ancho = (x: Urb, chico: boolean) => (chico ? 46 : anchoDe(x.n ? `${x.nombre} · ${x.n}` : x.nombre, 50));
 
     const lista = (grupo: Urb[]) => {
       const div = document.createElement("div");
@@ -413,12 +451,14 @@ export function MapaUrbanizaciones({ cantidades, className = "h-[64vh]" }: { can
     mapa.on("zoomend", dibujar);
     // Se encuadra el grupo de Merlo (las que están a menos de 4 km del punto del medio): La Pituca, El Solar y La
     // Eloisa, lejos del resto, alejaban tanto el mapa que en el celular todo quedaba en una burbuja. Se ven al alejar.
-    // Don Fermín (a 4,2 km) queda en el borde a propósito: sumarla aleja el celular un nivel y junta 7 en una burbuja.
+    // Don Fermín (a 4,2 km) queda afuera a propósito: sumarla aleja el celular un nivel y junta 7 en una burbuja; si
+    // queda a medias en el borde, sinCortadas corre el mapa para que entre.
     const medio = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
     const centro = L.latLng(medio(urbs.map((x) => x.lat)), medio(urbs.map((x) => x.lng)));
     const cerca = urbs.filter((x) => centro.distanceTo([x.lat, x.lng]) < 4000);
     mapa.fitBounds(L.latLngBounds((cerca.length ? cerca : urbs).map((x) => [x.lat, x.lng])), { padding: [40, 40], maxZoom: 15, animate: false });
     dibujar();
+    if (caja.current) sinCortadas(mapa, caja.current);
     return () => {
       mapa.off("zoomend", dibujar);
       mapa.closePopup();
