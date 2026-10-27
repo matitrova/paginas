@@ -188,8 +188,20 @@ def lados(puntos_ll):
         largo = sum(math.dist(tramo[s], tramo[s + 1]) for s in range(len(tramo) - 1))
         if largo < 8:  # un lado cortito se dibuja igual, pero su rótulo se encima con los de al lado
             continue
+        # El rótulo va en la mitad del recorrido del borde, no en la mitad de la recta entre las puntas: en un lado
+        # largo apenas quebrado (menos de 5° por vértice) la recta se separa del borde (6415358: 122 m)
+        falta = largo / 2
+        for s in range(len(tramo) - 1):
+            seg = math.dist(tramo[s], tramo[s + 1])
+            if falta <= seg or s == len(tramo) - 2:
+                f = min(falta / seg, 1) if seg else 0
+                medio = (tramo[s][0] + (tramo[s + 1][0] - tramo[s][0]) * f, tramo[s][1] + (tramo[s + 1][1] - tramo[s][1]) * f)
+                break
+            falta -= seg
+        mlat = pts[0][1] + medio[1] / 110540
+        mlng = pts[0][0] + medio[0] / (111320 * math.cos(math.radians(lat0)))
         p1, p2 = pantalla[i], pantalla[j]
-        mx, my = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
+        mx, my = mundo(mlat, mlng, 20)
         ang = math.degrees(math.atan2(p2[1] - p1[1], p2[0] - p1[0]))
         if ang > 90:
             ang -= 180
@@ -198,7 +210,7 @@ def lados(puntos_ll):
         # Hacia afuera: del centro del lote hacia el medio del lado
         dx, dy = mx - centro[0], my - centro[1]
         d = math.hypot(dx, dy) or 1
-        rotulos.append({"lat": round((pts[i][1] + pts[j][1]) / 2, 6), "lng": round((pts[i][0] + pts[j][0]) / 2, 6),
+        rotulos.append({"lat": round(mlat, 6), "lng": round(mlng, 6),
                         "ang": round(ang, 1), "afuera": [round(dx / d, 3), round(dy / d, 3)],
                         "texto": f"{largo:.1f} m".replace(".", ",") if largo < 100 else f"{round(largo)} m"})
     return rotulos
@@ -235,7 +247,7 @@ def terrenos():
         lat = sum(p[1] for p in pts) / len(pts)
         lng = sum(p[0] for p in pts) / len(pts)
         yield {"id": t["id"], "confianza": t["confianza"], "lat": lat, "lng": lng, "puntos": pts, "vecinas": [anillo(v["geometry"]) for v in vecinas],
-               "celda": celda_de(lat, lng), "titulo": props[t["id"]]["titulo"], "lote_id": lote.get("id")}
+               "celda": celda_de(lat, lng), "titulo": props[t["id"]]["titulo"], "lote_id": lote.get("id"), "tipo": props[t["id"]]["tipo"]}
 
 
 def encuadre(t, factor=2.6, minimo=160):
@@ -316,6 +328,51 @@ assert adentro(0.00015, 0.00015, _cuadro) and not adentro(0.00015, 0.0004, _cuad
 # Una PH encima de una urbana se va; dos PH iguales dejan una; una PH sola queda
 assert [p[0] for p in sin_encimadas([(1, _cuadro, "URBANA"), (2, _chico, "PROPIEDAD HORIZONTAL"), (3, _lejos, "PROPIEDAD HORIZONTAL"),
                                      (4, _lejos, "PROPIEDAD HORIZONTAL")])] == [1, 3]
+
+
+def area_m2(anillo_ll):
+    """Superficie de un anillo [lng, lat] en m² (proyección local; sobra para un lote)."""
+    lat0 = sum(p[1] for p in anillo_ll) / len(anillo_ll)
+    k = 111320 * math.cos(math.radians(lat0))
+    pts = [(p[0] * k, p[1] * 110540) for p in anillo_ll]
+    return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1]))) / 2
+
+
+TOLERANCIA_SUPERFICIE = 0.10
+
+
+def por_punto(ya):
+    """Las propiedades sin terreno cruzado con el catastro (casas, locales, complejos y terrenos que no se encontraron)
+    cuyo punto publicado cae ADENTRO de una parcela con la misma superficie publicada (±10%): con esas dos cosas a la
+    vez, la parcela es la de la propiedad. La parcela sale de la trama ya guardada (catastro/<id>-alrededor.geojson).
+    Quedan afuera las de EXCLUIR y las que comparten el punto con otra (ese punto no es de ninguna en particular)."""
+    indice = {p["id"]: p for p in json.load(open(RAIZ / "propuestas/castro-inmobiliaria/src/datos/indice.json"))}
+    props = json.load(open(FUENTE / "propiedades.json"))
+    puntos = {}
+    for p in props:
+        puntos[(p["lat"], p["lng"])] = puntos.get((p["lat"], p["lng"]), 0) + 1
+    for p in props:
+        sup = (indice.get(p["id"]) or {}).get("terreno")
+        if p["id"] in ya or p["id"] in EXCLUIR or not sup or not p.get("lat") or puntos[(p["lat"], p["lng"])] > 1:
+            continue
+        parcelas, _ = alrededor(p["id"], p["lat"], p["lng"])
+        contienen = [(fid, r) for fid, r, _ in parcelas if adentro(p["lat"], p["lng"], r)]
+        # Si el punto cae en más de una (una parcela adentro de otra, como el complejo 6415358), no se sabe cuál es: marcador
+        if len(contienen) != 1:
+            continue
+        fid, ring = contienen[0]
+        if abs(area_m2(ring) - sup) / sup > TOLERANCIA_SUPERFICIE:
+            continue
+        lat = sum(q[1] for q in ring) / len(ring)
+        lng = sum(q[0] for q in ring) / len(ring)
+        # Para la imagen fija, las que lo tocan (algún vértice a menos de 3 m de uno del lote)
+        cerca = lambda a, b: math.hypot((a[0] - b[0]) * 111320 * math.cos(math.radians(lat)), (a[1] - b[1]) * 110540) < 3
+        vecinas = [r for f2, r, _ in parcelas if f2 != fid and any(cerca(x, y) for x in r for y in ring)]
+        yield {"id": p["id"], "confianza": "punto", "lat": lat, "lng": lng, "puntos": ring, "vecinas": vecinas,
+               "celda": celda_de(lat, lng), "titulo": p["titulo"], "lote_id": fid, "tipo": p["tipo"]}
+
+
+assert round(area_m2([[0, 0], [0.001, 0], [0.001, 0.001], [0, 0.001], [0, 0]])) == round(0.001 * 111320 * 0.001 * 110540)
 
 
 def seis(anillo_ll):
@@ -450,7 +507,8 @@ def hoja(celda, salida, pruebas):
 
 def todos():
     formas, sin_calce, sin_foto, dibujados = {}, [], [], {}
-    for t in terrenos():
+    de_resumen = list(terrenos())
+    for t in [*de_resumen, *por_punto({x["id"] for x in de_resumen})]:
         if t["celda"] not in CALCES:
             sin_calce.append(t["id"])
             continue
@@ -473,10 +531,15 @@ def todos():
             "mini": " ".join(f"{(x - min(xs)) / lado * 100:.1f},{(y - min(ys)) / lado * 100:.1f}" for x, y in poly),
         }
         dibujados[t["id"]] = t
-        tarjeta(t)
+        if t["tipo"] in ("Terreno", "Campo"):  # las casas siguen con la foto de la casa en la tarjeta
+            tarjeta(t)
     (FUENTE / "formas.json").write_text(json.dumps(formas, ensure_ascii=False))
     (FUENTE / "calces.json").write_text(json.dumps({c: list(v) for c, v in CALCES.items()}))
-    print(len(formas), "terrenos dibujados;", len(sin_calce), "sin calce todavía:", sin_calce[:12], ";", len(sin_foto), "sin foto:", sin_foto)
+    por_tipo = {}
+    for t in dibujados.values():
+        por_tipo[t["tipo"]] = por_tipo.get(t["tipo"], 0) + 1
+    print(len(formas), "lotes dibujados", por_tipo, "(", sum(t["confianza"] == "punto" for t in dibujados.values()), "por el punto);",
+          len(sin_calce), "sin calce todavía:", sin_calce[:12], ";", len(sin_foto), "sin foto:", sin_foto)
     portada(list(dibujados.values()))
 
     # El mapa que se mueve de cada ficha: el lote solo en los mismos terrenos de formas.json, y la trama solo donde la

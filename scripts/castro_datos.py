@@ -383,7 +383,8 @@ for p in propiedades:
         "lat": p["lat"],
         "lng": p["lng"],
         "fotos": len(p["fotos"]),
-        "mini": FORMAS.get(ident, {}).get("mini"),
+        # La silueta va solo en terrenos y campos: es la tarjeta con el lote y lo que cuenta "N terrenos con su forma real"
+        "mini": FORMAS.get(ident, {}).get("mini") if p["tipo"] in ("Terreno", "Campo") else None,
         "etiquetas": etiquetas(p),
     })
     ficha = {
@@ -402,7 +403,7 @@ for p in propiedades:
     m = MAPAS[ident]
     compartido = PUNTOS[(p["lat"], p["lng"])] - 1
     ficha["mapa"] = {"calce": m["calce"], "celda": m["celda"], "zmax": m["zmax"], "lote": m["lote"], "lados": m["lados"],
-                     "zona": None if m["lote"] else {"radio": 400 if compartido else 150, "compartido": compartido},
+                     "zona": None if m["lote"] else {"compartido": compartido},
                      "alrededor": m["alrededor"]}
     ficha["cercanos"] = cercanos(*DONDE[ident], VIAJES)
     ficha["altura"] = altura(*DONDE[ident])
@@ -439,7 +440,7 @@ for x in indice:
         assert not adentro(*c, mapa["lote"]) or not any(adentro(*c, a) for a in mapa["alrededor"]), f"{i}: una parcela de la trama tapa el lote"
     else:
         compartido = en_indice[(x["lat"], x["lng"])] - 1
-        assert mapa["zona"] == {"radio": 400 if compartido else 150, "compartido": compartido}, f"{i}: zona {mapa['zona']}"
+        assert mapa["zona"] == {"compartido": compartido}, f"{i}: zona {mapa['zona']}"
 
 (PUB / "fichas").mkdir(parents=True, exist_ok=True)
 for i, f in FICHAS.items():
@@ -568,3 +569,10 @@ print(sum(1 for f in fichas.values() if f["mapa"]["lote"]), "con lote;", sum(1 f
       sum(n for n in PUNTOS.values() if n > 1), "comparten punto en", len(compartidos), "grupos; alturas de", min(alturas), "a", max(alturas), "m;",
       Counter(f["altura"]["pendiente"] for f in fichas.values()), ";", sum(1 for f in fichas.values() if f["cercanos"][0]["lugar"] == "Villa de Merlo"), "lejos de Merlo")
 print(con_volante, "con volante (la portada es la primera foto de verdad);", len(indice), "propiedades,", len(urbanizaciones), "urbanizaciones,", len(equipo), "personas,", len(museo), "fotos del museo,", len(errores), "con errores de carga")
+
+# La vista previa del link (og:description de la propuesta) dice cuántos terrenos tienen su forma: sale de los datos
+_html = RAIZ / "propuestas/castro-inmobiliaria/index.html"
+_n = sum(1 for x in indice if x["mini"])
+_nuevo = re.sub(r"\d+ terrenos con su forma real", f"{_n} terrenos con su forma real", _html.read_text())
+assert f"{_n} terrenos con su forma real" in _nuevo, "la vista previa del link no dice cuántos terrenos tienen forma"
+_html.write_text(_nuevo)
