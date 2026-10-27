@@ -75,6 +75,8 @@ export function crearMapa(L: L, el: HTMLElement, { zmax, ...opciones }: Leaflet.
   L.control.attribution({ position: "bottomleft", prefix: false }).addTo(mapa);
   L.control.scale({ imperial: false, position: "bottomleft" }).addTo(mapa);
   L.control.zoom({ position: "topright", zoomInTitle: "Acercar", zoomOutTitle: "Alejar" }).addTo(mapa);
+  // Leaflet le pone "Close popup" a la X de cada popup
+  mapa.on("popupopen", (e) => e.popup.getElement()?.querySelector(".leaflet-popup-close-button")?.setAttribute("aria-label", "Cerrar"));
   const fondo = (f: Fondo) => {
     for (const capa of f === "satelital" ? [plano] : [foto, nombres]) capa.remove();
     for (const capa of f === "satelital" ? [foto, nombres] : [plano]) capa.addTo(mapa);

@@ -1066,6 +1066,8 @@ def castro_mapa(pg, nombre, cap):
         problemas.append(f"{nombre}: la ficha pide a Google Maps: {pedidos_a_google()[:2]}")
     if pg.locator("h1").count() != 1 or pg.locator("[data-consultar]").count() != 1:
         problemas.append(f"{nombre}: la ficha tiene {pg.locator('h1').count()} h1 y {pg.locator('[data-consultar]').count()} [data-consultar]; va uno de cada uno")
+    if pg.locator("[data-mapa-ficha][role=region][aria-label]").count() != 1:
+        problemas.append(f"{nombre}: el mapa de la ficha no es una región con nombre para el lector de pantalla")
 
     # Rótulos de lados que se pisan: en estos lotes chicos pasaba; se esconde el del lado más corto (está escrito abajo)
     for ident in ["8482685", "4925850"]:
@@ -1110,10 +1112,28 @@ def castro_mapa(pg, nombre, cap):
     if "leaflet-grab" not in (pg.locator(".leaflet-container").get_attribute("class") or ""):
         problemas.append(f"{nombre}: en pantalla completa el mapa no se puede arrastrar")
     cap("mapa-pantalla-completa")
+    # El foco queda en "Cerrar" y el Tab no se va a lo que quedó tapado atrás. La cinta de la propuesta sigue a la
+    # vista arriba del mapa: esa sí tiene que seguir andando (no inerte)
+    cinta = "aside[aria-label^='Aviso']"
+    enfocado = "() => ['data-pantalla-completa', 'data-cerrar-3d', 'data-ver-3d'].find(n => document.activeElement?.hasAttribute(n)) || document.activeElement?.tagName"
+    if pg.evaluate(enfocado) != "data-pantalla-completa":
+        problemas.append(f"{nombre}: al abrir la pantalla completa el foco queda en {pg.evaluate(enfocado)} y no en 'Cerrar'")
+    escapados = set()
+    for _ in range(15):
+        pg.keyboard.press("Tab")
+        escapados |= set(pg.evaluate(f"() => {{ const a = document.activeElement; return a === document.body || a.closest(\"[data-mapa-ficha], {cinta}\") ? [] : [a.tagName + ' ' + a.textContent.trim().slice(0, 30)] }}"))
+    if escapados:
+        problemas.append(f"{nombre}: en pantalla completa el Tab se va a lo que quedó tapado: {sorted(escapados)[:3]}")
+    links_cinta = pg.locator(f"{cinta} a")
+    if not links_cinta.count() or pg.locator(f"{cinta}[inert], [inert] {cinta}, {cinta} [inert]").count() or not links_cinta.first.is_visible():
+        problemas.append(f"{nombre}: en pantalla completa la cinta de la propuesta no se ve o quedó inerte ({links_cinta.count()} links)")
+    pg.locator("[data-fondo='satelital']").focus()  # el foco en otro lado: al cerrar tiene que volver a "Cerrar"
     pg.keyboard.press("Escape")
     pg.wait_for_timeout(500)
     if pg.locator("[data-mapa-ficha]").bounding_box()["height"] >= pg.viewport_size["height"] - 40:
         problemas.append(f"{nombre}: Escape no cierra la pantalla completa del mapa")
+    if pg.evaluate(enfocado) != "data-pantalla-completa" or pg.locator("[inert]").count():
+        problemas.append(f"{nombre}: al cerrar la pantalla completa el foco queda en {pg.evaluate(enfocado)} y quedan {pg.locator('[inert]').count()} partes inertes")
 
     # Ver en 3D: nada de MapLibre antes de tocar el botón; después, el mapa o la salida a Google Earth
     if any("maplibre" in u for u in pedidos):
@@ -1131,6 +1151,24 @@ def castro_mapa(pg, nombre, cap):
         problemas.append(f"{nombre}: 'Ver en 3D' no muestra ni el mapa ni el aviso de Google Earth")
     if pg.locator("[data-mapa-3d] canvas").count() and "Este terreno" not in pg.locator("[data-mapa-3d]").inner_text():
         problemas.append(f"{nombre}: el 3D no marca 'Este terreno'")
+    if pg.evaluate(enfocado) != "data-cerrar-3d":
+        problemas.append(f"{nombre}: al abrir el 3D el foco queda en {pg.evaluate(enfocado)} y no en 'Volver al mapa'")
+    # Con el 3D abierto, el Escape de otro diálogo (la galería) cierra ese diálogo y no el 3D
+    pg.locator("[data-ver-grande]").click()
+    try:
+        pg.wait_for_selector("[data-galeria-grande][open]", timeout=5000)
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(300)
+        abierta, con_3d = pg.locator("[data-galeria-grande][open]").count(), pg.locator("[data-mapa-3d]").count()
+        if abierta or not con_3d:
+            problemas.append(f"{nombre}: con el 3D abierto, Escape en la galería deja la galería {'abierta' if abierta else 'cerrada'} y el 3D {'abierto' if con_3d else 'cerrado'}")
+    except Exception:
+        problemas.append(f"{nombre}: con el 3D abierto, 'Ver las fotos en grande' no abre la galería")
+    pg.evaluate("document.querySelector('[data-cerrar-3d]')?.focus()")
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(300)
+    if pg.locator("[data-mapa-3d]").count() or pg.evaluate(enfocado) != "data-ver-3d":
+        problemas.append(f"{nombre}: Escape no cierra el 3D o el foco no vuelve a 'Ver en 3D' (queda en {pg.evaluate(enfocado)})")
 
     def costuras(ident):
         """Una línea clara de 1 px entre una fila de tiles y la siguiente: en el celular (DPR 2) Chrome la dibuja si el
@@ -1163,10 +1201,16 @@ def castro_mapa(pg, nombre, cap):
             problemas.append(f"{nombre}: la casa 7876886 no muestra la zona aproximada o muestra un lote")
         if pg.locator("iframe").count() or pedidos_a_google():
             problemas.append(f"{nombre}: la ficha de la casa pide a Google Maps: {pedidos_a_google()[:2]}")
+    zona = (json.loads((fichas / "12024296.json").read_text()).get("mapa") or {}).get("zona") or {}
     if abrir("12024296"):
         mirados += costuras("12024296")
-        if not pg.locator(".zona").count() or pg.locator(".lote, .vecina, [data-forma]").count():
+        if not pg.locator(".zona").count() or pg.locator(".lote, .vecina").count():
             problemas.append(f"{nombre}: el 12024296 (zona sin calzar) tiene que ir solo con la zona aproximada")
+        # Un mismo punto lo publican para barrios distintos: no se puede decir que es "el del barrio"
+        nota, rotulo = pg.locator("[data-nota-mapa]").inner_text(), pg.locator(".zona-texto").all_inner_texts()
+        esperada = f"Punto aproximado: la inmobiliaria publica este mismo punto para {zona.get('compartido', 0) + 1} propiedades, así que no marca dónde está esta."
+        if not zona.get("compartido") or esperada not in nota or rotulo != ["Punto aproximado, no el de la propiedad"] or "barrio" in nota + "".join(rotulo):
+            problemas.append(f"{nombre}: el 12024296 (punto compartido por {zona.get('compartido')} más) dice «{nota}» y en el mapa {rotulo}")
     if tactil and not mirados:
         problemas.append(f"{nombre}: ningún borde entre tiles quedó en el medio del mapa: el chequeo de costuras no probó nada")
 
@@ -1179,16 +1223,111 @@ def castro_mapa(pg, nombre, cap):
             problemas.append(f"{nombre}: 'Ver en 3D' no muestra ni el mapa ni el aviso de Google Earth")
 
     # 3D sin lote (12024296, ubicación compartida): sin un punto exacto, ni "Este terreno" ni el palito que baja al lugar
-    zona = (json.loads((fichas / "12024296.json").read_text()).get("mapa") or {}).get("zona") or {}
     if pg.locator("[data-mapa-ficha]").count() and ver_3d():
         pg.wait_for_selector("[data-mapa-3d] .maplibregl-marker", timeout=20000)
         texto = pg.locator("[data-mapa-3d]").inner_text()
-        esperado = "Zona del barrio" if zona.get("compartido") else "Zona aproximada"
-        if esperado not in texto or "Este terreno" in texto or pg.locator("[data-mapa-3d] [data-palito]").count():
-            problemas.append(f"{nombre}: el 3D del 12024296 (sin lote) tiene que decir '{esperado}' sin marcar un punto: dice «{texto[:80]}»")
+        if "Zona aproximada" not in texto or "barrio" in texto or "Este terreno" in texto or pg.locator("[data-mapa-3d] [data-palito]").count():
+            problemas.append(f"{nombre}: el 3D del 12024296 (sin lote) tiene que decir 'Zona aproximada' sin marcar un punto: dice «{texto[:80]}»")
         pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
         pg.wait_for_timeout(1500)
         cap("mapa-3d-zona")
+    # El 3D en pantalla completa: Escape cierra primero el 3D (y el foco va a "Cerrar", el otro botón queda tapado)
+    if pg.locator("[data-mapa-3d]").count():
+        pg.locator("[data-pantalla-completa]").click()
+        pg.wait_for_timeout(500)
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(300)
+        grande = pg.locator("[data-mapa-ficha]").bounding_box()["height"] >= pg.viewport_size["height"] - 40
+        if pg.locator("[data-mapa-3d]").count() or not grande or pg.evaluate(enfocado) != "data-pantalla-completa":
+            problemas.append(f"{nombre}: con el 3D en pantalla completa, Escape tiene que cerrar el 3D y dejar la pantalla completa con el foco en 'Cerrar' (3D: {pg.locator('[data-mapa-3d]').count()}, grande: {grande}, foco: {pg.evaluate(enfocado)})")
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(300)
+        if pg.locator("[data-mapa-ficha]").bounding_box()["height"] >= pg.viewport_size["height"] - 40:
+            problemas.append(f"{nombre}: el segundo Escape no cierra la pantalla completa")
+
+    # Un campo más grande que el círculo de la zona lo avisa; una casa no
+    campo = "4021072"
+    zcampo = (json.loads((fichas / f"{campo}.json").read_text()).get("mapa") or {}).get("zona") or {}
+    if (indice[campo]["terreno"] or 0) <= math.pi * zcampo.get("radio", 0) ** 2:
+        problemas.append(f"{nombre}: el {campo} ya no es más grande que su círculo: el chequeo del aviso no probaría nada")
+    for ident, avisa in [(campo, True), ("7876886", False)]:
+        if not abrir(ident):
+            continue
+        nota = pg.locator("[data-nota-mapa]").inner_text()
+        if ("más grande que el círculo" in nota) != avisa or (avisa and "El campo es más grande que el círculo: marca solo la ubicación publicada." not in nota):
+            problemas.append(f"{nombre}: el {ident} {'no ' if avisa else ''}avisa que es más grande que el círculo: «{nota}»")
+        if ident == campo:
+            cap("mapa-campo")
+
+    # Si Esri no responde, el terreno se queda con su imagen fija (no un mapa gris) y la casa no queda en "Cargando".
+    # Esto también prueba la imagen fija, que con Esri andando desaparece antes de que se la pueda mirar.
+    # Página aparte, para que los errores de carga (esperados) no se cuenten como problemas.
+    otra = pg.context.new_page()
+    otra.route(f"{BASE}**", servir)
+    otra.route("**/server.arcgisonline.com/**", lambda r: r.abort())
+    otra.goto(f"{raiz}?p={t}", wait_until="networkidle")
+    otra.locator("[data-mapa-ficha]").scroll_into_view_if_needed()
+    try:
+        otra.wait_for_selector("[data-mapa-ficha] .leaflet-container .lote", timeout=20000)
+        otra.wait_for_timeout(3000)
+        if not otra.locator("[data-forma]").is_visible() or otra.locator("[data-mapa-listo]").count():
+            problemas.append(f"{nombre}: sin Esri, el {t} cambia su imagen fija por un mapa gris")
+        if otra.locator("[data-fondo]").count():
+            problemas.append(f"{nombre}: sin Esri, el {t} se queda con su imagen fija pero sigue mostrando Satelital/Calles, que no andan")
+        otra.screenshot(path=str(OUT / f"{nombre}-mapa-sin-esri.png"))
+    except Exception:
+        problemas.append(f"{nombre}: sin Esri, el mapa del {t} ni siquiera se arma")
+    otra.goto(f"{raiz}?p=7876886", wait_until="networkidle")
+    otra.locator("[data-mapa-ficha]").scroll_into_view_if_needed()
+    try:
+        otra.wait_for_selector("[data-mapa-listo]", timeout=20000)
+    except Exception:
+        problemas.append(f"{nombre}: sin Esri, la casa 7876886 queda en «{otra.locator('[data-mapa-ficha]').inner_text()[:40]}»")
+    otra.close()
+
+    # Si Leaflet no baja: con forma, la imagen fija; sin forma, el aviso con "Recargar la página" (y recargando,
+    # anda). Satelital/Calles no aparecen; Ver en 3D y Cómo llegar siguen.
+    otra = pg.context.new_page()
+    otra.route(f"{BASE}**", servir)
+    otra.route("**/assets/leaflet-src-*.js", lambda r: r.abort())
+    for ident in [t, "7876886"]:
+        otra.goto(f"{raiz}?p={ident}", wait_until="networkidle")
+        otra.locator("[data-mapa-ficha]").scroll_into_view_if_needed()
+        try:
+            otra.wait_for_selector("[data-fondo]", state="detached", timeout=15000)
+        except Exception:
+            problemas.append(f"{nombre}: sin Leaflet, la ficha {ident} sigue mostrando Satelital/Calles")
+        aviso = otra.locator("[data-mapa-error]")
+        bien = otra.locator("[data-forma]").is_visible() if ident == t else aviso.is_visible() and "Recargar la página" in aviso.inner_text()
+        if not bien or "Cargando" in otra.locator("[data-mapa-ficha]").inner_text() or otra.locator("[data-ver-3d]").is_disabled() or not otra.locator("a[data-mapa]").count():
+            problemas.append(f"{nombre}: sin Leaflet, la ficha {ident} muestra «{otra.locator('[data-mapa-ficha]').inner_text()[:60]}»")
+    otra.screenshot(path=str(OUT / f"{nombre}-mapa-sin-leaflet.png"))
+    otra.unroute("**/assets/leaflet-src-*.js")
+    if otra.locator("[data-mapa-error] button").count():
+        otra.locator("[data-mapa-error] button").click()
+        otra.wait_for_load_state("networkidle")
+        otra.locator("[data-mapa-ficha]").scroll_into_view_if_needed()
+        try:
+            otra.wait_for_selector("[data-mapa-listo]", timeout=20000)
+        except Exception:
+            problemas.append(f"{nombre}: 'Recargar la página' no trae el mapa de vuelta")
+    otra.close()
+
+    # La X de los popups (crearMapa, la usan todos los mapas) en castellano: se prueba en el mapa del listado
+    pg.goto(f"{raiz}?ver=propiedades" + ("&mapa=1" if pg.viewport_size["width"] < 1024 else ""), wait_until="networkidle")
+    try:
+        pg.wait_for_selector("[data-mapa-general][data-mapa-listo]", timeout=20000)
+        for _ in range(5):
+            if pg.locator("[data-mapa-general] .pildora").count():
+                break
+            pg.locator("[data-mapa-general] .burbuja").first.evaluate("e => e.click()")
+            pg.wait_for_timeout(900)
+        pg.locator("[data-mapa-general] .pildora").first.evaluate("e => e.click()")
+        x = pg.wait_for_selector(".leaflet-popup-close-button", timeout=5000)
+        if x.get_attribute("aria-label") != "Cerrar":
+            problemas.append(f"{nombre}: la X del popup del mapa dice «{x.get_attribute('aria-label')}»")
+    except Exception:
+        problemas.append(f"{nombre}: no se pudo abrir un popup del mapa del listado para mirar su X")
 
     # Si MapLibre no consigue el WebGL aunque la prueba previa diga que hay: el aviso con Google Earth, sin errores
     # en la consola ni "Cargando el 3D" para siempre. Va al final: el script queda puesto en esta página.

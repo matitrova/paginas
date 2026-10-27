@@ -64,6 +64,11 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
   const [fondo, setFondo] = useState<Fondo>("satelital");
   const [grande, setGrande] = useState(false);
   const [ver3d, setVer3d] = useState(false);
+  // No hay mapa que mostrar: no bajó Leaflet (Chrome guarda el import fallido hasta recargar, así que lo único que sirve
+  // es recargar la página) o no bajó ninguna imagen de la foto y queda la imagen fija. Sin Satelital/Calles, que no andarían
+  const [error, setError] = useState(false);
+  const botonGrande = useRef<HTMLButtonElement>(null);
+  const boton3d = useRef<HTMLButtonElement>(null);
   // En el celular el mapa no se arrastra con un dedo (no se roba el scroll de la página); en pantalla completa, sí
   const tactil = matchMedia("(pointer: coarse)").matches;
 
@@ -95,7 +100,7 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
             });
           } else {
             L.circle(centro, { ...ESTILO_ZONA, radius: radio }).addTo(mapa);
-            if (m.zona?.compartido) L.marker(centro, { interactive: false, keyboard: false, icon: L.divIcon({ className: "zona-texto", iconSize: [0, 0], html: "<span>Ubicación del barrio, no de la propiedad</span>" }) }).addTo(mapa);
+            if (m.zona?.compartido) L.marker(centro, { interactive: false, keyboard: false, icon: L.divIcon({ className: "zona-texto", iconSize: [0, 0], html: "<span>Punto aproximado, no el de la propiedad</span>" }) }).addTo(mapa);
             encuadre = L.latLng(centro).toBounds(radio * 2.5);
           }
           mapa.fitBounds(encuadre, { maxZoom: 19, animate: false });
@@ -109,10 +114,16 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
             mapa.on("zoomend", mirar);
           }
           seguirElCalce(mapa, () => m.calce); // recién ahora, con centro y zoom ya fijados (b71b306)
-          r.foto.once("load", () => vivo && setListo(true));
+          // Listo cuando terminó de bajar la foto y llegó al menos una imagen: con Esri caído 'load' llega igual (todas
+          // con error), y la imagen fija del lote es mejor respaldo que el gris. Sin imagen fija, el gris con el dibujo.
+          let llego = !(ficha?.forma && lote);
+          r.foto.on("tileload", () => {
+            llego = true;
+          });
+          r.foto.on("load", () => vivo && (llego ? setListo(true) : setError(true)));
           control.current = { mapa, fondo: r.fondo };
           ro.observe(el);
-        });
+        }).catch(() => vivo && setError(true));
       },
       // Recién cuando entra en pantalla: con la señal de Merlo, abrir la ficha no baja el mapa de arriba
       { rootMargin: "0px" },
@@ -140,16 +151,43 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
       else mapa.scrollWheelZoom.disable();
     }
     if (!grande) return;
-    // Pantalla completa hecha con CSS: Safari en iPhone no la deja pedir para un div
+    // Pantalla completa hecha con CSS: Safari en iPhone no la deja pedir para un div. Lo de atrás queda inerte, así el
+    // Tab no se va a botones tapados por el mapa. La cinta de la propuesta no: queda a la vista arriba y sigue andando
     document.documentElement.style.overflow = "hidden";
-    const tecla = (e: KeyboardEvent) => e.key === "Escape" && setGrande(false);
-    addEventListener("keydown", tecla);
+    const inertes: HTMLElement[] = [];
+    for (let e = caja.current?.parentElement; e && e !== document.body; e = e.parentElement)
+      for (const h of Array.from(e.parentElement?.children ?? []))
+        if (h !== e && h instanceof HTMLElement && !h.inert && !h.matches("aside[aria-label^='Aviso']")) {
+          h.inert = true;
+          inertes.push(h);
+        }
     return () => {
       document.documentElement.style.overflow = "";
-      removeEventListener("keydown", tecla);
+      for (const h of inertes) h.inert = false;
     };
     // listo: si se tocó pantalla completa antes de que bajara el mapa, recién ahora se le puede habilitar el arrastre
   }, [grande, tactil, listo]);
+
+  // Al cerrar el 3D el foco vuelve al botón que lo abrió (en pantalla completa ese queda tapado: va a "Cerrar")
+  const cerrar3d = () => {
+    setVer3d(false);
+    (grande ? botonGrande : boton3d).current?.focus();
+  };
+  // Escape cierra primero el 3D y después la pantalla completa
+  useEffect(() => {
+    if (!grande && !ver3d) return;
+    const tecla = (e: KeyboardEvent) => {
+      // El Escape de otro diálogo (la galería, la consulta) lo cierra a él y no al 3D
+      if (e.key !== "Escape" || (e.target as Element).closest?.("dialog")) return;
+      if (ver3d) cerrar3d();
+      else {
+        setGrande(false);
+        botonGrande.current?.focus();
+      }
+    };
+    addEventListener("keydown", tecla);
+    return () => removeEventListener("keydown", tecla);
+  }, [grande, ver3d]); // cerrar3d solo depende de grande
 
   const d = ficha || fallo ? datosDelMapa(p, ficha?.mapa) : null;
   const lote = d?.lote ?? null;
@@ -157,32 +195,55 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
   const cercanos = ficha?.cercanos ?? [];
   const altura = ficha?.altura;
   const [lat, lng] = d?.centro ?? [p.lat, p.lng];
-  const compartido = !lote && (d?.m.zona?.compartido ?? 0) > 0;
+  const compartido = lote ? 0 : (d?.m.zona?.compartido ?? 0);
+  const radio = d?.radio ?? 150;
+  // Un campo de cientos de hectáreas no entra en el círculo: se avisa en vez de inventarle un tamaño
+  const masGrande = !lote && !!p.terreno && p.terreno > Math.PI * radio ** 2;
   // Sin lote no hay un punto exacto: el 3D marca la zona y no dice "este terreno"
-  const etiqueta3d = lote ? (p.tipo === "Terreno" ? "Este terreno" : "Esta propiedad") : compartido ? "Zona del barrio" : "Zona aproximada";
+  const etiqueta3d = lote ? (p.tipo === "Terreno" ? "Este terreno" : "Esta propiedad") : "Zona aproximada";
 
   return (
     <section id="mapa" className="mt-9 scroll-mt-28 md:scroll-mt-44">
       <h2 className="font-display text-2xl">{lote ? "El lote y su entorno" : "Ubicación"}</h2>
       <p className="mt-1 text-[15px] text-suave">{lugar(p)}</p>
+      {/* En pantalla completa, diálogo sin aria-modal: lo de atrás ya queda inerte, salvo la cinta, que sigue andando */}
       <div
         className={`isolate overflow-hidden bg-hondo ${grande ? "fixed inset-x-0 top-8 bottom-0 z-50" : "relative mt-4 h-[340px] rounded-2xl border border-linea sm:h-[440px]"}`}
+        role={grande ? "dialog" : "region"}
+        aria-label={lote ? "Mapa del lote" : "Mapa de la ubicación"}
         data-libre
         data-mapa-ficha
         data-mapa-listo={listo || undefined}
       >
         <div ref={caja} className="absolute inset-0 z-0" />
         {!listo &&
-          (ficha?.forma && lote ? <Forma f={ficha.forma} /> : <p className="absolute inset-0 grid place-items-center text-[14px] text-suave">Cargando el mapa…</p>)}
-        <div role="group" aria-label="Tipo de mapa" className="absolute top-3 left-3 z-10 flex gap-0.5 rounded-full bg-white/95 p-1 shadow">
-          {(["satelital", "calles"] as const).map((f) => (
-            <button key={f} onClick={() => setFondo(f)} aria-pressed={fondo === f} disabled={!listo} data-fondo={f} className={BOTON}>
-              {f === "satelital" ? "Satelital" : "Calles"}
-            </button>
+          (ficha?.forma && lote ? (
+            <Forma f={ficha.forma} />
+          ) : error ? (
+            <div className="absolute inset-0 grid place-content-center justify-items-center gap-3 p-6 text-center text-[15px]" data-mapa-error>
+              <p>No se pudo cargar el mapa.</p>
+              <button onClick={() => location.reload()} className="rounded-full bg-naranja-osc px-4 py-2 font-semibold text-white">
+                Recargar la página
+              </button>
+            </div>
+          ) : (
+            <p className="absolute inset-0 grid place-items-center text-[14px] text-suave">Cargando el mapa…</p>
           ))}
-        </div>
+        {!error && (
+          <div role="group" aria-label="Tipo de mapa" className="absolute top-3 left-3 z-10 flex gap-0.5 rounded-full bg-white/95 p-1 shadow">
+            {(["satelital", "calles"] as const).map((f) => (
+              <button key={f} onClick={() => setFondo(f)} aria-pressed={fondo === f} disabled={!listo} data-fondo={f} className={BOTON}>
+                {f === "satelital" ? "Satelital" : "Calles"}
+              </button>
+            ))}
+          </div>
+        )}
         <button
-          onClick={() => setGrande(!grande)}
+          ref={botonGrande}
+          onClick={(e) => {
+            setGrande(!grande);
+            e.currentTarget.focus(); // Safari no enfoca el botón al tocarlo
+          }}
           aria-label={grande ? "Cerrar la pantalla completa" : "Ver el mapa en pantalla completa"}
           data-pantalla-completa
           className="absolute top-3 right-3 z-30 grid h-10 min-w-10 place-items-center rounded-full bg-white/95 px-2.5 text-[14px] font-semibold shadow"
@@ -200,11 +261,11 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
             <text y={12} textAnchor="middle" fontSize={8} fontWeight={700} fill="#fff">N</text>
           </svg>
         </span>
-        {ver3d && <Mapa3D centro={[lat, lng]} lote={lote} radio={d?.radio ?? 150} zmax={d?.m.zmax ?? 17} etiqueta={etiqueta3d} alCerrar={() => setVer3d(false)} />}
+        {ver3d && <Mapa3D centro={[lat, lng]} lote={lote} radio={radio} zmax={d?.m.zmax ?? 17} etiqueta={etiqueta3d} alCerrar={cerrar3d} />}
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
-        <button onClick={() => setVer3d(true)} disabled={!d} data-ver-3d className="rounded-2xl border border-linea bg-white px-4 py-1.5 text-left hover:bg-hondo">
+        <button ref={boton3d} onClick={() => setVer3d(true)} disabled={!d} data-ver-3d className="rounded-2xl border border-linea bg-white px-4 py-1.5 text-left hover:bg-hondo">
           <span className="block text-[14.5px] font-semibold">Ver en 3D</span>
           <span className="block text-[12px] text-suave">Usa unos 3 MB de datos</span>
         </button>
@@ -216,8 +277,9 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
         {lote
           ? "Forma según el catastro de San Luis. Las medidas son aproximadas: las definitivas, según la mensura."
           : compartido
-            ? "Ubicación del barrio, no de la propiedad: la inmobiliaria publica el mismo punto para varias propiedades."
+            ? `Punto aproximado: la inmobiliaria publica este mismo punto para ${compartido + 1} propiedades, así que no marca dónde está esta.`
             : "Zona aproximada, alrededor de la ubicación que publica la inmobiliaria."}
+        {masGrande && ` ${p.tipo === "Campo" ? "El campo" : "El terreno"} es más grande que el círculo: marca solo la ubicación publicada.`}
       </p>
 
       {ficha && (lados.length > 0 || cercanos.length > 0 || altura || lote) && (

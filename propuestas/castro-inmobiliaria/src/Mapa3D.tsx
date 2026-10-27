@@ -43,11 +43,17 @@ type Props = { centro: [number, number]; lote: [number, number][] | null; radio:
 
 export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }: Props) {
   const caja = useRef<HTMLDivElement>(null);
+  const volver = useRef<HTMLButtonElement>(null);
   const [sinWebGL] = useState(() => !hayWebGL());
   const [seguir, setSeguir] = useState(() => !(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
   const [cargando, setCargando] = useState(true);
   const [fallo, setFallo] = useState(false);
   const [lat, lng] = centro;
+
+  // El foco entra al 3D (Escape lo cierra y el foco vuelve al botón que lo abrió: lo maneja MapaFicha)
+  useEffect(() => {
+    volver.current?.focus();
+  }, []);
 
   useEffect(() => {
     const el = caja.current;
@@ -142,7 +148,7 @@ export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }
               </button>
             ))
           : cargando && <p className="pointer-events-none absolute inset-x-0 top-16 mx-auto w-fit rounded-full bg-white/95 px-4 py-2 text-[14px] font-semibold shadow">Cargando el 3D…</p>}
-      <button onClick={alCerrar} className="absolute top-3 left-3 z-10 rounded-full bg-white/95 px-4 py-2 text-[14px] font-semibold shadow" data-cerrar-3d>
+      <button ref={volver} onClick={alCerrar} className="absolute top-3 left-3 z-10 rounded-full bg-white/95 px-4 py-2 text-[14px] font-semibold shadow" data-cerrar-3d>
         ← Volver al mapa
       </button>
     </div>
