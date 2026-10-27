@@ -1136,12 +1136,16 @@ def castro_mapa(pg, nombre, cap):
     fichas = DIST / "propuestas/castro-inmobiliaria/fichas"
     indice = {x["id"]: x for x in json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/indice.json").read_text())}
     # Las fichas sin lote se eligen por los datos (no fijas), así los chequeos siguen andando cuando entran lotes nuevos:
-    # la primera sin punto compartido, la primera con punto compartido y, si hay, la primera con lote que no es terreno
+    # sin punto compartido, la de foto más corrida (la primera si empatan): con calce y sin calce el pin no se tiene que
+    # mover, y con calce [0,0] eso no probaría nada. Después, la primera con punto compartido y, si hay, la primera casa
+    # (o local, etc.) y el primer campo con lote
     mapas = {i: json.loads((fichas / f"{i}.json").read_text()).get("mapa") or {} for i in indice}
     sin_lote = [i for i, m in mapas.items() if not m.get("lote")]
-    solo = next((i for i in sin_lote if not (mapas[i].get("zona") or {}).get("compartido")), None)
+    propios = [i for i in sin_lote if not (mapas[i].get("zona") or {}).get("compartido")]
+    solo = max(propios, key=lambda i: math.hypot(*(mapas[i].get("calce") or [0, 0])), default=None)
     mismo = next((i for i in sin_lote if (mapas[i].get("zona") or {}).get("compartido")), None)
     casa_lote = next((i for i, m in mapas.items() if m.get("lote") and indice[i]["tipo"] not in ("Terreno", "Campo")), None)
+    campo_lote = next((i for i, m in mapas.items() if m.get("lote") and indice[i]["tipo"] == "Campo"), None)
     if not solo or not mismo:
         problemas.append(f"{nombre}: no hay una ficha sin lote con punto propio ({solo}) y otra con punto compartido ({mismo}) para probar el pin")
         return
@@ -1360,10 +1364,19 @@ def castro_mapa(pg, nombre, cap):
         import io
         from PIL import Image, ImageStat
         m, dpr = pg.locator("[data-mapa-ficha]").bounding_box(), pg.evaluate("devicePixelRatio")
-        im = Image.open(io.BytesIO(pg.screenshot())).convert("L")
         # Solo las filas de tiles que caen en el medio del mapa: arriba van los botones y abajo la escala y los créditos
-        bordes = {b for b in pg.evaluate("[...document.querySelectorAll('.leaflet-foto-pane img.leaflet-tile')].map(i => i.getBoundingClientRect().top)")
-                  if m["y"] + m["height"] * 0.2 < b < min(m["y"] + m["height"] * 0.75, pg.viewport_size["height"] - 120)}
+        def medio():
+            return {b for b in pg.evaluate("[...document.querySelectorAll('.leaflet-foto-pane img.leaflet-tile')].map(i => i.getBoundingClientRect().top)")
+                    if m["y"] + m["height"] * 0.2 < b < min(m["y"] + m["height"] * 0.75, pg.viewport_size["height"] - 120)}
+
+        bordes = medio()
+        if not bordes:
+            # Ninguno cayó en el medio: se corre el mapa 80 px con la flecha (más que el hueco entre una franja y la siguiente)
+            pg.locator("[data-mapa-ficha] .leaflet-container").focus()
+            pg.keyboard.press("ArrowDown")
+            pg.wait_for_timeout(1200)
+            bordes = medio()
+        im = Image.open(io.BytesIO(pg.screenshot())).convert("L")
         x0, x1 = int((m["x"] + 70) * dpr), int((m["x"] + m["width"] - 70) * dpr)
 
         def fila(y):
@@ -1379,15 +1392,38 @@ def castro_mapa(pg, nombre, cap):
     # Sin lote: un pin con la punta en el punto que publica la inmobiliaria, sin círculo ni lote, la trama de alrededor
     # si la hay, y la nota de abajo. Lo esperado del pin se proyecta aparte (Web Mercator) desde el centro y el zoom
     # que dice el pane, no con Leaflet
+    def pin():
+        return pg.evaluate("""() => { const c = document.querySelector('[data-mapa-ficha] .leaflet-container').getBoundingClientRect();
+          const pane = document.querySelector('.leaflet-foto-pane');
+          // La cabeza del pin, a la izquierda del círculo blanco y lejos del borde blanco (en el viewBox de 30x40: x 8, y 14)
+          const s = document.querySelector('.punto svg')?.getBoundingClientRect();
+          return { ancho: c.width, alto: c.height, vista: pane.dataset.vista, calce: pane.dataset.calce,
+                   cabeza: s && [s.left + s.width * 8 / 30, s.top + s.height * 14 / 40],
+                   puntas: [...document.querySelectorAll('.punto path')].map(e => { const b = e.getBoundingClientRect(); return [b.left + b.width / 2 - c.left, b.bottom - c.top] }) } }""")
+
+    def color(x, y):
+        """El color que de verdad se ve en (x, y) de la pantalla: getBoundingClientRect no se entera si el pin es
+        invisible o quedó tapado."""
+        import io
+        from PIL import Image, ImageStat
+        return [round(c) for c in ImageStat.Stat(Image.open(io.BytesIO(pg.screenshot(clip={"x": x - 1, "y": y - 1, "width": 2, "height": 2}))).convert("RGB")).mean]
+
+    sin_calce = abrir(solo, "&calce=0") and pin()
     mirados = 0
     for ident in (solo, mismo):
         if not abrir(ident):
             continue
         cap("mapa-punto" if ident == solo else "mapa-punto-compartido")
-        mirados += costuras(ident)
-        r = pg.evaluate("""() => { const c = document.querySelector('[data-mapa-ficha] .leaflet-container').getBoundingClientRect();
-          return { ancho: c.width, alto: c.height, vista: document.querySelector('.leaflet-foto-pane').dataset.vista,
-                   puntas: [...document.querySelectorAll('.punto path')].map(e => { const b = e.getBoundingClientRect(); return [b.left + b.width / 2 - c.left, b.bottom - c.top] }) } }""")
+        r = pin()
+        # El pin va con los datos del catastro y no con la foto: con calce y sin calce, en el mismo lugar
+        if ident == solo and sin_calce:
+            if r["calce"] in (None, "0,0"):
+                problemas.append(f"{nombre}: la foto del {solo} no se corre con calce {mapas[solo].get('calce')} (pane: {r['calce']}): el chequeo del pin con calce no probaría nada")
+            if len(r["puntas"]) != 1 or len(sin_calce["puntas"]) != 1 or max(abs(a - b) for a, b in zip(r["puntas"][0], sin_calce["puntas"][0])) > 0.5:
+                problemas.append(f"{nombre}: el pin del {solo} se mueve con el calce de la foto: {sin_calce['puntas']} sin calce, {r['puntas']} con calce")
+        visto = color(*r["cabeza"]) if r["cabeza"] else None
+        if not visto or max(abs(a - b) for a, b in zip(visto, (0x9A, 0x3E, 0x27))) > 30:
+            problemas.append(f"{nombre}: en el {ident} la cabeza del pin se ve de color {visto} y no terracota (154, 62, 39)")
         z, clat, clng = (float(v) for v in r["vista"].split(","))
         escala = 256 * 2**z
 
@@ -1408,6 +1444,7 @@ def castro_mapa(pg, nombre, cap):
             problemas.append(f"{nombre}: debajo del mapa del {ident} dice «{nota}» y tenía que decir «{esperada}»")
         if pg.locator("iframe").count() or pedidos_a_google():
             problemas.append(f"{nombre}: la ficha {ident} pide a Google Maps: {pedidos_a_google()[:2]}")
+        mirados += costuras(ident)  # al final: si ningún borde cae en el medio, corre el mapa
     if tactil and not mirados:
         problemas.append(f"{nombre}: ningún borde entre tiles quedó en el medio del mapa: el chequeo de costuras no probó nada")
 
@@ -1446,15 +1483,17 @@ def castro_mapa(pg, nombre, cap):
         if pg.locator("[data-mapa-ficha]").bounding_box()["height"] >= pg.viewport_size["height"] - 40:
             problemas.append(f"{nombre}: el segundo Escape no cierra la pantalla completa")
 
-    # Una casa (o local, etc.) con lote: el 3D dice "Esta propiedad" y no "Este terreno". Hoy (27/10) ninguna que no sea
-    # terreno o campo tiene lote, así que no se chequea; se chequea solo cuando entren las de la Actualización 14
-    if casa_lote and abrir(casa_lote) and ver_3d():
-        texto = texto_3d()
-        if texto != "Esta propiedad":
-            problemas.append(f"{nombre}: el 3D del {casa_lote} ({indice[casa_lote]['tipo']} con lote) dice «{texto[:80]}» y no 'Esta propiedad'")
-        pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
-        pg.wait_for_timeout(1500)
-        cap("mapa-3d-casa")
+    # Una casa (o local, etc.) con lote: el 3D dice "Esta propiedad" y no "Este terreno"; un campo con lote, "Este
+    # terreno" (el terreno 7973638 se mira arriba). Hoy (27/10) ninguna casa ni campo tiene lote, así que no se chequean;
+    # se chequean solo cuando entren las de la Actualización 14
+    for ident, esperado, foto in ((casa_lote, "Esta propiedad", "mapa-3d-casa"), (campo_lote, "Este terreno", "mapa-3d-campo")):
+        if ident and abrir(ident) and ver_3d():
+            texto = texto_3d()
+            if texto != esperado:
+                problemas.append(f"{nombre}: el 3D del {ident} ({indice[ident]['tipo']} con lote) dice «{texto[:80]}» y no '{esperado}'")
+            pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
+            pg.wait_for_timeout(1500)
+            cap(foto)
 
     # Si Esri no responde, el terreno se queda con su imagen fija (no un mapa gris) y la casa no queda en "Cargando".
     # Esto también prueba la imagen fija, que con Esri andando desaparece antes de que se la pueda mirar.

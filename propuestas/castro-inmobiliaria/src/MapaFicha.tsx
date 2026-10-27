@@ -59,7 +59,7 @@ function Forma({ f }: { f: DatosForma }) {
 
 const BOTON = "rounded-full px-3 py-1.5 text-[13.5px] font-semibold aria-pressed:bg-tinta aria-pressed:text-white";
 
-/** fallo: no se pudo bajar la ficha; el mapa igual muestra la zona alrededor del punto publicado. */
+/** fallo: no se pudo bajar la ficha; el mapa igual muestra el pin en el punto publicado. */
 export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: FichaConMapa | null; fallo: boolean }) {
   const caja = useRef<HTMLDivElement>(null);
   const control = useRef<{ mapa: Leaflet.Map; fondo: (f: Fondo) => void } | null>(null);
