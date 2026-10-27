@@ -1426,8 +1426,9 @@ def castro_mapa(pg, nombre, cap):
     # 3D sin lote (la ficha con punto compartido, la última abierta): el cartel con el palito marca el punto publicado
     if pg.locator("[data-mapa-ficha]").count() and ver_3d():
         texto = texto_3d()
-        if texto != "Ubicación publicada" or not pg.locator("[data-mapa-3d] [data-palito]").count():
-            problemas.append(f"{nombre}: el 3D del {mismo} (sin lote) tiene que marcar el punto con 'Ubicación publicada': dice «{texto[:80]}»")
+        palitos = pg.locator("[data-mapa-3d] [data-palito]").count()
+        if texto != "Ubicación publicada" or not palitos:
+            problemas.append(f"{nombre}: el 3D del {mismo} (sin lote) tiene que marcar el punto con 'Ubicación publicada' y el palito que baja hasta él: dice «{texto[:80]}», con {palitos} palitos")
         pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
         pg.wait_for_timeout(1500)
         cap("mapa-3d-punto")
@@ -1451,6 +1452,8 @@ def castro_mapa(pg, nombre, cap):
         texto = texto_3d()
         if texto != "Esta propiedad":
             problemas.append(f"{nombre}: el 3D del {casa_lote} ({indice[casa_lote]['tipo']} con lote) dice «{texto[:80]}» y no 'Esta propiedad'")
+        pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
+        pg.wait_for_timeout(1500)
         cap("mapa-3d-casa")
 
     # Si Esri no responde, el terreno se queda con su imagen fija (no un mapa gris) y la casa no queda en "Cargando".
