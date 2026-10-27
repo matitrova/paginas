@@ -16,15 +16,6 @@ function hayWebGL() {
   }
 }
 
-/** Un círculo de radio en metros como anillo [lng, lat], para marcar la zona cuando no hay lote. */
-function circulo([lat, lng]: [number, number], radio: number) {
-  const kx = 111320 * Math.cos((lat * Math.PI) / 180);
-  return Array.from({ length: 65 }, (_, i) => {
-    const a = (i / 64) * 2 * Math.PI;
-    return [lng + (Math.cos(a) * radio) / kx, lat + (Math.sin(a) * radio) / 110540];
-  });
-}
-
 const TEXTOS = {
   "NavigationControl.ZoomIn": "Acercar",
   "NavigationControl.ZoomOut": "Alejar",
@@ -39,9 +30,9 @@ const TEXTOS = {
   "ScaleControl.Kilometers": "km",
 };
 
-type Props = { centro: [number, number]; lote: [number, number][] | null; radio: number; zmax: number; etiqueta: string; alCerrar: () => void };
+type Props = { centro: [number, number]; lote: [number, number][] | null; zmax: number; etiqueta: string; alCerrar: () => void };
 
-export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }: Props) {
+export default function Mapa3D({ centro, lote, zmax, etiqueta, alCerrar }: Props) {
   const caja = useRef<HTMLDivElement>(null);
   const volver = useRef<HTMLButtonElement>(null);
   const [sinWebGL] = useState(() => !hayWebGL());
@@ -64,7 +55,6 @@ export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }
       .then(([modulo]) => {
         if (!vivo) return;
         const ml = ((modulo as unknown as { default?: ML }).default ?? modulo) as ML;
-        const anillo = lote ?? circulo([lat, lng], radio);
         // Solo se piden tiles de unos 30 km alrededor: el relieve de Terrarium existe hasta el zoom 14 y da 403 más allá
         const cerca: [number, number, number, number] = [lng - 0.3, lat - 0.3, lng + 0.3, lat + 0.3];
         mapa = new ml.Map({
@@ -89,13 +79,18 @@ export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }
             sources: {
               foto: { type: "raster", tiles: [FOTO], tileSize: 256, maxzoom: zmax, bounds: cerca, attribution: "Esri, Maxar, Earthstar Geographics" },
               relieve: { type: "raster-dem", tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"], encoding: "terrarium", tileSize: 256, maxzoom: 14, bounds: cerca, attribution: "Relieve: SRTM" },
-              lugar: { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [anillo] } } },
+              // Sin lote no hay nada que pintar: el punto lo marca el cartel
+              ...(lote && { lugar: { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [lote] } } } }),
             },
             layers: [
               { id: "fondo", type: "background", paint: { "background-color": "#c9d6e3" } },
               { id: "foto", type: "raster", source: "foto" },
-              { id: "lugar", type: "fill", source: "lugar", paint: { "fill-color": "#FF8000", "fill-opacity": 0.45 } },
-              { id: "borde", type: "line", source: "lugar", paint: { "line-color": "#ffffff", "line-width": 2 } },
+              ...(lote
+                ? ([
+                    { id: "lugar", type: "fill", source: "lugar", paint: { "fill-color": "#FF8000", "fill-opacity": 0.45 } },
+                    { id: "borde", type: "line", source: "lugar", paint: { "line-color": "#ffffff", "line-width": 2 } },
+                  ] as const)
+                : []),
             ],
             terrain: { source: "relieve", exaggeration: 1.3 },
           },
@@ -103,13 +98,13 @@ export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }
         // Sin esto MapLibre escribe en la consola cada tile que no llega
         mapa.on("error", () => {});
         mapa.addControl(new ml.NavigationControl({ visualizePitch: true }), "bottom-right");
-        // A esta distancia el lote son pocos píxeles: lo marca un cartel con un palito que baja hasta el lugar. Sin
-        // lote no hay un lugar exacto: el cartel va solo, en el medio del círculo, sin palito ni punto
+        // A esta distancia el lote son pocos píxeles: lo marca un cartel con un palito que baja hasta el lugar (el centro
+        // del lote, o sin lote el punto que publica la inmobiliaria)
         const cartel = document.createElement("div");
         cartel.className = "flex flex-col items-center";
-        cartel.innerHTML = '<span class="rounded-full bg-naranja-osc px-3 py-1 text-[13px] font-semibold whitespace-nowrap text-white shadow"></span>' + (lote ? '<span class="h-4 w-0.5 bg-white" data-palito></span><span class="h-2.5 w-2.5 rounded-full border-2 border-white bg-naranja-osc"></span>' : "");
+        cartel.innerHTML = '<span class="rounded-full bg-naranja-osc px-3 py-1 text-[13px] font-semibold whitespace-nowrap text-white shadow"></span><span class="h-4 w-0.5 bg-white" data-palito></span><span class="h-2.5 w-2.5 rounded-full border-2 border-white bg-naranja-osc"></span>';
         cartel.firstElementChild!.textContent = etiqueta;
-        new ml.Marker({ element: cartel, anchor: lote ? "bottom" : "center", offset: lote ? [0, 4] : [0, 0] }).setLngLat([lng, lat]).addTo(mapa);
+        new ml.Marker({ element: cartel, anchor: "bottom", offset: [0, 4] }).setLngLat([lng, lat]).addTo(mapa);
         mapa.once("idle", () => vivo && setCargando(false));
       })
       // También si MapLibre no consigue el WebGL aunque hayWebGL() haya dado bien: el aviso con Google Earth, no "Cargando" para siempre
@@ -118,7 +113,7 @@ export default function Mapa3D({ centro, lote, radio, zmax, etiqueta, alCerrar }
       vivo = false;
       mapa?.remove();
     };
-  }, [sinWebGL, seguir, lat, lng, lote, radio, zmax, etiqueta]);
+  }, [sinWebGL, seguir, lat, lng, lote, zmax, etiqueta]);
 
   const earth = `https://earth.google.com/web/@${lat.toFixed(6)},${lng.toFixed(6)},900a,1500d,35y,0h,60t,0r`;
   const aviso = (texto: string, botones: React.ReactNode) => (
