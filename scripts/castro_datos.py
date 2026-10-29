@@ -541,7 +541,7 @@ for (lat, lng), ps in sorted(grupos.items(), key=lambda g: -len(g[1])):
     + "\n".join(errores) + "\n\n"
     "## Propiedades que publican el mismo punto\n\n"
     "Varias propiedades con exactamente la misma ubicación: suele ser un punto del barrio y no el de cada propiedad. En la "
-    "propuesta se muestran con una zona aproximada más grande que lo aclara.\n\n"
+    "propuesta se muestran con un marcador en ese punto y el aviso de que es aproximado.\n\n"
     + "\n".join(compartidos) + "\n\n"
     "## Terrenos que no se dibujan\n\n"
     "El catastro tiene una parcela que coincide, pero el aviso no deja asegurar que sea esa. En la propuesta van con la zona "

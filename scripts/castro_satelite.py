@@ -55,6 +55,11 @@ CALCES: dict[str, tuple[float, float]] = {
     "c-1619_-3250": (-3, -3), "c-1619_-3251": (0, 0), "c-1619_-3252": (2, 0), "c-1620_-3250": (0, 0),
     "c-1621_-3249": (0, -3), "c-1621_-3250": (0, -3), "c-1622_-3250": (2, -3), "c-1622_-3251": (3.5, 0),
     "c-1625_-3250": (0, 0), "c-1626_-3251": (2.5, 1),
+    # 29/10: dos calibradores por separado coincidieron a menos de 0,5 m (uno con confianza alta); se usa el promedio.
+    # No entraron c-1617_-3255 ni c-1618_-3256 (difieren 1,5 m, ambos con confianza media) ni c-1620_-3251 (uno: no calzable).
+    "c-1621_-3251": (0.25, 0),  # Carpintería: bordes de calles abiertas en el monte
+    "c-1618_-3259": (-6.75, -4.25),  # Santa Rosa del Conlara: ojo, sin corrimiento parece calzar y no
+    "c-1617_-3260": (-5.5, 2.25),  # Santa Rosa del Conlara: lotes que calzan de ancho y huellas centradas
 }
 
 # Los que no se dibujan aunque pasen la regla de abajo, después de mirarlos, con el motivo (castro_datos.py lo pasa a la
