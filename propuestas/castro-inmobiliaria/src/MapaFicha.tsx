@@ -1,23 +1,26 @@
 // El mapa de la ficha, al estilo MojonApp: la foto satelital calzada con el catastro, el lote con borde blanco y
 // relleno naranja, la medida de cada lado y la trama de parcelas de alrededor punteada. Donde no hay forma del lote,
-// un círculo de zona aproximada. Todo lo que muestra el mapa también está escrito abajo.
+// un pin en el punto que publica la inmobiliaria. Todo lo que muestra el mapa también está escrito abajo.
 import type * as Leaflet from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import { lugar } from "./componentes";
 import { miles, superficie, type Ficha, type Forma as DatosForma, type Propiedad } from "./datos";
-import { aLatLng, cargarLeaflet, centroDe, crearMapa, ESTILO_LOTE, ESTILO_VECINA, ESTILO_ZONA, seguirElCalce, type Altura, type Cercano, type Fondo, type MapaDatos } from "./mapa";
+import { aLatLng, cargarLeaflet, centroDe, crearMapa, ESTILO_LOTE, ESTILO_VECINA, seguirElCalce, type Altura, type Cercano, type Fondo, type MapaDatos } from "./mapa";
 import Mapa3D from "./Mapa3D";
 
 export type FichaConMapa = Ficha & { mapa?: MapaDatos; cercanos?: Cercano[]; altura?: Altura | null };
 
-/** Una ficha sin datos de mapa se muestra como una propiedad sin forma: zona aproximada y sin trama. */
-const SIN_MAPA: MapaDatos = { calce: null, celda: "", zmax: 17, lote: null, lados: null, zona: { radio: 150, compartido: 0 }, alrededor: [] };
+/** Una ficha sin datos de mapa se muestra como una propiedad sin forma: el pin en el punto publicado y sin trama. */
+const SIN_MAPA: MapaDatos = { calce: null, celda: "", zmax: 17, lote: null, lados: null, zona: null, alrededor: [] };
 
 function datosDelMapa(p: Propiedad, mapa?: MapaDatos) {
   const m = mapa ?? SIN_MAPA;
   const lote = m.lote?.length ? m.lote : null;
-  return { m, lote, centro: lote ? centroDe(lote) : ([p.lat, p.lng] as [number, number]), radio: m.zona?.radio ?? 150 };
+  return { m, lote, centro: lote ? centroDe(lote) : ([p.lat, p.lng] as [number, number]) };
 }
+
+/** El pin del punto publicado: la punta (abajo al medio del ícono) cae justo en el punto. Colores en index.css (.punto) */
+const PIN = '<svg viewBox="0 0 30 40" width="30" height="40" aria-hidden="true"><path d="M15 40C15 40 2.5 25 2.5 14a12.5 12.5 0 0 1 25 0C27.5 25 15 40 15 40Z"/><circle cx="15" cy="14" r="4.5"/></svg>';
 
 const coma = (n: number) => String(n).replace(".", ",");
 
@@ -56,7 +59,7 @@ function Forma({ f }: { f: DatosForma }) {
 
 const BOTON = "rounded-full px-3 py-1.5 text-[13.5px] font-semibold aria-pressed:bg-tinta aria-pressed:text-white";
 
-/** fallo: no se pudo bajar la ficha; el mapa igual muestra la zona alrededor del punto publicado. */
+/** fallo: no se pudo bajar la ficha; el mapa igual muestra el pin en el punto publicado (sin trama ni calce). */
 export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: FichaConMapa | null; fallo: boolean }) {
   const caja = useRef<HTMLDivElement>(null);
   const control = useRef<{ mapa: Leaflet.Map; fondo: (f: Fondo) => void } | null>(null);
@@ -75,7 +78,7 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
   useEffect(() => {
     const el = caja.current;
     if (!el || (!ficha && !fallo)) return;
-    const { m, lote, centro, radio } = datosDelMapa(p, ficha?.mapa);
+    const { m, lote, centro } = datosDelMapa(p, ficha?.mapa);
     let vivo = true; // StrictMode monta dos veces y el import puede volver después de desmontar
     let mapa: Leaflet.Map | undefined;
     const ro = new ResizeObserver(() => mapa?.invalidateSize());
@@ -99,13 +102,14 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
               return L.marker([l.lat, l.lng], { interactive: false, keyboard: false, icon: L.divIcon({ className: "lado", iconSize: [0, 0], html }) }).addTo(r.mapa);
             });
           } else {
-            L.circle(centro, { ...ESTILO_ZONA, radius: radio }).addTo(mapa);
-            if (m.zona?.compartido) L.marker(centro, { interactive: false, keyboard: false, icon: L.divIcon({ className: "zona-texto", iconSize: [0, 0], html: "<span>Punto aproximado, no el de la propiedad</span>" }) }).addTo(mapa);
-            encuadre = L.latLng(centro).toBounds(radio * 2.5);
+            L.marker(centro, { interactive: false, keyboard: false, icon: L.divIcon({ className: "punto", iconSize: [30, 40], iconAnchor: [15, 40], html: PIN }) }).addTo(mapa);
+            // Un punto que la inmobiliaria repite para varias no es el de esta: que no parezca tan exacto como uno propio
+            if (m.zona?.compartido) L.marker(centro, { interactive: false, keyboard: false, icon: L.divIcon({ className: "punto-aprox", iconSize: [0, 0], html: "<span>Punto aproximado</span>" }) }).addTo(mapa);
+            encuadre = L.latLng(centro).toBounds(300);
           }
           mapa.fitBounds(encuadre, { maxZoom: 19, animate: false });
           // Unos 300 m alrededor, o más si el lote o la trama son más grandes: que se pueda ver todo lo dibujado
-          const limite = L.latLng(centro).toBounds(Math.max(600, radio * 2 + 300)).extend(encuadre);
+          const limite = L.latLng(centro).toBounds(600).extend(encuadre);
           if (trama) limite.extend(trama.getBounds());
           mapa.setMaxBounds(limite.pad(0.1));
           if (rotulos.length) {
@@ -195,12 +199,10 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
   const cercanos = ficha?.cercanos ?? [];
   const altura = ficha?.altura;
   const [lat, lng] = d?.centro ?? [p.lat, p.lng];
+  // zona trae {radio, compartido} o solo {compartido}: del radio ya no se usa nada
   const compartido = lote ? 0 : (d?.m.zona?.compartido ?? 0);
-  const radio = d?.radio ?? 150;
-  // Un campo de cientos de hectáreas no entra en el círculo: se avisa en vez de inventarle un tamaño
-  const masGrande = !lote && !!p.terreno && p.terreno > Math.PI * radio ** 2;
-  // Sin lote no hay un punto exacto: el 3D marca la zona y no dice "este terreno"
-  const etiqueta3d = lote ? (p.tipo === "Terreno" ? "Este terreno" : "Esta propiedad") : "Zona aproximada";
+  // Sin lote el 3D marca el punto publicado y no dice "este terreno"
+  const etiqueta3d = !lote ? "Ubicación publicada" : p.tipo === "Terreno" || p.tipo === "Campo" ? "Este terreno" : "Esta propiedad";
 
   return (
     <section id="mapa" className="mt-9 scroll-mt-28 md:scroll-mt-44">
@@ -261,7 +263,7 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
             <text y={12} textAnchor="middle" fontSize={8} fontWeight={700} fill="#fff">N</text>
           </svg>
         </span>
-        {ver3d && <Mapa3D centro={[lat, lng]} lote={lote} radio={radio} zmax={d?.m.zmax ?? 17} etiqueta={etiqueta3d} alCerrar={cerrar3d} />}
+        {ver3d && <Mapa3D centro={[lat, lng]} lote={lote} zmax={d?.m.zmax ?? 17} etiqueta={etiqueta3d} alCerrar={cerrar3d} />}
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
@@ -277,9 +279,8 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
         {lote
           ? "Forma según el catastro de San Luis. Las medidas son aproximadas: las definitivas, según la mensura."
           : compartido
-            ? `Punto aproximado: la inmobiliaria publica este mismo punto para ${compartido + 1} propiedades, así que no marca dónde está esta.`
-            : "Zona aproximada, alrededor de la ubicación que publica la inmobiliaria."}
-        {masGrande && ` ${p.tipo === "Campo" ? "El campo" : "El terreno"} es más grande que el círculo: marca solo la ubicación publicada.`}
+            ? `La inmobiliaria publica este mismo punto para ${compartido + 1} propiedades: es aproximado.`
+            : "Ubicación que publica la inmobiliaria."}
       </p>
 
       {ficha && (lados.length > 0 || cercanos.length > 0 || altura || lote) && (

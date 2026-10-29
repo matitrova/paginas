@@ -18,7 +18,8 @@ export interface MapaDatos {
   /** Anillo exterior del lote [lng, lat] (solo los terrenos con forma confirmada) */
   lote: [number, number][] | null;
   lados: { lat: number; lng: number; ang: number; afuera: [number, number]; texto: string }[] | null;
-  zona: { radio: number; compartido: number } | null;
+  /** Sin lote: cuántas OTRAS propiedades publican el mismo punto (radio quedó de cuando era un círculo) */
+  zona: { radio?: number; compartido: number } | null;
   alrededor: [number, number][][];
 }
 export type Cercano = { lugar: string; km: number; min?: number };

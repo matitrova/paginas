@@ -84,21 +84,38 @@ body {
 :root .leaflet-container .leaflet-control-attribution {
   font-size: 10px;
 }
-.lado span,
-.zona-texto span {
+.lado span {
   position: absolute;
   white-space: nowrap;
   font: 700 13px/1 var(--font-sans);
   color: #fff;
   text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000;
 }
-.zona-texto span {
-  transform: translate(-50%, -50%);
-  padding: 6px 11px;
+/* Sin lote, el pin en el punto que publica la inmobiliaria (MapaFicha.tsx): terracota con borde blanco */
+.punto svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.5));
+}
+.punto path {
+  fill: var(--color-terracota);
+  stroke: #fff;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.punto circle {
+  fill: #fff;
+}
+/* "Punto aproximado", debajo del pin, cuando el punto lo comparten varias propiedades */
+.punto-aprox span {
+  position: absolute;
+  transform: translate(-50%, 8px);
+  padding: 5px 10px;
   border-radius: 999px;
-  background: rgb(0 0 0 / 0.62);
-  font-size: 12.5px;
-  text-shadow: none;
+  background: rgb(0 0 0 / 0.65);
+  color: #fff;
+  font: 600 12.5px/1 var(--font-sans);
+  white-space: nowrap;
 }
 
 /* Mapa general (src/MapaGeneral.tsx): burbujas por zona de lejos, pastillas de precio de cerca, logos de urbanizaciones */

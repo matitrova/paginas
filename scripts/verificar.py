@@ -1126,7 +1126,7 @@ def castro(pg, nombre, cap):
 
 
 def castro_mapa(pg, nombre, cap):
-    """El mapa de cada ficha de Castro (Actualizaciones 10 y 12). Se prueba con el 7973638 porque su foto SÍ se corre
+    """El mapa de cada ficha de Castro (Actualizaciones 10, 12 y 14). Se prueba con el 7973638 porque su foto SÍ se corre
     (calce 4 m al este y 2 al norte): con calce y sin calce, el lote tiene que quedar en el mismo lugar y la foto
     correrse justo los píxeles que dan esos metros en ese zoom. Lo esperado sale del JSON de la ficha."""
     import json
@@ -1135,6 +1135,20 @@ def castro_mapa(pg, nombre, cap):
     raiz = f"{BASE}propuestas/castro-inmobiliaria/"
     fichas = DIST / "propuestas/castro-inmobiliaria/fichas"
     indice = {x["id"]: x for x in json.loads((DIST.parent / "propuestas/castro-inmobiliaria/src/datos/indice.json").read_text())}
+    # Las fichas sin lote se eligen por los datos (no fijas), así los chequeos siguen andando cuando entran lotes nuevos:
+    # sin punto compartido, la de foto más corrida (la primera si empatan): con calce y sin calce el pin no se tiene que
+    # mover, y con calce [0,0] eso no probaría nada. Después, la primera con punto compartido y, si hay, la primera casa
+    # (o local, etc.) y el primer campo con lote
+    mapas = {i: json.loads((fichas / f"{i}.json").read_text()).get("mapa") or {} for i in indice}
+    sin_lote = [i for i, m in mapas.items() if not m.get("lote")]
+    propios = [i for i in sin_lote if not (mapas[i].get("zona") or {}).get("compartido")]
+    solo = max(propios, key=lambda i: math.hypot(*(mapas[i].get("calce") or [0, 0])), default=None)
+    mismo = next((i for i in sin_lote if (mapas[i].get("zona") or {}).get("compartido")), None)
+    casa_lote = next((i for i, m in mapas.items() if m.get("lote") and indice[i]["tipo"] not in ("Terreno", "Campo")), None)
+    campo_lote = next((i for i, m in mapas.items() if m.get("lote") and indice[i]["tipo"] == "Campo"), None)
+    if not solo or not mismo:
+        problemas.append(f"{nombre}: no hay una ficha sin lote con punto propio ({solo}) y otra con punto compartido ({mismo}) para probar el pin")
+        return
     pedidos, fotos = [], []
     pg.on("request", lambda r: pedidos.append(r.url))
     pg.on("response", lambda r: "World_Imagery" in r.url and r.status == 200 and fotos.append(r))
@@ -1350,10 +1364,19 @@ def castro_mapa(pg, nombre, cap):
         import io
         from PIL import Image, ImageStat
         m, dpr = pg.locator("[data-mapa-ficha]").bounding_box(), pg.evaluate("devicePixelRatio")
-        im = Image.open(io.BytesIO(pg.screenshot())).convert("L")
         # Solo las filas de tiles que caen en el medio del mapa: arriba van los botones y abajo la escala y los créditos
-        bordes = {b for b in pg.evaluate("[...document.querySelectorAll('.leaflet-foto-pane img.leaflet-tile')].map(i => i.getBoundingClientRect().top)")
-                  if m["y"] + m["height"] * 0.2 < b < min(m["y"] + m["height"] * 0.75, pg.viewport_size["height"] - 120)}
+        def medio():
+            return {b for b in pg.evaluate("[...document.querySelectorAll('.leaflet-foto-pane img.leaflet-tile')].map(i => i.getBoundingClientRect().top)")
+                    if m["y"] + m["height"] * 0.2 < b < min(m["y"] + m["height"] * 0.75, pg.viewport_size["height"] - 120)}
+
+        bordes = medio()
+        if not bordes:
+            # Ninguno cayó en el medio: se corre el mapa 80 px con la flecha (más que el hueco entre una franja y la siguiente)
+            pg.locator("[data-mapa-ficha] .leaflet-container").focus()
+            pg.keyboard.press("ArrowDown")
+            pg.wait_for_timeout(1200)
+            bordes = medio()
+        im = Image.open(io.BytesIO(pg.screenshot())).convert("L")
         x0, x1 = int((m["x"] + 70) * dpr), int((m["x"] + m["width"] - 70) * dpr)
 
         def fila(y):
@@ -1366,25 +1389,66 @@ def castro_mapa(pg, nombre, cap):
                 problemas.append(f"{nombre}: el mapa del {ident} tiene una línea clara entre tiles en y={b} (salta {round(salto)} de brillo)")
         return len(bordes)
 
-    # Casa: la zona aproximada, sin lote; y un terreno de una zona sin calzar: zona, sin lote ni trama
+    # Sin lote: un pin con la punta en el punto que publica la inmobiliaria, sin círculo ni lote, la trama de alrededor
+    # si la hay, y la nota de abajo. Lo esperado del pin se proyecta aparte (Web Mercator) desde el centro y el zoom
+    # que dice el pane, no con Leaflet
+    def pin():
+        return pg.evaluate("""() => { const c = document.querySelector('[data-mapa-ficha] .leaflet-container').getBoundingClientRect();
+          const pane = document.querySelector('.leaflet-foto-pane');
+          // La cabeza del pin, a la izquierda del círculo blanco y lejos del borde blanco (en el viewBox de 30x40: x 8, y 14)
+          const s = document.querySelector('.punto svg')?.getBoundingClientRect();
+          return { ancho: c.width, alto: c.height, vista: pane.dataset.vista, calce: pane.dataset.calce,
+                   cabeza: s && [s.left + s.width * 8 / 30, s.top + s.height * 14 / 40],
+                   puntas: [...document.querySelectorAll('.punto path')].map(e => { const b = e.getBoundingClientRect(); return [b.left + b.width / 2 - c.left, b.bottom - c.top] }) } }""")
+
+    def color(x, y):
+        """El color que de verdad se ve en (x, y) de la pantalla: getBoundingClientRect no se entera si el pin es
+        invisible o quedó tapado."""
+        import io
+        from PIL import Image, ImageStat
+        return [round(c) for c in ImageStat.Stat(Image.open(io.BytesIO(pg.screenshot(clip={"x": x - 1, "y": y - 1, "width": 2, "height": 2}))).convert("RGB")).mean]
+
+    sin_calce = abrir(solo, "&calce=0") and pin()
     mirados = 0
-    if abrir("7876886"):
-        cap("mapa-casa")
-        mirados += costuras("7876886")
-        if not pg.locator(".zona").count() or pg.locator(".lote").count():
-            problemas.append(f"{nombre}: la casa 7876886 no muestra la zona aproximada o muestra un lote")
+    for ident in (solo, mismo):
+        if not abrir(ident):
+            continue
+        cap("mapa-punto" if ident == solo else "mapa-punto-compartido")
+        r = pin()
+        # El pin va con los datos del catastro y no con la foto: con calce y sin calce, en el mismo lugar
+        if ident == solo and sin_calce:
+            if r["calce"] in (None, "0,0"):
+                problemas.append(f"{nombre}: la foto del {solo} no se corre con calce {mapas[solo].get('calce')} (pane: {r['calce']}): el chequeo del pin con calce no probaría nada")
+            if len(r["puntas"]) != 1 or len(sin_calce["puntas"]) != 1 or max(abs(a - b) for a, b in zip(r["puntas"][0], sin_calce["puntas"][0])) > 0.5:
+                problemas.append(f"{nombre}: el pin del {solo} se mueve con el calce de la foto: {sin_calce['puntas']} sin calce, {r['puntas']} con calce")
+        visto = color(*r["cabeza"]) if r["cabeza"] else None
+        if not visto or max(abs(a - b) for a, b in zip(visto, (0x9A, 0x3E, 0x27))) > 30:
+            problemas.append(f"{nombre}: en el {ident} la cabeza del pin se ve de color {visto} y no terracota (154, 62, 39)")
+        z, clat, clng = (float(v) for v in r["vista"].split(","))
+        escala = 256 * 2**z
+
+        def merc_y(la):
+            return (1 - math.log(math.tan(math.radians(la)) + 1 / math.cos(math.radians(la))) / math.pi) / 2 * escala
+
+        p = indice[ident]
+        punto = (r["ancho"] / 2 + (p["lng"] - clng) / 360 * escala, r["alto"] / 2 + merc_y(p["lat"]) - merc_y(clat))
+        if len(r["puntas"]) != 1 or max(abs(a - b) for a, b in zip(r["puntas"][0], punto)) > 3 or not (0 < punto[0] < r["ancho"] and 0 < punto[1] < r["alto"]):
+            problemas.append(f"{nombre}: en el {ident} la punta del pin está en {r['puntas']} y el punto publicado cae en {[round(x, 1) for x in punto]} (mapa de {r['ancho']}x{r['alto']})")
+        if pg.locator(".lote, .zona").count() or bool(pg.locator(".vecina").count()) != bool(mapas[ident].get("alrededor")):
+            problemas.append(f"{nombre}: el {ident} (sin lote) muestra {pg.locator('.lote').count()} lotes, {pg.locator('.zona').count()} círculos y "
+                             f"{pg.locator('.vecina').count()} tramas (en los datos, {len(mapas[ident].get('alrededor') or [])} parcelas de alrededor)")
+        nota = pg.locator("[data-nota-mapa]").inner_text()
+        n = (mapas[ident].get("zona") or {}).get("compartido", 0) + 1
+        esperada = "Ubicación que publica la inmobiliaria." if ident == solo else f"La inmobiliaria publica este mismo punto para {n} propiedades: es aproximado."
+        if nota.strip() != esperada:
+            problemas.append(f"{nombre}: debajo del mapa del {ident} dice «{nota}» y tenía que decir «{esperada}»")
+        # Sobre el mapa: "Punto aproximado" junto al pin solo cuando el punto es compartido
+        aprox = pg.locator("[data-mapa-ficha] .punto-aprox").all_inner_texts()
+        if (ident != solo) != (aprox == ["Punto aproximado"]):
+            problemas.append(f"{nombre}: sobre el mapa del {ident} el aviso de punto aproximado es {aprox} (compartido: {ident != solo})")
         if pg.locator("iframe").count() or pedidos_a_google():
-            problemas.append(f"{nombre}: la ficha de la casa pide a Google Maps: {pedidos_a_google()[:2]}")
-    zona = (json.loads((fichas / "12024296.json").read_text()).get("mapa") or {}).get("zona") or {}
-    if abrir("12024296"):
-        mirados += costuras("12024296")
-        if not pg.locator(".zona").count() or pg.locator(".lote, .vecina").count():
-            problemas.append(f"{nombre}: el 12024296 (zona sin calzar) tiene que ir solo con la zona aproximada")
-        # Un mismo punto lo publican para barrios distintos: no se puede decir que es "el del barrio"
-        nota, rotulo = pg.locator("[data-nota-mapa]").inner_text(), pg.locator(".zona-texto").all_inner_texts()
-        esperada = f"Punto aproximado: la inmobiliaria publica este mismo punto para {zona.get('compartido', 0) + 1} propiedades, así que no marca dónde está esta."
-        if not zona.get("compartido") or esperada not in nota or rotulo != ["Punto aproximado, no el de la propiedad"] or "barrio" in nota + "".join(rotulo):
-            problemas.append(f"{nombre}: el 12024296 (punto compartido por {zona.get('compartido')} más) dice «{nota}» y en el mapa {rotulo}")
+            problemas.append(f"{nombre}: la ficha {ident} pide a Google Maps: {pedidos_a_google()[:2]}")
+        mirados += costuras(ident)  # al final: si ningún borde cae en el medio, corre el mapa
     if tactil and not mirados:
         problemas.append(f"{nombre}: ningún borde entre tiles quedó en el medio del mapa: el chequeo de costuras no probó nada")
 
@@ -1396,15 +1460,19 @@ def castro_mapa(pg, nombre, cap):
         except Exception:
             problemas.append(f"{nombre}: 'Ver en 3D' no muestra ni el mapa ni el aviso de Google Earth")
 
-    # 3D sin lote (12024296, ubicación compartida): sin un punto exacto, ni "Este terreno" ni el palito que baja al lugar
-    if pg.locator("[data-mapa-ficha]").count() and ver_3d():
+    def texto_3d():
         pg.wait_for_selector("[data-mapa-3d] .maplibregl-marker", timeout=20000)
-        texto = pg.locator("[data-mapa-3d]").inner_text()
-        if "Zona aproximada" not in texto or "barrio" in texto or "Este terreno" in texto or pg.locator("[data-mapa-3d] [data-palito]").count():
-            problemas.append(f"{nombre}: el 3D del 12024296 (sin lote) tiene que decir 'Zona aproximada' sin marcar un punto: dice «{texto[:80]}»")
+        return pg.locator("[data-mapa-3d] .maplibregl-marker").inner_text().strip()
+
+    # 3D sin lote (la ficha con punto compartido, la última abierta): el cartel con el palito marca el punto publicado
+    if pg.locator("[data-mapa-ficha]").count() and ver_3d():
+        texto = texto_3d()
+        palitos = pg.locator("[data-mapa-3d] [data-palito]").count()
+        if texto != "Ubicación publicada" or not palitos:
+            problemas.append(f"{nombre}: el 3D del {mismo} (sin lote) tiene que marcar el punto con 'Ubicación publicada' y el palito que baja hasta él: dice «{texto[:80]}», con {palitos} palitos")
         pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
         pg.wait_for_timeout(1500)
-        cap("mapa-3d-zona")
+        cap("mapa-3d-punto")
     # El 3D en pantalla completa: Escape cierra primero el 3D (y el foco va a "Cerrar", el otro botón queda tapado)
     if pg.locator("[data-mapa-3d]").count():
         pg.locator("[data-pantalla-completa]").click()
@@ -1419,19 +1487,17 @@ def castro_mapa(pg, nombre, cap):
         if pg.locator("[data-mapa-ficha]").bounding_box()["height"] >= pg.viewport_size["height"] - 40:
             problemas.append(f"{nombre}: el segundo Escape no cierra la pantalla completa")
 
-    # Un campo más grande que el círculo de la zona lo avisa; una casa no
-    campo = "4021072"
-    zcampo = (json.loads((fichas / f"{campo}.json").read_text()).get("mapa") or {}).get("zona") or {}
-    if (indice[campo]["terreno"] or 0) <= math.pi * zcampo.get("radio", 0) ** 2:
-        problemas.append(f"{nombre}: el {campo} ya no es más grande que su círculo: el chequeo del aviso no probaría nada")
-    for ident, avisa in [(campo, True), ("7876886", False)]:
-        if not abrir(ident):
-            continue
-        nota = pg.locator("[data-nota-mapa]").inner_text()
-        if ("más grande que el círculo" in nota) != avisa or (avisa and "El campo es más grande que el círculo: marca solo la ubicación publicada." not in nota):
-            problemas.append(f"{nombre}: el {ident} {'no ' if avisa else ''}avisa que es más grande que el círculo: «{nota}»")
-        if ident == campo:
-            cap("mapa-campo")
+    # Una casa (o local, etc.) con lote: el 3D dice "Esta propiedad" y no "Este terreno"; un campo con lote, "Este
+    # terreno" (el terreno 7973638 se mira arriba). Hoy (27/10) ninguna casa ni campo tiene lote, así que no se chequean;
+    # se chequean solo cuando entren las de la Actualización 14
+    for ident, esperado, foto in ((casa_lote, "Esta propiedad", "mapa-3d-casa"), (campo_lote, "Este terreno", "mapa-3d-campo")):
+        if ident and abrir(ident) and ver_3d():
+            texto = texto_3d()
+            if texto != esperado:
+                problemas.append(f"{nombre}: el 3D del {ident} ({indice[ident]['tipo']} con lote) dice «{texto[:80]}» y no '{esperado}'")
+            pg.wait_for_function("!document.querySelector('[data-mapa-3d]')?.textContent.includes('Cargando')", timeout=45000)
+            pg.wait_for_timeout(1500)
+            cap(foto)
 
     # Si Esri no responde, el terreno se queda con su imagen fija (no un mapa gris) y la casa no queda en "Cargando".
     # Esto también prueba la imagen fija, que con Esri andando desaparece antes de que se la pueda mirar.
@@ -1451,12 +1517,12 @@ def castro_mapa(pg, nombre, cap):
         otra.screenshot(path=str(OUT / f"{nombre}-mapa-sin-esri.png"))
     except Exception:
         problemas.append(f"{nombre}: sin Esri, el mapa del {t} ni siquiera se arma")
-    otra.goto(f"{raiz}?p=7876886", wait_until="networkidle")
+    otra.goto(f"{raiz}?p={solo}", wait_until="networkidle")
     otra.locator("[data-mapa-ficha]").scroll_into_view_if_needed()
     try:
         otra.wait_for_selector("[data-mapa-listo]", timeout=20000)
     except Exception:
-        problemas.append(f"{nombre}: sin Esri, la casa 7876886 queda en «{otra.locator('[data-mapa-ficha]').inner_text()[:40]}»")
+        problemas.append(f"{nombre}: sin Esri, el {solo} (sin lote) queda en «{otra.locator('[data-mapa-ficha]').inner_text()[:40]}»")
     otra.close()
 
     # Si Leaflet no baja: con forma, la imagen fija; sin forma, el aviso con "Recargar la página" (y recargando,
@@ -1464,7 +1530,7 @@ def castro_mapa(pg, nombre, cap):
     otra = pg.context.new_page()
     otra.route(f"{BASE}**", servir)
     otra.route("**/assets/leaflet-src-*.js", lambda r: r.abort())
-    for ident in [t, "7876886"]:
+    for ident in [t, solo]:
         otra.goto(f"{raiz}?p={ident}", wait_until="networkidle")
         otra.locator("[data-mapa-ficha]").scroll_into_view_if_needed()
         try:
@@ -1507,7 +1573,7 @@ def castro_mapa(pg, nombre, cap):
     # en la consola ni "Cargando el 3D" para siempre. Va al final: el script queda puesto en esta página.
     pg.add_init_script("""const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) {
       return this.classList.contains('maplibregl-canvas') && /webgl/.test(t) ? null : g.call(this, t, ...a) }""")
-    if abrir("7876886"):
+    if abrir(solo):
         pg.locator("[data-ver-3d]").click()
         try:
             pg.wait_for_selector("[data-mapa-3d] [data-google-earth]", timeout=30000)
