@@ -1442,6 +1442,10 @@ def castro_mapa(pg, nombre, cap):
         esperada = "Ubicación que publica la inmobiliaria." if ident == solo else f"La inmobiliaria publica este mismo punto para {n} propiedades: es aproximado."
         if nota.strip() != esperada:
             problemas.append(f"{nombre}: debajo del mapa del {ident} dice «{nota}» y tenía que decir «{esperada}»")
+        # Sobre el mapa: "Punto aproximado" junto al pin solo cuando el punto es compartido
+        aprox = pg.locator("[data-mapa-ficha] .punto-aprox").all_inner_texts()
+        if (ident != solo) != (aprox == ["Punto aproximado"]):
+            problemas.append(f"{nombre}: sobre el mapa del {ident} el aviso de punto aproximado es {aprox} (compartido: {ident != solo})")
         if pg.locator("iframe").count() or pedidos_a_google():
             problemas.append(f"{nombre}: la ficha {ident} pide a Google Maps: {pedidos_a_google()[:2]}")
         mirados += costuras(ident)  # al final: si ningún borde cae en el medio, corre el mapa

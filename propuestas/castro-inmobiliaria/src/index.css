@@ -106,6 +106,17 @@ body {
 .punto circle {
   fill: #fff;
 }
+/* "Punto aproximado", debajo del pin, cuando el punto lo comparten varias propiedades */
+.punto-aprox span {
+  position: absolute;
+  transform: translate(-50%, 8px);
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.65);
+  color: #fff;
+  font: 600 12.5px/1 var(--font-sans);
+  white-space: nowrap;
+}
 
 /* Mapa general (src/MapaGeneral.tsx): burbujas por zona de lejos, pastillas de precio de cerca, logos de urbanizaciones */
 .marca-mapa {

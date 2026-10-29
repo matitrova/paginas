@@ -59,7 +59,7 @@ function Forma({ f }: { f: DatosForma }) {
 
 const BOTON = "rounded-full px-3 py-1.5 text-[13.5px] font-semibold aria-pressed:bg-tinta aria-pressed:text-white";
 
-/** fallo: no se pudo bajar la ficha; el mapa igual muestra el pin en el punto publicado. */
+/** fallo: no se pudo bajar la ficha; el mapa igual muestra el pin en el punto publicado (sin trama ni calce). */
 export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: FichaConMapa | null; fallo: boolean }) {
   const caja = useRef<HTMLDivElement>(null);
   const control = useRef<{ mapa: Leaflet.Map; fondo: (f: Fondo) => void } | null>(null);
@@ -103,6 +103,8 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
             });
           } else {
             L.marker(centro, { interactive: false, keyboard: false, icon: L.divIcon({ className: "punto", iconSize: [30, 40], iconAnchor: [15, 40], html: PIN }) }).addTo(mapa);
+            // Un punto que la inmobiliaria repite para varias no es el de esta: que no parezca tan exacto como uno propio
+            if (m.zona?.compartido) L.marker(centro, { interactive: false, keyboard: false, icon: L.divIcon({ className: "punto-aprox", iconSize: [0, 0], html: "<span>Punto aproximado</span>" }) }).addTo(mapa);
             encuadre = L.latLng(centro).toBounds(300);
           }
           mapa.fitBounds(encuadre, { maxZoom: 19, animate: false });
