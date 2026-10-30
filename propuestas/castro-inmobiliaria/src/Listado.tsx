@@ -210,14 +210,14 @@ export default function Listado() {
       {/* "Simplificá tu búsqueda", como en su página de compra: un botón por tipo, con cuántas hay. En el celular, en una
           fila que se desliza, para que la primera propiedad se vea sin bajar */}
       <p className="font-display mt-6 hidden text-[13px] font-bold tracking-wide text-suave uppercase sm:block">Simplificá tu búsqueda</p>
-      <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:mt-2 sm:grid sm:grid-cols-4 sm:gap-2.5 sm:px-0 lg:grid-cols-8" role="group" aria-label="Simplificá tu búsqueda: tipo de propiedad">
-        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-terracota aria-pressed:bg-terracota aria-pressed:text-white sm:min-w-[5.5rem] sm:flex-col sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
+      <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:mt-2 sm:flex-wrap sm:gap-2.5 sm:overflow-visible sm:px-0" role="group" aria-label="Simplificá tu búsqueda: tipo de propiedad">
+        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-naranja aria-pressed:bg-naranja aria-pressed:text-chocolate sm:min-w-[5.5rem] sm:flex-1 sm:flex-col sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
           <span className="font-display text-[12px] font-bold tracking-wide uppercase">Todas</span>
           <span className="text-[13px] opacity-80">{deLaOperacion.length}</span>
         </button>
         {tipos.map(([tipo, n]) => (
-          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-terracota aria-pressed:bg-terracota aria-pressed:text-white sm:min-w-[5.5rem] sm:flex-col sm:justify-center sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
-            <span className="font-display text-[12px] leading-tight font-bold tracking-wide whitespace-nowrap uppercase sm:text-center sm:whitespace-normal">{TIPOS[tipo] ?? tipo}</span>
+          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-naranja aria-pressed:bg-naranja aria-pressed:text-chocolate sm:min-w-[5.5rem] sm:flex-1 sm:flex-col sm:justify-center sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
+            <span className="font-display text-[12px] leading-tight font-bold tracking-wide whitespace-nowrap uppercase">{TIPOS[tipo] ?? tipo}</span>
             <span className="text-[13px] opacity-80">{n}</span>
           </button>
         ))}
@@ -261,7 +261,7 @@ export default function Listado() {
       {lista.length > cuantas && (
         <div className="mt-10 text-center">
           <p className="text-[14px] text-suave">Viendo {cuantas} de {lista.length}</p>
-          <button onClick={verMas} data-ver-mas className="font-display mt-3 rounded-full border-2 border-terracota bg-white px-7 py-3 text-[14px] font-bold tracking-wide text-terracota uppercase hover:bg-terracota hover:text-white">
+          <button onClick={verMas} data-ver-mas className="font-display mt-3 rounded-full border-2 border-terracota bg-white px-7 py-3 text-[14px] font-bold tracking-wide text-terracota uppercase hover:border-naranja hover:bg-naranja hover:text-chocolate">
             Ver {Math.min(TANDA, lista.length - cuantas)} más
           </button>
         </div>

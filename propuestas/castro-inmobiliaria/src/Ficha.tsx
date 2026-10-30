@@ -31,12 +31,16 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
     setGrande(null);
   };
 
+  // En la compu, como en su ficha: la foto grande y dos miniaturas al costado, con una altura que deja ver el título,
+  // el precio y WhatsApp sin bajar
+  const miniaturas = lista.slice(1, 3);
   return (
-    <div className="relative overflow-hidden bg-hondo sm:rounded-3xl">
+    <div className={`md:grid md:h-[360px] md:grid-rows-1 md:gap-2 lg:h-[420px] ${miniaturas.length ? "md:grid-cols-[2fr_1fr]" : ""}`}>
+    <div className="relative overflow-hidden bg-hondo sm:rounded-3xl md:rounded-2xl">
       <div
         ref={caja}
         onScroll={(e) => setActual(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
-        className="sin-barra flex aspect-[4/3] snap-x snap-mandatory overflow-x-auto sm:aspect-[16/10]"
+        className="sin-barra flex aspect-[4/3] snap-x snap-mandatory overflow-x-auto sm:aspect-[16/10] md:aspect-auto md:h-full"
         data-galeria
       >
         {total === 0 && <img src={portada(p.id)} alt="" className="h-full w-full shrink-0 snap-center object-cover" />}
@@ -65,6 +69,19 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
           <button onClick={() => mover(caja.current, -1)} aria-label="Foto anterior" disabled={actual === 0} className="absolute top-1/2 left-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">‹</button>
           <button onClick={() => mover(caja.current, 1)} aria-label="Foto siguiente" disabled={actual === total - 1} className="absolute top-1/2 right-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">›</button>
         </>
+      )}
+    </div>
+      {miniaturas.length > 0 && (
+        <div className={`hidden gap-2 md:grid ${miniaturas.length > 1 ? "grid-rows-2" : ""}`} data-miniaturas>
+          {miniaturas.map((f, i) => (
+            <button key={f} onClick={() => setGrande(i + 1)} aria-label={`Ver la foto ${i + 2} en grande`} className="relative min-h-0 overflow-hidden rounded-2xl bg-hondo">
+              <img src={f} alt="" onError={() => setRotas((r) => new Set(r).add(f))} className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]" />
+              {i === miniaturas.length - 1 && total > 3 && (
+                <span className="absolute inset-0 grid place-items-center bg-black/45 text-[17px] font-semibold text-white">Ver las {total} fotos</span>
+              )}
+            </button>
+          ))}
+        </div>
       )}
 
       <dialog
@@ -115,7 +132,7 @@ export function Descripcion({ texto }: { texto: string }) {
   return (
     <div>
       <p className={`text-[16px] leading-relaxed whitespace-pre-line text-tinta/85 ${larga && !abierta ? "line-clamp-6" : ""}`} data-descripcion>
-        {texto}
+        {texto.replace(/\s*•\s*/g, "\n• ").trim()}
       </p>
       {larga && (
         <button onClick={() => setAbierta(!abierta)} className="mt-2 font-semibold text-naranja-osc">
@@ -164,7 +181,7 @@ export default function Ficha({ id }: { id: string }) {
       <section className="mx-auto max-w-2xl px-5 py-20 text-center">
         <h1 className="font-display text-3xl font-bold">Esta propiedad ya no está publicada</h1>
         <p className="mt-4 text-suave">Puede que se haya vendido o alquilado.</p>
-        <a href={ir({ ver: "propiedades" })} className="mt-8 inline-block rounded-full bg-terracota px-6 py-3 font-semibold text-white">Ver las propiedades</a>
+        <a href={ir({ ver: "propiedades" })} className="mt-8 inline-block rounded-full bg-naranja px-6 py-3 font-semibold text-chocolate">Ver las propiedades</a>
       </section>
     );
   }
@@ -301,7 +318,7 @@ export default function Ficha({ id }: { id: string }) {
           <aside className="hidden md:block">
             <div className="sticky top-28 space-y-3 rounded-2xl border border-linea bg-white p-5">
               <p className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">Recibí más información</p>
-              <a href={whatsapp} target="_blank" rel="noopener" data-consultar className="flex items-center justify-center gap-2 rounded-full bg-[#25d366] px-5 py-3 font-semibold text-black hover:brightness-95">
+              <a href={whatsapp} target="_blank" rel="noopener" data-consultar className="flex items-center justify-center gap-2 rounded-full bg-[#25d366] px-4 py-3 text-[15px] font-semibold whitespace-nowrap text-black hover:brightness-95">
                 <IconoWhatsApp className="h-5 w-5" /> Consultar por WhatsApp
               </a>
               <a href={LLAMAR} className={SECUNDARIO}>Llamar</a>

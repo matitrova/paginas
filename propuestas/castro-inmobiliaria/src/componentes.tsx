@@ -21,7 +21,7 @@ const MENU = [
   { href: "./", texto: "Inicio", ver: "" },
   { href: ir({ ver: "propiedades" }), texto: "Propiedades", ver: "propiedades" },
   { href: ir({ ver: "urbanizaciones" }), texto: "Urbanizaciones", ver: "urbanizaciones" },
-  { href: ir({ ver: "vender" }), texto: "Vender", ver: "vender" },
+  { href: ir({ ver: "vender" }), texto: "Vender o tasar", ver: "vender" },
   { href: ir({ ver: "nosotros" }), texto: "Quiénes somos", ver: "nosotros" },
   { href: ir({ ver: "contacto" }), texto: "Contacto", ver: "contacto" },
 ];
@@ -43,15 +43,16 @@ export function Encabezado({ actual }: { actual: string }) {
         {/* En la compu el logo lleva al inicio: así el menú entra entero desde 1024 px */}
         <nav className="ml-auto hidden items-center lg:flex xl:gap-1">
           {MENU.filter((m) => m.ver).map((m) => (
-            <a key={m.texto} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="font-display px-1.5 py-2 text-[13px] font-semibold tracking-wide whitespace-nowrap uppercase hover:text-terracota aria-[current=page]:text-terracota xl:px-2">
+            <a key={m.texto} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="font-display px-1.5 py-2 text-[13px] font-semibold tracking-wide whitespace-nowrap uppercase hover:text-terracota aria-[current=page]:text-terracota aria-[current=page]:underline aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-8 xl:px-2">
               {m.texto}
             </a>
           ))}
         </nav>
-        <a href={LLAMAR} className="font-display ml-auto hidden rounded-full bg-terracota px-4 py-2 text-[13px] font-bold whitespace-nowrap text-white hover:brightness-110 sm:inline-block lg:ml-2">
-          <span className="lg:hidden xl:inline">Llamá </span>{TELEFONO}
+        <a href={LLAMAR} aria-label={`Llamar al ${TELEFONO}`} className="font-display ml-auto flex h-10 items-center rounded-full bg-naranja px-3 text-[13px] font-bold whitespace-nowrap text-chocolate hover:brightness-105 sm:px-4 lg:ml-2">
+          <svg viewBox="0 0 24 24" className="h-5 w-5 sm:hidden" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z" /></svg>
+          <span className="hidden sm:inline"><span className="lg:hidden xl:inline">Llamá </span>{TELEFONO}</span>
         </a>
-        <details className="relative ml-auto sm:ml-0 lg:hidden">
+        <details className="relative lg:hidden">
           <summary className="font-display flex h-10 cursor-pointer list-none items-center rounded-full border border-linea px-4 text-[13px] font-semibold uppercase">Menú</summary>
           <nav className="absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl border border-linea bg-white py-2 shadow-[0_24px_50px_-20px_rgb(0_0_0/0.35)]">
             {MENU.map((m) => (
@@ -59,7 +60,7 @@ export function Encabezado({ actual }: { actual: string }) {
                 {m.texto}
               </a>
             ))}
-            <a href={LLAMAR} className="mx-3 mt-1 block rounded-xl bg-terracota px-4 py-3 text-center font-semibold whitespace-nowrap text-white">
+            <a href={LLAMAR} className="mx-3 mt-1 block rounded-xl bg-naranja px-4 py-3 text-center font-semibold whitespace-nowrap text-chocolate">
               Llamá {TELEFONO}
             </a>
           </nav>
@@ -76,8 +77,8 @@ export function Pie({ pegado = false }: { pegado?: boolean }) {
   return (
     // Abajo queda lugar para el botón de WhatsApp (o la barra de la ficha) en el celular
     <footer className={`${pegado ? "" : "mt-20"} bg-[#3a3a3a] pb-20 text-white/80 md:pb-0`}>
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
-        <div>
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-10 px-5 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+        <div className="col-span-2 md:col-span-1">
           <img src="./fotos/logofooter.png" alt="Castro Inmobiliaria" className="h-11 w-auto" />
           <p className="mt-5 max-w-xs text-[14px] leading-relaxed">{SITIO.pie.texto}</p>
           <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
@@ -106,7 +107,7 @@ export function Pie({ pegado = false }: { pegado?: boolean }) {
             <li><a href={ir({ ver: "contacto" })} className="hover:text-white">Contacto</a></li>
           </ul>
         </div>
-        <div className="text-[14px] leading-relaxed">
+        <div className="col-span-2 text-[14px] leading-relaxed md:col-span-1">
           <p className={rotulo}>Oficina</p>
           <p className="mt-3">{c.direccion}</p>
           <p className="mt-1"><a href={LLAMAR} className="hover:text-white">{c.telefono}</a></p>
@@ -224,10 +225,10 @@ export function WhatsAppFlotante({ mensaje }: { mensaje: () => string }) {
       rel="noopener"
       data-whatsapp-flotante
       aria-label="Escribir por WhatsApp"
-      className="fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full bg-[#25d366] py-3 pr-5 pl-3.5 font-semibold text-black shadow-[0_12px_30px_-10px_rgb(0_0_0/0.45)] hover:brightness-95"
+      className="fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full bg-[#25d366] p-3.5 font-semibold sm:py-3 sm:pr-5 sm:pl-3.5 text-black shadow-[0_12px_30px_-10px_rgb(0_0_0/0.45)] hover:brightness-95"
     >
       <IconoWhatsApp />
-      <span>WhatsApp</span>
+      <span className="hidden sm:inline">WhatsApp</span>
     </a>
   );
 }

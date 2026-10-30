@@ -33,9 +33,9 @@ export default function Portada() {
           <h1 className="font-display mx-auto max-w-3xl text-[1.7rem] leading-tight font-bold text-balance text-white drop-shadow sm:text-[2.6rem]">
             {inicio.titular.replace(/\s*\n\s*/g, " ")}
           </h1>
-          <div className="mt-8 flex flex-wrap justify-center gap-3" data-botones-portada>
+          <div className="mx-auto mt-8 grid max-w-sm grid-cols-3 gap-2 sm:flex sm:max-w-none sm:justify-center sm:gap-3" data-botones-portada>
             {BOTONES.map((b) => (
-              <a key={b.texto} href={b.href} className="font-display min-w-[8.5rem] rounded-full bg-white px-6 py-3.5 text-[14px] font-bold tracking-wider text-chocolate uppercase shadow-lg hover:bg-terracota hover:text-white">
+              <a key={b.texto} href={b.href} className="font-display rounded-full bg-white px-2 py-3.5 text-[13px] font-bold tracking-wider text-chocolate uppercase shadow-lg hover:bg-naranja sm:min-w-[8.5rem] sm:px-6 sm:text-[14px]">
                 {b.texto}
               </a>
             ))}
@@ -51,7 +51,7 @@ export default function Portada() {
           ))}
         </div>
         <div className="mt-9 text-center">
-          <a href={ir({ ver: "propiedades" })} className="font-display inline-block rounded-full border-2 border-terracota px-7 py-3 text-[14px] font-bold tracking-wide text-terracota uppercase hover:bg-terracota hover:text-white">
+          <a href={ir({ ver: "propiedades" })} className="font-display inline-block rounded-full border-2 border-terracota px-7 py-3 text-[14px] font-bold tracking-wide text-terracota uppercase hover:bg-naranja hover:border-naranja hover:text-chocolate">
             Ver todas las propiedades
           </a>
         </div>
@@ -63,7 +63,7 @@ export default function Portada() {
           <div className="text-center md:text-left">
             <h2 className="font-display text-[1.6rem] leading-tight font-bold sm:text-[2rem]">{inicio.experiencia_titulo}</h2>
             <p className="mt-4 text-[16px] leading-relaxed text-suave">{inicio.experiencia_texto}</p>
-            <a href={ir({ ver: "nosotros" })} className="font-display mt-6 inline-block rounded-full bg-terracota px-7 py-3 text-[14px] font-bold tracking-wide text-white uppercase hover:brightness-110">
+            <a href={ir({ ver: "nosotros" })} className="font-display mt-6 inline-block rounded-full bg-naranja px-7 py-3 text-[14px] font-bold tracking-wide text-chocolate uppercase hover:brightness-105">
               Conocenos
             </a>
           </div>

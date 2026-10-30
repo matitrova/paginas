@@ -9,7 +9,7 @@ import { Descripcion, nombreLindo } from "./Ficha";
 
 const disponibles = (ids: string[]) => ids.map((id) => porId.get(id)).filter((p) => p !== undefined);
 
-const BOTON = "font-display inline-flex items-center justify-center gap-2 rounded-full bg-terracota px-7 py-3 text-[14px] font-bold tracking-wide text-white uppercase hover:brightness-110";
+const BOTON = "font-display inline-flex items-center justify-center gap-2 rounded-full bg-naranja px-7 py-3 text-[14px] font-bold tracking-wide text-chocolate uppercase hover:brightness-105";
 const CAMPO = "mt-1 h-12 w-full rounded-xl border border-linea bg-white px-3.5 text-[16px]";
 
 export function Urbanizaciones() {
@@ -55,17 +55,10 @@ export function Urbanizacion({ id }: { id: string }) {
   return (
     <article className="mx-auto max-w-6xl px-5 pt-6 sm:px-6">
       <a href={ir({ ver: "urbanizaciones" })} className="text-[13.5px] text-suave hover:text-tinta">← Urbanizaciones</a>
-      <div className="mt-4 grid gap-8 md:grid-cols-2">
-        <div className="space-y-5">
-          {(u.fotos[1] ?? u.fotos[0]) && <img src={u.fotos[1] ?? u.fotos[0]} alt={nombreLindo(u.nombre)} className="w-full rounded-2xl object-cover" />}
-          {u.lat && (
-            <div>
-              <h2 className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">Ubicación</h2>
-              <MapaGeneral props={props} lugarVacio={{ lat: Number(u.lat), lng: Number(u.lng), texto: "Ubicación de la urbanización" }} className="mt-3 h-80" />
-            </div>
-          )}
-        </div>
-        <div>
+      {/* En la compu, la foto y el mapa a la izquierda y los datos a la derecha; en el celular, el mapa al final */}
+      <div className="mt-4 grid items-start gap-8 md:grid-cols-2 md:grid-rows-[auto_1fr] md:gap-y-5">
+        {(u.fotos[1] ?? u.fotos[0]) && <img src={u.fotos[1] ?? u.fotos[0]} alt={nombreLindo(u.nombre)} className="w-full rounded-2xl object-cover md:col-start-1 md:row-start-1" />}
+        <div className="md:col-start-2 md:row-span-2 md:row-start-1">
           <div className="flex items-center gap-4">
             {u.fotos.length > 1 && <img src={u.fotos[0]} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />}
             <h1 className="font-display text-[1.8rem] leading-tight font-bold">{nombreLindo(u.nombre)}</h1>
@@ -85,6 +78,12 @@ export function Urbanizacion({ id }: { id: string }) {
             <IconoWhatsApp className="h-5 w-5" /> Consultar
           </a>
         </div>
+        {u.lat && (
+          <div className="md:col-start-1">
+            <h2 className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">Ubicación</h2>
+            <MapaGeneral props={props} lugarVacio={{ lat: Number(u.lat), lng: Number(u.lng), texto: "Ubicación de la urbanización" }} className="mt-3 h-80" />
+          </div>
+        )}
       </div>
       <section id="propiedades" className="mt-14 scroll-mt-28">
         <Titulo>{props.length ? `Propiedades en ${nombreLindo(u.nombre)}` : "Hoy no tiene propiedades publicadas"}</Titulo>
@@ -112,6 +111,14 @@ export function Nosotros() {
           {/* En su sitio dice "QUIENES SOMOS": va con la tilde */}
           <Titulo h1 centrado>Quiénes somos</Titulo>
           <p className="mt-5 text-[17px] leading-relaxed text-suave">{nosotros.texto}</p>
+          <div className="mt-8 grid gap-4 text-left sm:grid-cols-2" data-mision>
+            {[["Misión", nosotros.mision], ["Visión", nosotros.vision]].map(([titulo, texto]) => (
+              <div key={titulo} className="rounded-2xl bg-piedra p-5">
+                <h2 className="font-display text-[14px] font-bold tracking-wide text-terracota uppercase">{titulo}</h2>
+                <p className="mt-2 text-[15px] leading-relaxed text-suave">{texto}</p>
+              </div>
+            ))}
+          </div>
           <ul className="mt-6 flex flex-wrap justify-center gap-2">
             {nosotros.valores.map((v) => (
               <li key={v} className="font-display rounded-full bg-piedra px-4 py-2 text-[13px] font-semibold tracking-wide uppercase">{v}</li>
@@ -128,9 +135,15 @@ export function Nosotros() {
               <img src={e.foto} alt={e.nombre} loading="lazy" className="h-24 w-24 shrink-0 rounded-xl object-cover object-top" />
               <div className="min-w-0">
                 <p className="font-display font-bold">{e.nombre}</p>
-                <p className="text-[13.5px] leading-snug text-suave">{e.cargo.replace(/\.$/, "")}</p>
+                {e.cargo.replace(/\.$/, "").split("|").map((c) => (
+                  <p key={c} className="text-[13.5px] leading-snug text-suave">{c.trim()}</p>
+                ))}
                 {/* Como la publican, sin agregarle el colegio */}
                 {/^\d+$/.test(e.matricula) && <p className="mt-1 text-[13.5px] text-suave">Matrícula {e.matricula}</p>}
+                <p className="mt-2 flex gap-4 text-[14px] font-semibold text-terracota">
+                  {e.whatsapp && <a href={e.whatsapp} target="_blank" rel="noopener" className="underline underline-offset-4">WhatsApp</a>}
+                  {e.email && <a href={`mailto:${e.email}`} className="underline underline-offset-4">Mail</a>}
+                </p>
               </div>
             </li>
           ))}
@@ -157,15 +170,13 @@ export function Nosotros() {
   );
 }
 
-const MOTIVOS = ["Quiero comprar", "Quiero alquilar", "Quiero vender o tasar", "Otra consulta"];
-
 export function Contacto() {
   const c = SITIO.contacto;
-  const [form, setForm] = useState({ nombre: "", telefono: "", email: "", motivo: MOTIVOS[0], mensaje: "" });
+  const [form, setForm] = useState({ nombre: "", telefono: "", email: "", motivo: "", mensaje: "" });
   useEffect(() => {
     document.title = "Contacto · Castro Inmobiliaria";
   }, []);
-  const mensaje = [`Hola, soy ${form.nombre}.`, `Motivo: ${form.motivo}`, form.mensaje, form.telefono && `Mi teléfono: ${form.telefono}`, form.email && `Mi mail: ${form.email}`].filter(Boolean).join("\n");
+  const mensaje = [`Hola, soy ${form.nombre}.`, form.motivo && `Motivo: ${form.motivo}`, form.mensaje, form.telefono && `Mi teléfono: ${form.telefono}`, form.email && `Mi mail: ${form.email}`].filter(Boolean).join("\n");
   const cambiar = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
   return (
     <section className="mx-auto grid max-w-6xl gap-10 px-5 pt-8 sm:px-6 md:grid-cols-2">
@@ -190,7 +201,7 @@ export function Contacto() {
         </dl>
         <img src="./fotos/imagcontact.webp" alt="La oficina de Castro Inmobiliaria" loading="lazy" className="mt-8 w-full rounded-2xl object-cover" />
       </div>
-      <Formulario titulo="Recibí más información" mensaje={mensaje} listo={!!form.nombre.trim()} dato="data-formulario">
+      <Formulario titulo={SITIO.formulario.titulo} mensaje={mensaje} listo={!!form.nombre.trim()} dato="data-formulario">
         <label className="mt-5 block text-[14px] font-medium">
           Nombre
           <input required value={form.nombre} onChange={cambiar("nombre")} className={CAMPO} name="nombre" />
@@ -206,7 +217,8 @@ export function Contacto() {
         <label className="mt-4 block text-[14px] font-medium">
           Motivo
           <select value={form.motivo} onChange={cambiar("motivo")} className={CAMPO} name="motivo">
-            {MOTIVOS.map((m) => (
+            <option value="">Elegí uno</option>
+            {SITIO.formulario.motivos.map((m) => (
               <option key={m}>{m}</option>
             ))}
           </select>
@@ -247,13 +259,13 @@ function Formulario({ titulo, mensaje, listo, dato, boton = "Enviar por WhatsApp
 
 export function Vender() {
   const { vender } = SITIO;
-  const [form, setForm] = useState({ nombre: "", telefono: "", email: "", direccion: "", tipo: vender.formulario_tipologias[0], mensaje: "" });
+  const [form, setForm] = useState({ nombre: "", telefono: "", email: "", direccion: "", tipo: "", mensaje: "" });
   useEffect(() => {
     document.title = "Vender o tasar tu propiedad · Castro Inmobiliaria";
   }, []);
   const mensaje = [
     `Hola, soy ${form.nombre}. Quiero vender o tasar mi propiedad.`,
-    `Tipo: ${form.tipo}`,
+    form.tipo && `Tipo: ${form.tipo}`,
     form.direccion && `Dirección: ${form.direccion}`,
     form.mensaje,
     form.telefono && `Mi teléfono: ${form.telefono}`,
@@ -270,7 +282,7 @@ export function Vender() {
           <ol className="mt-5 space-y-3" data-pasos>
             {vender.pasos.map((paso, i) => (
               <li key={paso} className="flex items-center gap-4 text-[16px]">
-                <span className="font-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-terracota font-bold text-white">{i + 1}</span>
+                <span className="font-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-naranja font-bold text-chocolate">{i + 1}</span>
                 {paso}
               </li>
             ))}
@@ -299,6 +311,7 @@ export function Vender() {
           <label className="mt-4 block text-[14px] font-medium">
             Tipología
             <select value={form.tipo} onChange={cambiar("tipo")} className={CAMPO} name="tipo">
+              <option value="">Elegí una</option>
               {vender.formulario_tipologias.map((t) => (
                 <option key={t}>{t}</option>
               ))}

@@ -383,8 +383,15 @@ for archivo in ("fondonos.jpg", "imagcontact.jpg"):
 for ancho in (800, 1600):
     foto(FUENTE / "fotos/sitio/fondocontacto.jpg", PUB / "fotos" / f"portada-merlo-{ancho}.webp", ancho, 70)
 ImageOps.fit(Image.open(FUENTE / "fotos/sitio/fondocontacto.jpg").convert("RGB"), (1200, 630), Image.LANCZOS).save(PUB / "fotos/og.jpg", "JPEG", quality=82, optimize=True)
-# Su mapa dibujado y sus pines
-foto(FUENTE / "fotos/sitio/mapfondo.jpg", PUB / "fotos" / "mapa-merlo.webp", 1600, 70)
+# Su mapa dibujado y sus pines. Arriba trae una franja gris con "Urbanizaciones que comercializamos", que repetía el
+# título de la sección: se recorta, y la altura de cada pin (en % del alto) se recalcula sobre la imagen recortada
+FRANJA = 160
+_mapa = Image.open(FUENTE / "fotos/sitio/mapfondo.jpg").convert("RGB")
+_mapa_alto = _mapa.height
+_mapa = _mapa.crop((0, FRANJA, _mapa.width, _mapa.height))
+assert min(_mapa.getpixel((20, 0))) > 190, "la franja gris del título sigue arriba del mapa"
+_mapa.resize((1600, round(1600 * _mapa.height / _mapa.width)), Image.LANCZOS).save(PUB / "fotos" / "mapa-merlo.webp", "WEBP", quality=70)
+PINES = [{**pin, "top": round((pin["top"] * _mapa_alto / 100 - FRANJA) / (_mapa_alto - FRANJA) * 100, 2)} for pin in PINES]
 for i, pin in enumerate(PINES):
     destino = PUB / "fotos" / f"pin-{i + 1:02d}.webp"
     if not destino.exists():
@@ -399,9 +406,11 @@ sitio = {
     "equipo": equipo,
     "museo": {"titulo": inst["museo"]["titulo"], "textos": inst["museo"]["textos"], "fotos": museo},
     "inicio": inst["inicio"],
-    "nosotros": {k: inst["nosotros"][k] for k in ("titulo", "texto", "valores", "equipo_titulo")},
+    "nosotros": {k: inst["nosotros"][k] for k in ("titulo", "texto", "mision", "vision", "valores", "equipo_titulo")},
     "vender": inst["vender"],
     "pie": inst["pie"],
+    # El formulario de contacto con su título y sus motivos
+    "formulario": {"titulo": inst["contacto"]["titulo_formulario"], "motivos": inst["contacto"]["motivos"]},
     "contacto": {k: inst[k] for k in ("direccion", "telefono", "whatsapp", "email", "redes", "corredor_y_matricula", "colegio", "oficina_lat", "oficina_lng", "razon_social", "cuit", "afip_data_fiscal")},
     # Su mapa dibujado de Merlo con los 22 loteos, tal cual lo tienen en su portada (pines en % del ancho y del alto)
     "mapa": {"fondo": "fotos/mapa-merlo.webp", "pines": [{**pin, "img": f"fotos/pin-{i + 1:02d}.webp"} for i, pin in enumerate(PINES)]},
@@ -409,7 +418,7 @@ sitio = {
 # Errores de tipeo de sus textos, corregidos: el resto va tal cual lo escribieron
 _texto = json.dumps(sitio, ensure_ascii=False, indent=1)
 # (en una sola línea: scripts/verificar.py lee este diccionario con una expresión regular)
-for mal, bien in {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación", "Cincurvanlación": "Circunvalación", "Libertar": "Libertador"}.items():
+for mal, bien in {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación", "Cincurvanlación": "Circunvalación", "Libertar": "Libertador", "conoce el valor": "conocé el valor", "a lo que buscas": "a lo que buscás", "única!.": "única!", "Guillermo—su": "Guillermo —su", "Más de 20 Urbanizaciones": "Más de 20 urbanizaciones", "Martin| centro": "Martin | Centro", "Av. Del Libertador San Martin": "Av. del Libertador San Martín", "Déjanos": "Dejanos"}.items():
     assert mal in _texto, mal
     _texto = _texto.replace(mal, bien)
 (SRC / "sitio.json").write_text(_texto)

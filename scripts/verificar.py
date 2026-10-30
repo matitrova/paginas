@@ -697,6 +697,31 @@ def castro(pg, nombre, cap):
         problemas.append(f"{nombre}: al deslizar la galería el contador no pasa a 2")
     if pg.evaluate("[...document.querySelectorAll('[data-galeria] img')].slice(0, 2).every(i => i.complete && i.naturalWidth > 0)") is not True:
         problemas.append(f"{nombre}: las primeras fotos de la galería no se dibujaron")
+    if not movil:
+        # En la compu, como en su ficha: dos miniaturas al costado de la foto grande, y el título, el precio y WhatsApp
+        # a la vista sin bajar, también en una notebook común (1366 x 768)
+        tam = pg.viewport_size
+        pg.set_viewport_size({"width": 1366, "height": 768})
+        pg.evaluate("scrollTo(0, 0)")
+        pg.wait_for_timeout(300)
+        # Que estén dentro de la pantalla no alcanza: la foto llegó a taparlos. Se mira qué hay de verdad en su centro
+        tapados = pg.evaluate("""['h1', '[data-precio-ficha]', '[data-consultar]'].filter(s => {
+            const e = document.querySelector(s), r = e.getBoundingClientRect();
+            const arriba = document.elementFromPoint(r.left + Math.min(r.width / 2, 40), r.top + r.height / 2);
+            return r.bottom > innerHeight || !arriba || !(e.contains(arriba) || arriba.contains(e));
+        })""")
+        if tapados:
+            problemas.append(f"{nombre}: en una notebook (1366 x 768) no se ven sin bajar {tapados} de la ficha (tapados o más abajo)")
+        minis = pg.locator("[data-miniaturas] button")
+        if minis.count() != 2 or pg.evaluate("[...document.querySelectorAll('[data-miniaturas] img')].every(i => i.complete && i.naturalWidth > 0)") is not True:
+            problemas.append(f"{nombre}: la ficha en la compu no muestra las dos miniaturas al costado de la foto")
+        else:
+            minis.nth(1).click()
+            pg.wait_for_timeout(500)
+            if not pg.locator("[data-galeria-grande][open]").count() or not pg.locator("[data-galeria-grande] > span").inner_text().replace(" ", "").startswith("3/"):
+                problemas.append(f"{nombre}: tocar la segunda miniatura no abre la foto 3 en grande")
+            pg.keyboard.press("Escape")
+        pg.set_viewport_size(tam)
     letra = pg.evaluate("getComputedStyle(document.querySelector('h1')).fontFamily")
     if "Montserrat" not in letra:
         problemas.append(f"{nombre}: el título de la ficha va en {letra} y tiene que ir en Montserrat, la letra de su sitio")
@@ -769,6 +794,8 @@ def castro(pg, nombre, cap):
     cap("06-nosotros")
     if sitio["nosotros"]["texto"][:60] not in texto or pg.locator("[data-equipo] li").count() != 5 or "Matrícula -" in texto:
         problemas.append(f"{nombre}: Quiénes somos no trae su texto o el equipo no son las 5 personas")
+    if sitio["nosotros"]["mision"][:50] not in texto or sitio["nosotros"]["vision"][:50] not in texto:
+        problemas.append(f"{nombre}: faltan su misión y su visión en Quiénes somos")
     if "CMCPSL" in (equipo := pg.locator("[data-equipo]").inner_text()) or "Matrícula 881" not in equipo:
         problemas.append(f"{nombre}: las matrículas del equipo no van como las publican: {equipo[:120]!r}")
     if pg.locator("[data-museo] img").count() < 4:
@@ -779,8 +806,8 @@ def castro(pg, nombre, cap):
     if not pg.locator("img[src*=imagcontact]").count():
         problemas.append(f"{nombre}: la foto de la fachada no está en Contacto")
     pg.fill("[data-formulario] [name=nombre]", "Prueba")
-    pg.select_option("[data-formulario] [name=motivo]", "Quiero vender o tasar")
-    whatsapp("[data-formulario] [data-enviar]", "el formulario de contacto", ["Prueba", "Motivo: Quiero vender o tasar"])
+    pg.select_option("[data-formulario] [name=motivo]", "Tasación")
+    whatsapp("[data-formulario] [data-enviar]", "el formulario de contacto", ["Prueba", "Motivo: Tasación"])
     cap("07-contacto")
     ir("?ver=vender")
     cap("09-vender")
