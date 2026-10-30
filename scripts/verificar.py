@@ -225,8 +225,9 @@ def inicio(pg, nombre, cap):
     if not diag.count() or "diagn%C3%B3stico" not in diag.get_attribute("href"):
         problemas.append(f"{nombre}: falta el botón del diagnóstico gratis")
 
-    # Sin precios ni plazos prometidos en ningún lado (se decidió el 30/10)
-    todo = pg.locator("body").inner_text()
+    # Sin precios ni plazos prometidos en ningún lado (se decidió el 30/10). textContent y no innerText:
+    # las respuestas de las preguntas cerradas no se ven, e innerText las salteaba
+    todo = pg.evaluate("document.body.textContent")
     for patron, que in [(r"\$\s?\d", "un precio"), (r"\b(USD|pesos)\b", "un precio"), (r"\d+\s*(días|semanas?)", "un plazo"), (r"una semana", "un plazo")]:
         if m := re.search(patron, todo):
             problemas.append(f"{nombre}: aparece {que}: «{m.group(0)}»")
