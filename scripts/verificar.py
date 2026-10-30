@@ -837,6 +837,14 @@ def castro(pg, nombre, cap):
         if cortados:
             problemas.append(f"{nombre}: en 1024 px se cortan los botones de tipo {cortados}")
         pg.set_viewport_size(tam)
+    else:
+        # En el celular, el menú con sus redes: que ninguna quede cortada a los costados
+        pg.locator("details summary").click()
+        cortadas = pg.evaluate("""(() => { const n = document.querySelector('details nav').getBoundingClientRect();
+          return [...document.querySelectorAll('details nav a')].filter(a => { const r = a.getBoundingClientRect(); return r.left < n.left || r.right > n.right }).map(a => a.textContent) })()""")
+        if cortadas or pg.locator("details nav a[href*=instagram]").count() != 1:
+            problemas.append(f"{nombre}: en el menú del celular faltan las redes o se cortan: {cortadas}")
+        pg.locator("details summary").click()
 
 
 def castro_mapa(pg, nombre, cap):

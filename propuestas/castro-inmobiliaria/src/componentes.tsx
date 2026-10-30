@@ -83,7 +83,7 @@ export function Encabezado({ actual }: { actual: string }) {
             <a href={LLAMAR} className="mx-3 mt-1 block rounded-xl bg-naranja px-4 py-3 text-center font-semibold whitespace-nowrap text-chocolate">
               Llamá {TELEFONO}
             </a>
-            <p className="flex justify-center gap-4 px-5 pt-3 pb-1 text-[13.5px] text-suave">
+            <p className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 px-4 pt-3 pb-1 text-[13.5px] text-suave">
               {redes().map(([red, url]) => (
                 <a key={red} href={url} target="_blank" rel="noopener" className="underline underline-offset-4">{REDES[red] ?? red}</a>
               ))}
