@@ -827,6 +827,11 @@ def castro(pg, nombre, cap):
           return { menu: !!document.querySelector('header nav').offsetWidth, pisan: cajas.some((a, i) => i && a.left < cajas[i - 1].right - 1), sale: h.scrollWidth > h.clientWidth } }""")
         if not r["menu"] or r["pisan"] or r["sale"]:
             problemas.append(f"{nombre}: en 1024 px el menú no entra en el encabezado: {r}")
+        # Y los botones de tipo del listado: "Departamentos" y "Complejos y hoteles" se cortaban
+        ir("?ver=propiedades")
+        cortados = pg.evaluate("[...document.querySelectorAll('[data-filtro-tipo] span:first-child')].filter(s => s.scrollWidth > s.parentElement.clientWidth - 4).map(s => s.textContent)")
+        if cortados:
+            problemas.append(f"{nombre}: en 1024 px se cortan los botones de tipo {cortados}")
         pg.set_viewport_size(tam)
 
 
