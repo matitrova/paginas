@@ -349,7 +349,7 @@ export default function MapaGeneral({ props, op, resaltada, lugarVacio, classNam
   }, [resaltada, base, clave]);
 
   return (
-    <div className={`relative isolate overflow-hidden rounded-3xl bg-hondo ${className}`}>
+    <div className={`relative isolate overflow-hidden rounded-[3px] bg-hondo ${className}`}>
       <div ref={caja} className="absolute inset-0" data-mapa-general data-libre role="region" aria-label="Mapa de las propiedades" />
       {error && <SinMapa />}
     </div>

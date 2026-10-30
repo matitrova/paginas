@@ -179,19 +179,19 @@ export function siluetaDe(lote: number[][]) {
   return lote.map(([lng, lat]) => `${(lng * k * 1e5).toFixed(1)},${(-lat * 1e5).toFixed(1)}`).join(" ");
 }
 
-/** El sello del lote: su silueta con la forma real del catastro, en línea naranja, y los m² publicados. La caja se
- *  ajusta a la forma, así que sirven puntos en cualquier escala (los de `mini` van de 0 a 100). */
-export function Sello({ puntos, m2, className = "" }: { puntos: string; m2: number | null; className?: string }) {
+/** El sello del lote: su silueta con la forma real del catastro, en línea naranja, y una palabra que dice qué es. La
+ *  caja se ajusta a la forma, así que sirven puntos en cualquier escala (los de `mini` van de 0 a 100). */
+export function Sello({ puntos, etiqueta, grande = false, className = "" }: { puntos: string; etiqueta: string; grande?: boolean; className?: string }) {
   const n = puntos.split(/[ ,]/).map(Number);
   const xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2 === 1);
   const [x0, y0] = [Math.min(...xs), Math.min(...ys)];
   const lado = Math.max(Math.max(...xs) - x0, Math.max(...ys) - y0);
   return (
     <span className={`flex items-center gap-2 rounded-md bg-arena/95 py-1.5 pr-2.5 pl-1.5 text-[12.5px] font-semibold text-chocolate ${className}`} title="La forma real del lote, del catastro" data-sello>
-      <svg viewBox={`${x0 - lado * 0.08} ${y0 - lado * 0.08} ${lado * 1.16} ${lado * 1.16}`} className="h-7 w-7" aria-hidden="true">
+      <svg viewBox={`${x0 - lado * 0.08} ${y0 - lado * 0.08} ${lado * 1.16} ${lado * 1.16}`} className={grande ? "h-11 w-11" : "h-7 w-7"} aria-hidden="true">
         <polygon points={puntos} fill="rgb(248 142 4 / 0.18)" stroke="var(--color-naranja)" strokeWidth={2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
       </svg>
-      {m2 ? superficie(m2) : "Forma real"}
+      {etiqueta}
     </span>
   );
 }
@@ -217,7 +217,7 @@ export function Tarjeta({ p, op }: { p: Propiedad; op?: string }) {
               {p.operacion.map((o) => ETIQUETA_OP[o] ?? o).join(" y ")}
             </span>
           )}
-          {p.mini && <Sello puntos={p.mini} m2={p.terreno} className="absolute bottom-3 left-3" />}
+          {p.mini && <Sello puntos={p.mini} etiqueta="Forma real" className="absolute bottom-3 left-3" />}
         </div>
         <div className="flex flex-1 items-start justify-between gap-4 pt-3">
           <div className="min-w-0">
@@ -262,7 +262,7 @@ export function WhatsAppFlotante({ mensaje }: { mensaje: () => string }) {
       rel="noopener"
       data-whatsapp-flotante
       aria-label="Escribir por WhatsApp"
-      className="fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full bg-[#25d366] p-3.5 font-semibold sm:py-3 sm:pr-5 sm:pl-3.5 text-black shadow-[0_12px_30px_-10px_rgb(0_0_0/0.45)] hover:brightness-95"
+      className="fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full border border-arena/40 bg-chocolate p-3 text-[13px] font-semibold tracking-[0.1em] text-arena uppercase hover:bg-terracota sm:py-2.5 sm:pr-4.5 sm:pl-3.5"
     >
       <IconoWhatsApp />
       <span className="hidden sm:inline">WhatsApp</span>

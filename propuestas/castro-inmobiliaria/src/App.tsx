@@ -48,7 +48,7 @@ export default function App() {
       <CintaPropuesta negocio={NEGOCIO} />
       <Encabezado actual={ver} />
       <main className="flex-1">{pantalla}</main>
-      <Pie pegado={ver === "nosotros"} />
+      <Pie pegado={ver === "nosotros" || ver === "vender"} />
       {!p && <WhatsAppFlotante mensaje={() => mensajeFlotante(ver, u)} />}
     </div>
   );

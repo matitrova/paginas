@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BOTON, BOTON_BORDE, Etiquetas, IconoWhatsApp, ir, linkPropiedad, linkWhatsApp, LLAMAR, lugar, Sello, siluetaDe, Tarjeta, tipoTexto, Titulo } from "./componentes";
-import { esTerreno, pedirFicha, portada, porId, precio, PROPIEDADES, SITIO, superficie, TIPOS, URBANIZACIONES, type Propiedad } from "./datos";
+import { pedirFicha, portada, porId, precio, PROPIEDADES, SITIO, superficie, TIPOS, URBANIZACIONES, type Propiedad } from "./datos";
 import MapaFicha, { type FichaConMapa } from "./MapaFicha";
 
 /** Galería deslizable con el dedo; al tocar una foto se abre a pantalla completa. Las fotos vienen del servicio de
@@ -32,8 +32,8 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
   };
 
   // En la compu, la foto grande a todo el ancho: encima va el recuadro con el título, el precio y la consulta (Ficha).
-  // Los controles van abajo a la derecha, para que el recuadro no los tape
-  const flecha = "h-11 w-11 place-items-center rounded-md bg-arena/95 text-xl text-chocolate disabled:opacity-40";
+  // Los controles van arriba a la derecha, para que el recuadro no los tape ni tapen la marca de agua de sus fotos
+  const flecha = "h-11 w-11 place-items-center rounded-md bg-arena/95 text-xl text-chocolate disabled:invisible";
   return (
     <div className="relative overflow-hidden bg-hondo sm:rounded-[3px]">
       <div
@@ -65,7 +65,7 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
         </>
       )}
       {total > 0 && (
-        <div className="absolute top-3 right-3 flex gap-2 md:top-auto md:right-6 md:bottom-6">
+        <div className="absolute top-3 right-3 flex gap-2 md:top-5 md:right-5">
           {total > 1 && (
             <>
               <button onClick={() => mover(caja.current, -1)} aria-label="Foto anterior" disabled={actual === 0} className={`hidden md:grid ${flecha}`}>‹</button>
@@ -200,6 +200,8 @@ export default function Ficha({ id }: { id: string }) {
     ["Terreno", superficie(p.terreno)], ["Cubierta", superficie(p.cubierta)], ["Semicubierta", superficie(ficha?.semicubierta ?? null)],
     // Si es igual a la cubierta, repetirlo no dice nada
     ["Total construido", p.construido !== p.cubierta ? superficie(p.construido) : null],
+    // Las medidas de cada lado del lote dibujado: también están sobre el mapa, más abajo
+    ["Lados", ficha?.mapa?.lados?.length ? ficha.mapa.lados.map((l) => l.texto).join(" · ") : null],
   ] as const;
   const hay = (lista: readonly (readonly [string, unknown])[]) => lista.some(([, v]) => v !== null && v !== undefined && v !== "");
   const resumen = [tipoTexto(p.tipo), p.dormitorios && `${p.dormitorios} dorm.`, p.banos && `${p.banos} ${p.banos === 1 ? "baño" : "baños"}`, p.cubierta && `${superficie(p.cubierta)} cub.`, p.terreno && `${superficie(p.terreno)} de terreno`].filter(Boolean).join(" · ");
@@ -233,7 +235,7 @@ export default function Ficha({ id }: { id: string }) {
               {/* El lote con su forma real, al lado del precio: lleva al mapa */}
               {lote && (
                 <a href="#ubicacion" aria-label="Ver el lote en el mapa" className="shrink-0" data-sello-ficha>
-                  <Sello puntos={siluetaDe(lote)} m2={p.terreno} className="border border-linea" />
+                  <Sello puntos={siluetaDe(lote)} etiqueta="Ver el lote ↓" grande className="border border-linea underline-offset-4 hover:underline" />
                 </a>
               )}
             </div>
@@ -317,8 +319,6 @@ export default function Ficha({ id }: { id: string }) {
             <MapaFicha p={p} ficha={ficha} fallo={fallo} />
           </section>
 
-          {esTerreno(p) && <p className="text-[13px] text-suave">{SITIO.pie.legales[0]}</p>}
-
           {/* En la compu, la consulta también al final de la lectura */}
           <section className="hidden items-center justify-between gap-6 rounded-md bg-piedra p-7 md:flex">
             <p className="font-display text-[1.4rem] leading-snug font-medium">¿Te interesa? Escribinos y te contamos.</p>
@@ -333,7 +333,7 @@ export default function Ficha({ id }: { id: string }) {
 
         {otras.length > 0 && (
           <section className="mt-16 border-t border-linea px-5 pt-12 sm:px-0">
-            <Titulo>Búsquedas relacionadas</Titulo>
+            <Titulo>Propiedades parecidas</Titulo>
             <div className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3" data-parecidas>
               {otras.map((o) => (
                 <Tarjeta key={o.id} p={o} op={p.operacion[0]} />
@@ -345,10 +345,10 @@ export default function Ficha({ id }: { id: string }) {
 
       {/* En el celular, los dos botones siempre a mano, abajo */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-linea bg-arena/95 px-3 py-2.5 backdrop-blur md:hidden" data-barra-contacto>
-        <div className="grid grid-cols-[auto_1fr] gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-2">
           <a href={LLAMAR} className={`${BOTON_BORDE} px-5`}>Llamar</a>
           <a href={whatsapp} target="_blank" rel="noopener" data-whatsapp-ficha className={`${BOTON} px-3 text-[14.5px] tracking-normal whitespace-nowrap normal-case`}>
-            <IconoWhatsApp className="h-4 w-4" /> Consultar por WhatsApp
+            <IconoWhatsApp className="h-4 w-4" /> WhatsApp
           </a>
         </div>
       </div>

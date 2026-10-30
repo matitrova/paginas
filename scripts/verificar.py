@@ -450,7 +450,7 @@ def extras_indio_mejorada(pg, nombre, cap):
 
 # Las erratas de su sitio que corrige scripts/castro_datos.py, leídas de su código sin ejecutarlo (importarlo corre todo
 # el armado de datos): una sola lista. Si cambia de forma, esto rompe en vez de comparar sin corregir.
-ERRATAS_CASTRO = ast.literal_eval(re.search(r"for mal, bien in (\{.*?\})\.items\(\)", (Path(__file__).resolve().parent / "castro_datos.py").read_text()).group(1))
+ERRATAS_CASTRO = ast.literal_eval(re.search(r"^ERRATAS = (\{.*?\})$", (Path(__file__).resolve().parent / "castro_datos.py").read_text(), re.M).group(1))
 
 
 def castro_whatsapp(pg, sel):
@@ -630,14 +630,17 @@ def castro(pg, nombre, cap):
     if resultados() != terrenos or "tipo=Terreno" not in pg.url:
         problemas.append(f"{nombre}: filtrar terrenos da {resultados()} y son {terrenos} (url {pg.url})")
     whatsapp("[data-whatsapp-flotante]", "el listado", ["terrenos en venta", "tipo=Terreno"])
-    # Cada tarjeta lleva su foto; las de terrenos con lote, además, el sello con su silueta y los m² publicados
+    # Cada tarjeta lleva su foto; las de terrenos con lote, además, el sello con su silueta y "Forma real", y el listado
+    # de terrenos explica el sello una vez, arriba
     por_id = {x["id"]: x for x in indice}
     tarjetas = pg.locator("[data-tarjeta]").evaluate_all("""es => es.map(e => { const s = e.querySelector('[data-sello]');
       return [e.dataset.tarjeta, e.querySelector('img').getAttribute('src'), s ? s.querySelector('polygon').getAttribute('points') : null, s ? s.textContent.trim() : null] })""")
-    mal = [i for i, src, puntos, m2 in tarjetas if "lote-tarjeta" in src or bool(puntos) != bool(por_id[i].get("mini"))
-           or (puntos and (len(puntos.split()) < 4 or m2 != (f"{por_id[i]['terreno']:,.0f}".replace(",", ".") + " m²" if por_id[i]["terreno"] and por_id[i]["terreno"] < 10000 else m2)))]
+    mal = [i for i, src, puntos, texto in tarjetas if "lote-tarjeta" in src or bool(puntos) != bool(por_id[i].get("mini"))
+           or (puntos and (len(puntos.split()) < 4 or texto != "Forma real"))]
     if mal:
         problemas.append(f"{nombre}: tarjetas de terreno sin su foto, o con el sello del lote mal o donde no va: {mal[:5]}")
+    if not pg.locator("[data-leyenda-sello]").is_visible():
+        problemas.append(f"{nombre}: el listado de terrenos no explica qué es el sello del lote")
     if movil:
         pg.locator("[data-ver-filtros]").click()
     pg.select_option("select[name=precio]", "50000-100000")
@@ -764,6 +767,17 @@ def castro(pg, nombre, cap):
     whatsapp("[data-whatsapp-ficha]" if movil else "[data-consultar]", "la ficha", ["CHO7876886", titulo, "/p/7876886/"])
     if movil != pg.locator("[data-barra-contacto]").is_visible():
         problemas.append(f"{nombre}: la barra de Llamar y WhatsApp tiene que verse solo en el celular")
+    if movil:
+        # En un celular chico (375 px) los dos botones de la barra entran, con margen a los costados
+        tam = pg.viewport_size
+        pg.set_viewport_size({"width": 375, "height": 667})
+        pg.wait_for_timeout(200)
+        barra = pg.evaluate("""(() => { const b = document.querySelector('[data-barra-contacto]'), r = [...b.querySelectorAll('a')].map(a => a.getBoundingClientRect());
+          return { sale: b.scrollWidth > b.clientWidth || [...b.querySelectorAll('a')].some(a => a.scrollWidth > a.clientWidth + 1),
+                   izquierda: Math.round(Math.min(...r.map(x => x.left))), derecha: Math.round(innerWidth - Math.max(...r.map(x => x.right))) } })()""")
+        if barra["sale"] or barra["izquierda"] < 8 or barra["derecha"] < 8:
+            problemas.append(f"{nombre}: a 375 px la barra de Llamar y WhatsApp de la ficha no entra con margen: {barra}")
+        pg.set_viewport_size(tam)
     if pg.locator("a[href^='tel:']").first.get_attribute("href") != "tel:+542665024444":
         problemas.append(f"{nombre}: el botón de llamar marca {pg.locator('a[href^=tel:]').first.get_attribute('href')}")
     parecidas = pg.locator("[data-parecidas] [data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.tarjeta)")
@@ -1138,7 +1152,7 @@ def castro_mapa(pg, nombre, cap):
                              f"{pg.locator('.vecina').count()} tramas (en los datos, {len(mapas[ident].get('alrededor') or [])} parcelas de alrededor)")
         nota = pg.locator("[data-nota-mapa]").inner_text()
         n = (mapas[ident].get("zona") or {}).get("compartido", 0) + 1
-        esperada = "Ubicación que publica la inmobiliaria." if ident == solo else f"La inmobiliaria publica este mismo punto para {n} propiedades: es aproximado."
+        esperada = "Ubicación publicada." if ident == solo else f"Este mismo punto está publicado para {n} propiedades: es aproximado."
         if nota.strip() != esperada:
             problemas.append(f"{nombre}: debajo del mapa del {ident} dice «{nota}» y tenía que decir «{esperada}»")
         # Sobre el mapa: "Punto aproximado" junto al pin solo cuando el punto es compartido

@@ -254,6 +254,12 @@ export default function Listado() {
           </button>
         )}
       </div>
+      {conTerreno && (
+        <p className="mt-4 flex items-center gap-3 text-[14px] text-suave" data-leyenda-sello>
+          <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" aria-hidden="true"><polygon points="5,3 19,5 18,21 4,19" fill="rgb(248 142 4 / 0.18)" stroke="var(--color-naranja)" strokeWidth={1.6} strokeLinejoin="round" /></svg>
+          Los que tienen este sello muestran en la ficha la forma real del lote, del catastro, sobre la foto satelital.
+        </p>
+      )}
       {hayFiltros && (
         <a href={linkWhatsApp(`Hola, avisenme si entra algo así: ${resumen(f)}.\nLa búsqueda: ${location.href}`)} target="_blank" rel="noopener" data-avisame className="mt-2 inline-block text-[14px] font-semibold text-tinta/80 underline underline-offset-4">
           Avisame por WhatsApp si entra algo así

@@ -188,11 +188,11 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
 
   return (
     <section id="mapa" className="scroll-mt-28">
-      <h2 className="text-[15px] font-bold tracking-wide text-terracota uppercase">{lote ? "Ubicación: el lote y su entorno" : "Ubicación"}</h2>
+      <h2 className="text-[12.5px] font-semibold tracking-[0.16em] text-terracota uppercase">{lote ? "Ubicación: el lote y su entorno" : "Ubicación"}</h2>
       <p className="mt-1 text-[15px] text-suave">{lugar(p)}</p>
       {/* En pantalla completa, diálogo sin aria-modal: lo de atrás ya queda inerte, salvo la cinta, que sigue andando */}
       <div
-        className={`isolate overflow-hidden bg-hondo ${grande ? "fixed inset-x-0 top-8 bottom-0 z-50" : "relative mt-4 h-[340px] rounded-2xl border border-linea sm:h-[440px]"}`}
+        className={`isolate overflow-hidden bg-hondo ${grande ? "fixed inset-x-0 top-8 bottom-0 z-50" : "relative mt-4 h-[340px] rounded-[3px] border border-linea sm:h-[440px]"}`}
         role={grande ? "dialog" : "region"}
         aria-label={lote ? "Mapa del lote" : "Mapa de la ubicación"}
         data-libre
@@ -256,8 +256,8 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
         {lote
           ? "Forma según el catastro de San Luis. Las medidas son aproximadas: las definitivas, según la mensura."
           : compartido
-            ? `La inmobiliaria publica este mismo punto para ${compartido + 1} propiedades: es aproximado.`
-            : "Ubicación que publica la inmobiliaria."}
+            ? `Este mismo punto está publicado para ${compartido + 1} propiedades: es aproximado.`
+            : "Ubicación publicada."}
       </p>
 
       {ficha && (lados.length > 0 || lote) && (
@@ -271,7 +271,7 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
           {lote && p.terreno ? (
             <div>
               <dt className="text-[13px] font-semibold text-suave">Superficie</dt>
-              <dd className="mt-1" data-superficie>{superficie(p.terreno)}, la que publica la inmobiliaria</dd>
+              <dd className="mt-1" data-superficie>{superficie(p.terreno)} (la publicada)</dd>
             </div>
           ) : null}
         </dl>

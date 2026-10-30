@@ -7,8 +7,11 @@ import { nombreLindo } from "./Ficha";
 
 // De las que ellos destacan en su portada, las 6 más nuevas
 const DESTACADAS = PROPIEDADES.filter((p) => p.destacada).sort((a, b) => b.alta.localeCompare(a.alta)).slice(0, 6);
-// Los 3 terrenos con lote dibujado y precio más nuevos
-const CON_FORMA = PROPIEDADES.filter((p) => p.mini && p.precio).sort((a, b) => b.alta.localeCompare(a.alta)).slice(0, 3);
+// Los 3 terrenos con lote dibujado y precio más nuevos, de zonas distintas
+const CON_FORMA = PROPIEDADES.filter((p) => p.mini && p.precio)
+  .sort((a, b) => b.alta.localeCompare(a.alta))
+  .filter((p, i, todas) => todas.findIndex((o) => o.zona === p.zona) === i)
+  .slice(0, 3);
 const urbanizaciones = [...URBANIZACIONES].sort((a, b) => b.propiedades.length - a.propiedades.length).slice(0, 8);
 const ROTULO = "text-[12px] font-semibold tracking-[0.18em] text-terracota uppercase";
 
@@ -43,7 +46,7 @@ export default function Portada() {
       </section>
 
       <section className="mx-auto mt-20 max-w-6xl px-5 sm:px-6" data-destacadas>
-        <Titulo chico="Las que elegimos">Destacados</Titulo>
+        <Titulo>Destacados</Titulo>
         <div className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
           {DESTACADAS.map((p) => (
             <Tarjeta key={p.id} p={p} />
@@ -84,8 +87,7 @@ export default function Portada() {
         <div className="mx-auto grid max-w-6xl items-center gap-9 px-5 py-16 sm:px-6 md:grid-cols-2 md:gap-14">
           <img src="./fotos/fondonos.webp" alt="El equipo de Castro Inmobiliaria" loading="lazy" className="w-full rounded-[3px] object-cover" />
           <div>
-            <p className={ROTULO}>Desde 1985</p>
-            <h2 className="font-display mt-3 text-[1.85rem] leading-tight font-medium sm:text-[2.4rem]">{inicio.experiencia_titulo}</h2>
+            <h2 className="font-display text-[1.85rem] leading-tight font-medium sm:text-[2.4rem]">{inicio.experiencia_titulo}</h2>
             <p className="mt-4 text-[16.5px] leading-relaxed text-suave">{inicio.experiencia_texto}</p>
             <a href={ir({ ver: "nosotros" })} className={`${BOTON} mt-7`}>
               Conocenos
@@ -110,7 +112,7 @@ export default function Portada() {
 
       {/* Las urbanizaciones en una fila de fotos; su mapa dibujado queda en la página de Urbanizaciones */}
       <section className="mx-auto mt-20 max-w-6xl px-5 sm:px-6" data-urbanizaciones-portada>
-        <Titulo chico="Urbanizaciones que comercializamos">{inicio.urbanizaciones_titulo}</Titulo>
+        <Titulo>{inicio.urbanizaciones_titulo}</Titulo>
         <div data-libre className="sin-barra -mx-5 mt-8 flex snap-x gap-4 overflow-x-auto px-5 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-6 sm:overflow-visible sm:px-0">
           {urbanizaciones.map((u) => (
             <a key={u.id} href={ir({ u: u.id })} data-urbanizacion={u.id} className="group w-[62%] shrink-0 snap-start sm:w-auto">

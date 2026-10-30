@@ -40,7 +40,28 @@ SRC = RAIZ / "propuestas/castro-inmobiliaria/src/datos"
 PUB = RAIZ / "public/propuestas/castro-inmobiliaria"
 
 # Grafías distintas de un mismo lugar en sus títulos; solo para agrupar en los filtros
-LOCALIDADES = {"Carpinteria": "Carpintería", "Merlo": "Villa de Merlo", "Santa Rosa de Conlara": "Santa Rosa del Conlara"}
+LOCALIDADES = {"Carpinteria": "Carpintería", "Merlo": "Villa de Merlo", "Santa Rosa de Conlara": "Santa Rosa del Conlara", "Junin": "Junín"}
+# Errores de tipeo de sus textos, corregidos en todo lo que se publica (sitio.json, títulos, zonas y descripciones): el
+# resto va tal cual lo escribieron. En una sola línea: scripts/verificar.py lee este diccionario con una expresión regular
+ERRATAS = {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación", "Cincurvanlación": "Circunvalación", "Libertar": "Libertador", "conoce el valor": "conocé el valor", "a lo que buscas": "a lo que buscás", "única!.": "única!", "Guillermo—su": "Guillermo —su", "Más de 20 Urbanizaciones": "Más de 20 urbanizaciones", "Martin| centro": "Martin | Centro", "Av. Del Libertador San Martin": "Av. del Libertador San Martín", "Déjanos": "Dejanos", "Eloisa": "Eloísa", "ELOISA": "ELOÍSA", "Fermin Romero": "Fermín Romero", "Don Fermin": "Don Fermín", "Carpinteria": "Carpintería"}
+
+
+def corregir(texto):
+    for mal, bien in ERRATAS.items():
+        texto = texto.replace(mal, bien)
+    return texto
+
+
+def titulo_prolijo(titulo):
+    """Sus títulos, emprolijados sin cambiar lo que dicen: "Casa en Venta" -> "en venta", el guion siempre con un
+    espacio a cada lado y sin punto final."""
+    t = re.sub(r"\s+-\s*|\s*-\s+", " - ", corregir(titulo).strip())
+    t = re.sub(r"\ben (Venta|Alquiler)\b", lambda m: "en " + m.group(1).lower(), t)
+    return re.sub(r"\s{2,}", " ", t).rstrip(". ")
+
+
+assert titulo_prolijo("Casa en Venta- Barrio Los Olmos.") == "Casa en venta - Barrio Los Olmos"
+assert titulo_prolijo("Casa en venta -  Carpinteria") == "Casa en venta - Carpintería" and titulo_prolijo("Semi-cubierta") == "Semi-cubierta"
 
 
 def superficie(texto):
@@ -265,10 +286,10 @@ for p in propiedades:
     indice.append({
         "id": ident,
         "codigo": p["codigo"],
-        "titulo": p["titulo"].strip(),
+        "titulo": titulo_prolijo(p["titulo"]),
         "operacion": p["operacion"].split("/"),
         "tipo": p["tipo"],
-        "zona": zona_de(p["zona"]),
+        "zona": corregir(zona_de(p["zona"])),
         "localidad": LOCALIDADES.get(p["localidad"], p["localidad"] or ""),
         "urbanizacion": [u["id"] for u in p.get("urbanizacion") or []],
         # La única que está en venta y en alquiler (7665257) no trae precio de listado: va el de su primera operación
@@ -293,7 +314,7 @@ for p in propiedades:
     })
     ficha = {
         "id": ident,
-        "descripcion": p.get("descripcion") or "",
+        "descripcion": corregir(p.get("descripcion") or ""),
         "adicionales": list(dict.fromkeys(p.get("adicionales") or [])),
         "servicios": list(dict.fromkeys(p.get("servicios") or [])),
         "fotos": [p["fotos"][i] for i in orden],
@@ -415,10 +436,10 @@ sitio = {
     # Su mapa dibujado de Merlo con los 22 loteos, tal cual lo tienen en su portada (pines en % del ancho y del alto)
     "mapa": {"fondo": "fotos/mapa-merlo.webp", "pines": [{**pin, "img": f"fotos/pin-{i + 1:02d}.webp"} for i, pin in enumerate(PINES)]},
 }
-# Errores de tipeo de sus textos, corregidos: el resto va tal cual lo escribieron
+# Errores de tipeo de sus textos (ERRATAS, arriba), corregidos
 _texto = json.dumps(sitio, ensure_ascii=False, indent=1)
-# (en una sola línea: scripts/verificar.py lee este diccionario con una expresión regular)
-for mal, bien in {"experiancia": "experiencia", "Tasa tu propiedad": "Tasá tu propiedad", "Envia documentación": "Enviá documentación", "Cincurvanlación": "Circunvalación", "Libertar": "Libertador", "conoce el valor": "conocé el valor", "a lo que buscas": "a lo que buscás", "única!.": "única!", "Guillermo—su": "Guillermo —su", "Más de 20 Urbanizaciones": "Más de 20 urbanizaciones", "Martin| centro": "Martin | Centro", "Av. Del Libertador San Martin": "Av. del Libertador San Martín", "Déjanos": "Dejanos"}.items():
+# En orden, como corregir(): alguna aparece recién después de otra ("Libertar" -> "Av. Del Libertador San Martin")
+for mal, bien in ERRATAS.items():
     assert mal in _texto, mal
     _texto = _texto.replace(mal, bien)
 (SRC / "sitio.json").write_text(_texto)

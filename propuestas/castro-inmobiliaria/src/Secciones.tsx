@@ -79,7 +79,7 @@ export function Urbanizacion({ id }: { id: string }) {
         </div>
         {u.lat && (
           <div className="md:col-start-1">
-            <h2 className="text-[15px] font-bold tracking-wide text-terracota uppercase">Ubicación</h2>
+            <h2 className="text-[12.5px] font-semibold tracking-[0.16em] text-terracota uppercase">Ubicación</h2>
             <MapaGeneral props={props} lugarVacio={{ lat: Number(u.lat), lng: Number(u.lng), texto: "Ubicación de la urbanización" }} className="mt-3 h-80" />
           </div>
         )}
@@ -231,7 +231,7 @@ export function Contacto() {
 function Formulario({ titulo, mensaje, listo, dato, boton = "Enviar por WhatsApp", children }: { titulo: string; mensaje: string; listo: boolean; dato: string; boton?: string; children: React.ReactNode }) {
   return (
     <form onSubmit={(e) => e.preventDefault()} className="h-fit rounded-md bg-piedra p-6 sm:p-8" {...{ [dato]: "" }}>
-      <h2 className="text-[15px] font-bold tracking-wide text-terracota uppercase">{titulo}</h2>
+      <h2 className="font-display text-[1.45rem] leading-snug font-medium text-balance">{titulo}</h2>
       {children}
       <a
         href={linkWhatsApp(mensaje)}
