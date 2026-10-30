@@ -2,9 +2,11 @@
 Salen a public/inicio/<sitio>-movil.webp (600 px). Después arma og.jpg desde dist/.
 
 Uso:  ../Test1_Inmo/.venv/bin/python scripts/capturas_inicio.py
+      (con --og solo rehace og.jpg; Sumapuntos y MojonApp no salen de acá: piden usuario, son las del flyer)
 """
 import io
 import mimetypes
+import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -55,7 +57,7 @@ SITIOS = {
 
 with sync_playwright() as p:
     nav = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
-    for movil in (True,):  # las tarjetas solo usan la captura de celular
+    for movil in (() if "--og" in sys.argv else (True,)):  # las tarjetas solo usan la captura de celular
         ctx = nav.new_context(
             viewport={"width": 390, "height": 844} if movil else {"width": 1440, "height": 900},
             device_scale_factor=2 if movil else 1, is_mobile=movil, has_touch=movil,

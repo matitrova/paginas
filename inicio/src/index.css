@@ -6,11 +6,16 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --color-fondo: #faf7f2;
   --color-panel: #ffffff;
   --color-tinta: #17171b;
   --color-suave: #5f5e66;
   --color-acento: #ff5a1f;
+  /* el mismo naranja, oscurecido para texto sobre crema (contraste 4.5:1) */
+  --color-acento-texto: #d9480f;
+  --color-verde: #0f5a3f;
+  --color-azul: #19465a;
   --color-wa: #25d366;
   --color-linea: rgb(23 23 27 / 0.1);
 }
@@ -49,6 +54,8 @@ body {
   height: 100%;
   object-fit: cover;
 }
+
+summary::-webkit-details-marker { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
