@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Etiquetas, IconoWhatsApp, ir, linkPropiedad, linkWhatsApp, LLAMAR, lugar, Tarjeta, tipoTexto, Titulo } from "./componentes";
+import { BOTON, BOTON_BORDE, Etiquetas, IconoWhatsApp, ir, linkPropiedad, linkWhatsApp, LLAMAR, lugar, Sello, siluetaDe, Tarjeta, tipoTexto, Titulo } from "./componentes";
 import { esTerreno, pedirFicha, portada, porId, precio, PROPIEDADES, SITIO, superficie, TIPOS, URBANIZACIONES, type Propiedad } from "./datos";
 import MapaFicha, { type FichaConMapa } from "./MapaFicha";
 
@@ -31,16 +31,15 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
     setGrande(null);
   };
 
-  // En la compu, como en su ficha: la foto grande y dos miniaturas al costado, con una altura que deja ver el título,
-  // el precio y WhatsApp sin bajar
-  const miniaturas = lista.slice(1, 3);
+  // En la compu, la foto grande a todo el ancho: encima va el recuadro con el título, el precio y la consulta (Ficha).
+  // Los controles van abajo a la derecha, para que el recuadro no los tape
+  const flecha = "h-11 w-11 place-items-center rounded-md bg-arena/95 text-xl text-chocolate disabled:opacity-40";
   return (
-    <div className={`md:grid md:h-[360px] md:grid-rows-1 md:gap-2 lg:h-[420px] ${miniaturas.length ? "md:grid-cols-[2fr_1fr]" : ""}`}>
-    <div className="relative overflow-hidden bg-hondo sm:rounded-3xl md:rounded-2xl">
+    <div className="relative overflow-hidden bg-hondo sm:rounded-[3px]">
       <div
         ref={caja}
         onScroll={(e) => setActual(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
-        className="sin-barra flex aspect-[4/3] snap-x snap-mandatory overflow-x-auto sm:aspect-[16/10] md:aspect-auto md:h-full"
+        className="sin-barra flex aspect-[4/3] snap-x snap-mandatory overflow-x-auto sm:aspect-[16/10] md:aspect-auto md:h-[540px]"
         data-galeria
       >
         {total === 0 && <img src={portada(p.id)} alt="" className="h-full w-full shrink-0 snap-center object-cover" />}
@@ -56,31 +55,27 @@ function Galeria({ p, fotos }: { p: Propiedad; fotos: string[] | null }) {
           />
         ))}
       </div>
-      {total > 0 && (
-        <button onClick={() => setGrande(actual)} aria-label="Ver las fotos en grande" data-ver-grande className="absolute top-3 right-3 grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white">
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" /></svg>
-        </button>
-      )}
       {total > 1 && (
         <>
-          <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 text-[13px] text-white" data-contador>
+          <span className="absolute bottom-3 left-3 rounded-md bg-chocolate/75 px-2.5 py-1 text-[13px] text-arena md:top-5 md:bottom-auto md:left-5" data-contador>
             {actual + 1} / {total}
           </span>
-          <button onClick={() => mover(caja.current, -1)} aria-label="Foto anterior" disabled={actual === 0} className="absolute top-1/2 left-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">‹</button>
-          <button onClick={() => mover(caja.current, 1)} aria-label="Foto siguiente" disabled={actual === total - 1} className="absolute top-1/2 right-3 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl shadow disabled:opacity-0 sm:grid">›</button>
+          <button onClick={() => mover(caja.current, -1)} aria-label="Foto anterior" disabled={actual === 0} className={`absolute top-1/2 left-3 hidden -translate-y-1/2 sm:grid md:hidden ${flecha}`}>‹</button>
+          <button onClick={() => mover(caja.current, 1)} aria-label="Foto siguiente" disabled={actual === total - 1} className={`absolute top-1/2 right-3 hidden -translate-y-1/2 sm:grid md:hidden ${flecha}`}>›</button>
         </>
       )}
-    </div>
-      {miniaturas.length > 0 && (
-        <div className={`hidden gap-2 md:grid ${miniaturas.length > 1 ? "grid-rows-2" : ""}`} data-miniaturas>
-          {miniaturas.map((f, i) => (
-            <button key={f} onClick={() => setGrande(i + 1)} aria-label={`Ver la foto ${i + 2} en grande`} className="relative min-h-0 overflow-hidden rounded-2xl bg-hondo">
-              <img src={f} alt="" onError={() => setRotas((r) => new Set(r).add(f))} className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]" />
-              {i === miniaturas.length - 1 && total > 3 && (
-                <span className="absolute inset-0 grid place-items-center bg-black/45 text-[17px] font-semibold text-white">Ver las {total} fotos</span>
-              )}
-            </button>
-          ))}
+      {total > 0 && (
+        <div className="absolute top-3 right-3 flex gap-2 md:top-auto md:right-6 md:bottom-6">
+          {total > 1 && (
+            <>
+              <button onClick={() => mover(caja.current, -1)} aria-label="Foto anterior" disabled={actual === 0} className={`hidden md:grid ${flecha}`}>‹</button>
+              <button onClick={() => mover(caja.current, 1)} aria-label="Foto siguiente" disabled={actual === total - 1} className={`hidden md:grid ${flecha}`}>›</button>
+            </>
+          )}
+          <button onClick={() => setGrande(actual)} data-ver-grande className="h-11 rounded-md bg-arena/95 px-3.5 text-[12px] font-semibold tracking-[0.12em] text-chocolate uppercase">
+            <span className="md:hidden">{total} fotos</span>
+            <span className="hidden md:inline">Ver las {total} fotos</span>
+          </button>
         </div>
       )}
 
@@ -131,11 +126,11 @@ export function Descripcion({ texto }: { texto: string }) {
   const larga = texto.length > 420;
   return (
     <div>
-      <p className={`text-[16px] leading-relaxed whitespace-pre-line text-tinta/85 ${larga && !abierta ? "line-clamp-6" : ""}`} data-descripcion>
+      <p className={`text-[16.5px] leading-[1.7] whitespace-pre-line text-tinta/90 ${larga && !abierta ? "line-clamp-6" : ""}`} data-descripcion>
         {texto.replace(/\s*•\s*/g, "\n• ").trim()}
       </p>
       {larga && (
-        <button onClick={() => setAbierta(!abierta)} className="mt-2 font-semibold text-naranja-osc">
+        <button onClick={() => setAbierta(!abierta)} className="mt-2 font-semibold text-terracota underline underline-offset-4">
           {abierta ? "Leer menos" : "Leer más"}
         </button>
       )}
@@ -150,14 +145,11 @@ function parecidas(p: Propiedad) {
     .slice(0, 3);
 }
 
-// Compartir y el mail: botones secundarios
-const SECUNDARIO = "flex items-center justify-center gap-2 rounded-full border border-linea bg-white px-4 py-2.5 text-[14.5px] font-semibold hover:bg-hondo";
-
-/** Una caja de la ficha, como las de su sitio: un título en naranja y el contenido. */
+/** Una sección de la ficha, como en una revista: un filete arriba, el rótulo chico y el contenido. */
 function Caja({ titulo, id, children }: { titulo: string; id?: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-28 rounded-2xl border border-linea bg-white p-5 sm:p-6">
-      <h2 className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">{titulo}</h2>
+    <section id={id} className="scroll-mt-28 border-t border-chocolate/20 pt-5">
+      <h2 className="text-[12.5px] font-semibold tracking-[0.16em] text-terracota uppercase">{titulo}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -179,9 +171,9 @@ export default function Ficha({ id }: { id: string }) {
   if (!p) {
     return (
       <section className="mx-auto max-w-2xl px-5 py-20 text-center">
-        <h1 className="font-display text-3xl font-bold">Esta propiedad ya no está publicada</h1>
+        <h1 className="font-display text-3xl font-medium">Esta propiedad ya no está publicada</h1>
         <p className="mt-4 text-suave">Puede que se haya vendido o alquilado.</p>
-        <a href={ir({ ver: "propiedades" })} className="mt-8 inline-block rounded-full bg-naranja px-6 py-3 font-semibold text-chocolate">Ver las propiedades</a>
+        <a href={ir({ ver: "propiedades" })} className={`${BOTON} mt-8`}>Ver las propiedades</a>
       </section>
     );
   }
@@ -210,6 +202,8 @@ export default function Ficha({ id }: { id: string }) {
     ["Total construido", p.construido !== p.cubierta ? superficie(p.construido) : null],
   ] as const;
   const hay = (lista: readonly (readonly [string, unknown])[]) => lista.some(([, v]) => v !== null && v !== undefined && v !== "");
+  const resumen = [tipoTexto(p.tipo), p.dormitorios && `${p.dormitorios} dorm.`, p.banos && `${p.banos} ${p.banos === 1 ? "baño" : "baños"}`, p.cubierta && `${superficie(p.cubierta)} cub.`, p.terreno && `${superficie(p.terreno)} de terreno`].filter(Boolean).join(" · ");
+  const lote = ficha?.mapa?.lote;
 
   return (
     <article className="pb-28 md:pb-0">
@@ -225,113 +219,122 @@ export default function Ficha({ id }: { id: string }) {
           )}
         </nav>
 
-        <div id="fotos" className="scroll-mt-28">
+        {/* La foto y, en la compu, el recuadro con el título, el precio y la consulta encima, como en una revista */}
+        <div id="fotos" className="relative scroll-mt-28">
           <Galeria p={p} fotos={ficha?.fotos ?? null} />
+          <section className="px-5 pt-6 sm:px-0 md:absolute md:bottom-6 md:left-6 md:w-[25rem] md:rounded-md md:bg-arena md:p-7 md:shadow-[0_18px_40px_-24px_rgb(43_36_32/0.55)]" data-recuadro>
+            <p className="text-[12px] font-semibold tracking-[0.16em] text-terracota uppercase">
+              {p.operacion.map((o) => (o === "venta" ? "Venta" : "Alquiler")).join(" y ")} · Cód. {p.codigo}
+            </p>
+            <h1 className="font-display mt-2 text-[1.75rem] leading-[1.15] font-medium text-balance md:text-[1.6rem]">{p.titulo}</h1>
+            <p className="mt-1 text-[14.5px] text-suave">{lugar(p)}</p>
+            <div className="mt-4 flex items-center justify-between gap-4">
+              <p className="font-display text-[1.7rem] leading-tight font-medium tabular-nums" data-precio-ficha>{precios.join(" · ")}</p>
+              {/* El lote con su forma real, al lado del precio: lleva al mapa */}
+              {lote && (
+                <a href="#ubicacion" aria-label="Ver el lote en el mapa" className="shrink-0" data-sello-ficha>
+                  <Sello puntos={siluetaDe(lote)} m2={p.terreno} className="border border-linea" />
+                </a>
+              )}
+            </div>
+            <p className="mt-1.5 text-[14px]">{resumen}</p>
+            <div className="mt-2">
+              <Etiquetas p={p} max={4} />
+            </div>
+            <div className="mt-5 hidden gap-2 md:flex">
+              <a href={whatsapp} target="_blank" rel="noopener" data-consultar className={`${BOTON} flex-1 px-4`}>
+                <IconoWhatsApp className="h-4 w-4" /> WhatsApp
+              </a>
+              <a href={LLAMAR} className={`${BOTON_BORDE} px-5`}>Llamar</a>
+            </div>
+            <p className="mt-3 hidden flex-wrap gap-x-4 gap-y-1 text-[13.5px] md:flex">
+              <button onClick={compartir} className="underline underline-offset-4">{copiado ? "Link copiado" : "Compartir"}</button>
+              <a href={mail} data-mail className="underline underline-offset-4">Prefiero que me escriban por mail</a>
+            </p>
+            {fallo && (
+              <p className="mt-3 rounded-md bg-hondo px-4 py-3 text-[14.5px]">
+                No se pudo cargar el detalle de esta propiedad.{" "}
+                <button onClick={() => location.reload()} className="font-semibold text-terracota underline">Reintentar</button>
+              </p>
+            )}
+          </section>
         </div>
 
-        <div className="mt-6 grid gap-6 px-5 sm:px-0 md:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="min-w-0 space-y-5">
-            {/* Título y precio, como la primera caja de su ficha */}
-            <section className="rounded-2xl border border-linea bg-white p-5 sm:p-6">
-              <h1 className="font-display text-[22px] leading-snug font-bold text-balance sm:text-[26px]">{p.titulo}</h1>
-              <p className="mt-1 text-[15px] text-suave">{tipoTexto(p.tipo)} · {lugar(p)}</p>
-              <p className="font-display mt-3 text-[26px] font-bold text-terracota" data-precio-ficha>{precios.join(" · ")}</p>
-              <p className="text-[13.5px] text-suave">{p.operacion.map((o) => (o === "venta" ? "Venta" : "Alquiler")).join(" y ")} · Cód. {p.codigo}</p>
-              <div className="mt-3">
-                <Etiquetas p={p} max={4} />
-              </div>
-              {fallo && (
-                <p className="mt-3 rounded-xl bg-hondo px-4 py-3 text-[14.5px]">
-                  No se pudo cargar el detalle de esta propiedad.{" "}
-                  <button onClick={() => location.reload()} className="font-semibold text-terracota underline">Reintentar</button>
-                </p>
+        {/* El resto, en una columna de lectura */}
+        <div className="mx-auto mt-10 max-w-3xl space-y-10 px-5 sm:px-0 md:mt-14">
+          {(hay(general) || hay(superficies)) && (
+            <div id="datos" className="grid scroll-mt-28 gap-x-10 gap-y-10 sm:grid-cols-2">
+              {hay(general) && (
+                <Caja titulo="Información general">
+                  <dl>{general.map(([e, v]) => <Dato key={e} etiqueta={e} valor={v} />)}</dl>
+                </Caja>
               )}
-            </section>
+              {hay(superficies) && (
+                <Caja titulo="Superficies y medidas">
+                  <dl>{superficies.map(([e, v]) => <Dato key={e} etiqueta={e} valor={v} />)}</dl>
+                </Caja>
+              )}
+            </div>
+          )}
 
-            {(hay(general) || hay(superficies)) && (
-              <div id="datos" className="grid scroll-mt-28 gap-5 sm:grid-cols-2">
-                {hay(general) && (
-                  <Caja titulo="Información general">
-                    <dl>{general.map(([e, v]) => <Dato key={e} etiqueta={e} valor={v} />)}</dl>
-                  </Caja>
-                )}
-                {hay(superficies) && (
-                  <Caja titulo="Superficies y medidas">
-                    <dl>{superficies.map(([e, v]) => <Dato key={e} etiqueta={e} valor={v} />)}</dl>
-                  </Caja>
-                )}
-              </div>
-            )}
+          {ficha?.descripcion && (
+            <Caja titulo="Descripción" id="descripcion">
+              <Descripcion texto={ficha.descripcion} />
+            </Caja>
+          )}
 
-            {ficha?.descripcion && (
-              <Caja titulo="Descripción" id="descripcion">
-                <Descripcion texto={ficha.descripcion} />
-              </Caja>
-            )}
-
-            {ficha && ficha.adicionales.length > 0 && (
-              <Caja titulo="Adicionales">
-                <ul className="grid gap-x-6 gap-y-1.5 text-[15px] sm:grid-cols-2">
-                  {ficha.adicionales.map((a) => (
-                    <li key={a} className="flex items-start gap-2">
-                      <svg viewBox="0 0 20 20" className="mt-0.5 h-4 w-4 shrink-0 text-terracota" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true"><path d="M4 10l4 4 8-8" /></svg>
+          {[["Adicionales", ficha?.adicionales], ["Servicios", ficha?.servicios]].map(([titulo, lista]) =>
+            lista && lista.length > 0 ? (
+              <Caja key={titulo as string} titulo={titulo as string}>
+                <ul className="grid gap-x-8 gap-y-1.5 text-[15.5px] sm:grid-cols-2">
+                  {(lista as string[]).map((a) => (
+                    <li key={a} className="flex items-baseline gap-2.5">
+                      <span className="h-1.5 w-1.5 shrink-0 translate-y-[-2px] rounded-full bg-terracota" aria-hidden="true" />
                       {a}
                     </li>
                   ))}
                 </ul>
               </Caja>
-            )}
+            ) : null,
+          )}
 
-            {ficha && ficha.servicios.length > 0 && (
-              <Caja titulo="Servicios">
-                <ul className="flex flex-wrap gap-2">
-                  {ficha.servicios.map((s) => (
-                    <li key={s} className="rounded-full bg-naranja/15 px-3.5 py-1.5 text-[14px] font-medium">{s}</li>
-                  ))}
-                </ul>
-              </Caja>
-            )}
+          {urbs.length > 0 && (
+            <Caja titulo="Urbanización">
+              {urbs.map((u) => (
+                <a key={u.id} href={ir({ u: u.id })} className="flex items-center gap-4 rounded-md p-1 hover:bg-hondo">
+                  {u.fotos[0] && <img src={u.fotos[0]} alt="" className="h-14 w-20 rounded-[3px] object-cover" />}
+                  <span>
+                    <span className="font-display block text-[18px] font-medium">{nombreLindo(u.nombre)}</span>
+                    <span className="block text-[13.5px] text-suave">{u.acceso.replace(/^Acceso:\s*/, "")}</span>
+                  </span>
+                </a>
+              ))}
+            </Caja>
+          )}
 
-            {urbs.length > 0 && (
-              <Caja titulo="Urbanización">
-                {urbs.map((u) => (
-                  <a key={u.id} href={ir({ u: u.id })} className="flex items-center gap-4 rounded-xl p-1 hover:bg-hondo">
-                    {u.fotos[0] && <img src={u.fotos[0]} alt="" className="h-14 w-20 rounded-lg object-cover" />}
-                    <span>
-                      <span className="block font-semibold">{nombreLindo(u.nombre)}</span>
-                      <span className="block text-[13.5px] text-suave">{u.acceso.replace(/^Acceso:\s*/, "")}</span>
-                    </span>
-                  </a>
-                ))}
-              </Caja>
-            )}
+          {/* Ubicación: el lote dibujado sobre la foto satelital, con sus medidas, o el pin en el punto publicado */}
+          <section id="ubicacion" className="scroll-mt-28 border-t border-chocolate/20 pt-5">
+            <MapaFicha p={p} ficha={ficha} fallo={fallo} />
+          </section>
 
-            {/* Ubicación: el lote dibujado sobre la foto satelital, con sus medidas, o el pin en el punto publicado */}
-            <section className="rounded-2xl border border-linea bg-white p-5 sm:p-6">
-              <MapaFicha p={p} ficha={ficha} fallo={fallo} />
-            </section>
+          {esTerreno(p) && <p className="text-[13px] text-suave">{SITIO.pie.legales[0]}</p>}
 
-            {esTerreno(p) && <p className="text-[13px] text-suave">{SITIO.pie.legales[0]}</p>}
-          </div>
-
-          {/* En la compu, la consulta al costado, como el "Recibir más información" de su ficha */}
-          <aside className="hidden md:block">
-            <div className="sticky top-28 space-y-3 rounded-2xl border border-linea bg-white p-5">
-              <p className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">Recibí más información</p>
-              <a href={whatsapp} target="_blank" rel="noopener" data-consultar className="flex items-center justify-center gap-2 rounded-full bg-[#25d366] px-4 py-3 text-[15px] font-semibold whitespace-nowrap text-black hover:brightness-95">
-                <IconoWhatsApp className="h-5 w-5" /> Consultar por WhatsApp
+          {/* En la compu, la consulta también al final de la lectura */}
+          <section className="hidden items-center justify-between gap-6 rounded-md bg-piedra p-7 md:flex">
+            <p className="font-display text-[1.4rem] leading-snug font-medium">¿Te interesa? Escribinos y te contamos.</p>
+            <div className="flex shrink-0 gap-2">
+              <a href={whatsapp} target="_blank" rel="noopener" data-consultar-final className={BOTON}>
+                <IconoWhatsApp className="h-4 w-4" /> WhatsApp
               </a>
-              <a href={LLAMAR} className={SECUNDARIO}>Llamar</a>
-              <button onClick={compartir} className={`${SECUNDARIO} w-full`}>{copiado ? "Link copiado" : "Compartir"}</button>
-              <a href={mail} data-mail className="block pt-1 text-center text-[14px] text-tinta/75 underline underline-offset-4 hover:text-tinta">Prefiero que me escriban por mail</a>
+              <a href={LLAMAR} className={BOTON_BORDE}>Llamar</a>
             </div>
-          </aside>
+          </section>
         </div>
 
         {otras.length > 0 && (
-          <section className="mt-14 px-5 sm:px-0">
-            <Titulo centrado>Búsquedas relacionadas</Titulo>
-            <div className="mt-7 grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3" data-parecidas>
+          <section className="mt-16 border-t border-linea px-5 pt-12 sm:px-0">
+            <Titulo>Búsquedas relacionadas</Titulo>
+            <div className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3" data-parecidas>
               {otras.map((o) => (
                 <Tarjeta key={o.id} p={o} op={p.operacion[0]} />
               ))}
@@ -341,11 +344,11 @@ export default function Ficha({ id }: { id: string }) {
       </div>
 
       {/* En el celular, los dos botones siempre a mano, abajo */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-linea bg-white/95 px-3 py-2.5 backdrop-blur md:hidden" data-barra-contacto>
-        <div className="grid grid-cols-2 gap-2">
-          <a href={LLAMAR} className="rounded-full border border-linea py-2.5 text-center font-semibold">Llamar</a>
-          <a href={whatsapp} target="_blank" rel="noopener" data-whatsapp-ficha className="flex items-center justify-center gap-2 rounded-full bg-[#25d366] py-2.5 font-semibold text-black">
-            <IconoWhatsApp className="h-5 w-5" /> WhatsApp
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-linea bg-arena/95 px-3 py-2.5 backdrop-blur md:hidden" data-barra-contacto>
+        <div className="grid grid-cols-[auto_1fr] gap-2">
+          <a href={LLAMAR} className={`${BOTON_BORDE} px-5`}>Llamar</a>
+          <a href={whatsapp} target="_blank" rel="noopener" data-whatsapp-ficha className={`${BOTON} px-3 text-[14.5px] tracking-normal whitespace-nowrap normal-case`}>
+            <IconoWhatsApp className="h-4 w-4" /> Consultar por WhatsApp
           </a>
         </div>
       </div>

@@ -466,9 +466,31 @@ def castro_whatsapp(pg, sel):
     return u.path.strip("/"), parse_qs(u.query).get("text", [""])[0]
 
 
+# El estilo de una pantalla de Castro: fondo, letra, si queda algo con la letra de su sitio, texto en el naranja de su
+# logo (2,1:1 sobre hueso, no se lee) y texto con menos de 4,5:1 (3:1 si es grande) contra el fondo que tiene atrás
+ESTILO_CASTRO = """(() => {
+  // Tailwind escribe los colores con transparencia en oklab: el lienzo los pasa todos a RGB y alfa
+  const lienzo = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  const rgb = c => { lienzo.clearRect(0, 0, 1, 1); lienzo.fillStyle = 'rgba(0, 0, 0, 0)'; lienzo.fillStyle = c; lienzo.fillRect(0, 0, 1, 1);
+    const d = lienzo.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2], d[3] / 255]; };
+  const lum = ([r, g, b]) => [r, g, b].map(v => (v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+  const fondo = e => { for (; e; e = e.parentElement) { const c = rgb(getComputedStyle(e).backgroundColor); if (c[3] >= 0.7) return c; } return [255, 255, 255]; };
+  const conTexto = [...document.querySelectorAll('body *')].filter(e => e.offsetWidth && !e.closest('aside[aria-label^="Aviso"], .leaflet-container, dialog')
+    && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()));
+  const nombre = e => e.textContent.trim().slice(0, 30);
+  return {
+    fondo: getComputedStyle(document.documentElement).backgroundColor, letra: getComputedStyle(document.body).fontFamily,
+    suyas: conTexto.filter(e => /Montserrat|Inter\\b/.test(getComputedStyle(e).fontFamily)).map(nombre),
+    naranja: conTexto.filter(e => rgb(getComputedStyle(e).color).slice(0, 3).join() === '248,142,4').map(nombre),
+    contraste: conTexto.filter(e => { const s = getComputedStyle(e), a = lum(rgb(s.color)), b = lum(fondo(e)), r = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      const grande = parseFloat(s.fontSize) >= 24 || (parseFloat(s.fontSize) >= 18.66 && +s.fontWeight >= 700);
+      return r < (grande ? 3 : 4.5) && rgb(s.color)[3] > 0.5 }).map(e => nombre(e) + ' ' + getComputedStyle(e).color),
+  } })()"""
+
+
 def castro(pg, nombre, cap):
-    """La propuesta de Castro Inmobiliaria en su versión básica (30/10: "como la de ellos pero mejor hecha"): su
-    recorrido, sus textos sin erratas, su mapa dibujado de loteos y WhatsApp directo. Lo esperado sale del mismo índice
+    """La propuesta de Castro Inmobiliaria con su contenido y cara propia (Actualización 17, "Editorial serrano"): que no
+    sea la misma página que la de ellos, sus textos sin erratas, los terrenos con su forma real y WhatsApp directo. Lo esperado sale del mismo índice
     que usa la página, así que si la página filtra o cuenta mal, esto falla. El lote y el pin de cada ficha los prueba
     castro_mapa."""
     import json
@@ -500,6 +522,11 @@ def castro(pg, nombre, cap):
         if pg.locator("[data-guardar], [data-mensaje], [data-ver-3d], [data-cercano], [data-altura], [data-mapa-general]:not(article [data-mapa-general])").count() or any("maplibre" in u for u in pedidos):
             problemas.append(f"{nombre}: en '{q or 'portada'}' volvió algo de lo que se sacó (favoritas, vista del mensaje, 3D, a cuánto queda o el mapa de todas)")
         textos_afuera(pg, f"{nombre} {q or 'portada'}")
+        estilo = pg.evaluate(ESTILO_CASTRO)
+        if estilo["fondo"] != "rgb(246, 242, 235)" or "Hanken Grotesk" not in estilo["letra"] or estilo["suyas"]:
+            problemas.append(f"{nombre}: '{q or 'portada'}' no tiene el fondo hueso y la letra nueva, o usa la de su sitio: {estilo['fondo']} {estilo['letra'][:30]} {estilo['suyas'][:3]}")
+        if estilo["naranja"] or estilo["contraste"]:
+            problemas.append(f"{nombre}: en '{q or 'portada'}' hay texto en naranja {estilo['naranja'][:3]} o con poco contraste {estilo['contraste'][:3]}")
         return texto
 
     def resultados():
@@ -510,8 +537,8 @@ def castro(pg, nombre, cap):
         if numero != "5492665024444" or any(d not in texto for d in deben):
             problemas.append(f"{nombre}: el WhatsApp de {donde} no abre el chat de la inmobiliaria con {deben}: {numero} «{texto[:90]}»")
 
-    # Portada, en su orden: su foto de Merlo con su frase y los tres botones, sus destacadas, los 40 años, el museo y su
-    # mapa dibujado de loteos
+    # Portada: su foto de Merlo sin velo con su frase al costado o abajo (no encima, como en su sitio), el buscador, sus
+    # destacadas, los terrenos con su forma real, los 40 años, el museo y las urbanizaciones en fotos
     texto = ir("", 1000)
     cap("01-portada")
     if "noindex" not in (pg.get_attribute("meta[name=robots]", "content") or ""):
@@ -523,39 +550,45 @@ def castro(pg, nombre, cap):
         problemas.append(f"{nombre}: volvió a aparecer el aviso de que su página no anda")
     if pg.locator("h1").inner_text().strip() != " ".join(sitio["inicio"]["titular"].split()):
         problemas.append(f"{nombre}: el titular de la portada no es su frase: «{pg.locator('h1').inner_text()}»")
-    if not pg.evaluate("(() => { const i = document.querySelector('[data-portada] img'); return !!i && i.complete && i.naturalWidth > 0 && i.currentSrc.includes('portada-merlo') })()"):
-        problemas.append(f"{nombre}: no se ve su foto de Merlo arriba de la portada")
-    botones = pg.locator("[data-botones-portada] a").evaluate_all("es => es.map(e => [e.textContent.trim(), e.getAttribute('href')])")
-    if botones != [["Comprar", "?ver=propiedades"], ["Vender", "?ver=vender"], ["Alquilar", "?ver=propiedades&op=alquiler"]]:
-        problemas.append(f"{nombre}: los botones de la portada no son Comprar / Vender / Alquilar a su lugar: {botones}")
+    if "Newsreader" not in pg.evaluate("getComputedStyle(document.querySelector('h1')).fontFamily"):
+        problemas.append(f"{nombre}: el titular de la portada no va en Newsreader")
+    arriba = pg.evaluate("""(() => { const i = document.querySelector('[data-portada] img'), h = document.querySelector('h1').getBoundingClientRect(), r = i?.getBoundingClientRect();
+      return { foto: !!i && i.complete && i.naturalWidth > 0 && i.currentSrc.includes('portada-merlo'), encima: !!r && h.left < r.right && r.left < h.right && h.top < r.bottom && r.top < h.bottom } })()""")
+    if not arriba["foto"] or arriba["encima"] or pg.locator("[data-botones-portada]").count():
+        problemas.append(f"{nombre}: arriba de la portada tiene que estar su foto de Merlo con la frase al costado, no encima ni con los tres botones: {arriba}")
     destacadas = sorted((x for x in indice if x["destacada"]), key=lambda x: x["alta"], reverse=True)[:6]
     if pg.locator("[data-destacadas] [data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.tarjeta)") != [x["id"] for x in destacadas]:
         problemas.append(f"{nombre}: las destacadas de la portada no son sus 6 destacadas más nuevas")
-    for clave in ("experiencia_titulo", "museo_titulo"):
+    for clave in ("experiencia_titulo", "museo_titulo", "urbanizaciones_titulo"):
         if sitio["inicio"][clave] not in texto:
             problemas.append(f"{nombre}: a la portada le falta «{sitio['inicio'][clave]}»")
     if any("leaflet" in u for u in pedidos):
         problemas.append(f"{nombre}: la portada baja Leaflet y no tiene ningún mapa que lo use")
-    # Su mapa dibujado: 22 logos que llevan a cada urbanización, y las imágenes se dibujan
-    pg.locator("[data-mapa-urbanizaciones]").scroll_into_view_if_needed()
-    pg.wait_for_timeout(1200)
-    pines = pg.locator("[data-mapa-urbanizaciones] [data-pin]").evaluate_all("es => es.map(e => e.getAttribute('href'))")
-    if len(pines) != 22 or any(not h.startswith("?u=") for h in pines):
-        problemas.append(f"{nombre}: su mapa de urbanizaciones tiene {len(pines)} logos o alguno no lleva a su página")
-    if not pg.evaluate("[...document.querySelectorAll('[data-mapa-urbanizaciones] img')].every(i => i.naturalWidth > 0)"):
-        problemas.append(f"{nombre}: alguna imagen de su mapa de urbanizaciones no se dibujó")
+    if pg.locator("[data-mapa-urbanizaciones]").count():
+        problemas.append(f"{nombre}: su mapa dibujado volvió a la portada (va solo en Urbanizaciones)")
+    # Los terrenos con su forma real: 3 láminas que se dibujan y llevan a fichas con lote
+    pg.locator("[data-forma-real]").scroll_into_view_if_needed()
+    pg.wait_for_timeout(900)
+    laminas = pg.locator("[data-lamina]").evaluate_all("es => es.map(e => [e.dataset.lamina, e.getAttribute('href'), e.querySelector('img').naturalWidth])")
+    con_lote = {x["id"] for x in indice if x.get("mini")}
+    if len(laminas) != 3 or any(i not in con_lote or h != f"?p={i}" or not w for i, h, w in laminas):
+        problemas.append(f"{nombre}: la sección de terrenos con su forma real no tiene 3 láminas con lote que se vean y lleven a su ficha: {laminas}")
+    urbs = pg.locator("[data-urbanizaciones-portada] [data-urbanizacion]").evaluate_all("es => es.map(e => e.getAttribute('href'))")
+    if len(urbs) != 8 or any(not h.startswith("?u=") for h in urbs):
+        problemas.append(f"{nombre}: las urbanizaciones de la portada no son 8 fotos que llevan a cada una: {urbs}")
     pg.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     pg.wait_for_timeout(400)
     if not cartel.is_visible():
         problemas.append(f"{nombre}: el cartel de propuesta se pierde al bajar")
     whatsapp("[data-whatsapp-flotante]", "la portada", ["Hola"])
-    # En el celular, los tres botones de la portada no quedan debajo del WhatsApp flotante
-    if movil:
-        tapado = pg.evaluate("""() => { window.scrollTo(0, 0); const w = document.querySelector('[data-whatsapp-flotante]').getBoundingClientRect();
-          return [...document.querySelectorAll('[data-botones-portada] a')].filter(e => { const r = e.getBoundingClientRect();
-            return r.left < w.right && w.left < r.right && r.top < w.bottom && w.top < r.bottom }).map(e => e.textContent) }""")
-        if tapado:
-            problemas.append(f"{nombre}: el WhatsApp flotante tapa {tapado} en la portada")
+    # El buscador de la portada lleva al listado con lo escrito
+    pg.evaluate("window.scrollTo(0, 0)")
+    pg.fill("[data-buscador-portada] input[name=q]", "CHO7876886")
+    pg.locator("[data-buscador-portada] button").click()
+    pg.wait_for_load_state("networkidle")
+    pg.wait_for_timeout(500)
+    if "ver=propiedades" not in pg.url or "q=CHO7876886" not in pg.url or resultados() != 1:
+        problemas.append(f"{nombre}: el buscador de la portada no lleva al listado con lo escrito ({pg.url})")
     # La vista previa del link dice los números de los datos
     og = re.search(r'og:description" content="([^"]*)"', (DIST / "propuestas/castro-inmobiliaria/index.html").read_text()).group(1)
     if re.findall(r"(\d+) propiedades|(\d+) terrenos con su forma", og) != [(str(len(indice)), ""), ("", str(sum(bool(x.get("mini")) for x in indice)))]:
@@ -597,11 +630,14 @@ def castro(pg, nombre, cap):
     if resultados() != terrenos or "tipo=Terreno" not in pg.url:
         problemas.append(f"{nombre}: filtrar terrenos da {resultados()} y son {terrenos} (url {pg.url})")
     whatsapp("[data-whatsapp-flotante]", "el listado", ["terrenos en venta", "tipo=Terreno"])
-    mini = {x["id"] for x in indice if x.get("mini")}
-    mal = [i for i, src in pg.locator("[data-tarjeta]").evaluate_all("es => es.map(e => [e.dataset.tarjeta, e.querySelector('img').getAttribute('src')])")
-           if (f"lote-tarjeta-{i}." in src) != (i in mini)]
+    # Cada tarjeta lleva su foto; las de terrenos con lote, además, el sello con su silueta y los m² publicados
+    por_id = {x["id"]: x for x in indice}
+    tarjetas = pg.locator("[data-tarjeta]").evaluate_all("""es => es.map(e => { const s = e.querySelector('[data-sello]');
+      return [e.dataset.tarjeta, e.querySelector('img').getAttribute('src'), s ? s.querySelector('polygon').getAttribute('points') : null, s ? s.textContent.trim() : null] })""")
+    mal = [i for i, src, puntos, m2 in tarjetas if "lote-tarjeta" in src or bool(puntos) != bool(por_id[i].get("mini"))
+           or (puntos and (len(puntos.split()) < 4 or m2 != (f"{por_id[i]['terreno']:,.0f}".replace(",", ".") + " m²" if por_id[i]["terreno"] and por_id[i]["terreno"] < 10000 else m2)))]
     if mal:
-        problemas.append(f"{nombre}: tarjetas de terreno con la imagen equivocada (lote o foto): {mal[:5]}")
+        problemas.append(f"{nombre}: tarjetas de terreno sin su foto, o con el sello del lote mal o donde no va: {mal[:5]}")
     if movil:
         pg.locator("[data-ver-filtros]").click()
     pg.select_option("select[name=precio]", "50000-100000")
@@ -714,19 +750,17 @@ def castro(pg, nombre, cap):
         })""")
         if tapados:
             problemas.append(f"{nombre}: en una notebook (1366 x 768) no se ven sin bajar {tapados} de la ficha (tapados o más abajo)")
-        minis = pg.locator("[data-miniaturas] button")
-        if minis.count() != 2 or pg.evaluate("[...document.querySelectorAll('[data-miniaturas] img')].every(i => i.complete && i.naturalWidth > 0)") is not True:
-            problemas.append(f"{nombre}: la ficha en la compu no muestra las dos miniaturas al costado de la foto")
-        else:
-            minis.nth(1).click()
-            pg.wait_for_timeout(500)
-            if not pg.locator("[data-galeria-grande][open]").count() or not pg.locator("[data-galeria-grande] > span").inner_text().replace(" ", "").startswith("3/"):
-                problemas.append(f"{nombre}: tocar la segunda miniatura no abre la foto 3 en grande")
-            pg.keyboard.press("Escape")
+        # El recuadro va encima de la foto, como en una revista, y no tapa los controles de la galería
+        sobre = pg.evaluate("""(() => { const c = document.querySelector('[data-recuadro]').getBoundingClientRect(), g = document.querySelector('[data-galeria]').getBoundingClientRect();
+          const tapa = [...document.querySelectorAll('[data-ver-grande], [aria-label="Foto siguiente"]')].filter(b => b.offsetWidth).some(b => { const r = b.getBoundingClientRect();
+            return r.left < c.right && c.left < r.right && r.top < c.bottom && c.top < r.bottom });
+          return { encima: c.top >= g.top && c.bottom <= g.bottom && c.left >= g.left && c.right <= g.right, tapa } })()""")
+        if not sobre["encima"] or sobre["tapa"]:
+            problemas.append(f"{nombre}: en la compu el recuadro de la ficha no va sobre la foto o tapa sus controles: {sobre}")
         pg.set_viewport_size(tam)
     letra = pg.evaluate("getComputedStyle(document.querySelector('h1')).fontFamily")
-    if "Montserrat" not in letra:
-        problemas.append(f"{nombre}: el título de la ficha va en {letra} y tiene que ir en Montserrat, la letra de su sitio")
+    if "Newsreader" not in letra:
+        problemas.append(f"{nombre}: el título de la ficha va en {letra} y tiene que ir en Newsreader")
     whatsapp("[data-whatsapp-ficha]" if movil else "[data-consultar]", "la ficha", ["CHO7876886", titulo, "/p/7876886/"])
     if movil != pg.locator("[data-barra-contacto]").is_visible():
         problemas.append(f"{nombre}: la barra de Llamar y WhatsApp tiene que verse solo en el celular")
@@ -1087,7 +1121,7 @@ def castro_mapa(pg, nombre, cap):
             if len(r["puntas"]) != 1 or len(sin_calce["puntas"]) != 1 or max(abs(a - b) for a, b in zip(r["puntas"][0], sin_calce["puntas"][0])) > 0.5:
                 problemas.append(f"{nombre}: el pin del {solo} se mueve con el calce de la foto: {sin_calce['puntas']} sin calce, {r['puntas']} con calce")
         visto = color(*r["cabeza"]) if r["cabeza"] else None
-        if not visto or max(abs(a - b) for a, b in zip(visto, (0xB8, 0x54, 0x00))) > 30:  # --color-terracota de index.css
+        if not visto or max(abs(a - b) for a, b in zip(visto, (0xF8, 0x8E, 0x04))) > 30:  # --color-naranja de index.css
             problemas.append(f"{nombre}: en el {ident} la cabeza del pin se ve de color {visto} y no terracota (184, 84, 0)")
         z, clat, clng = (float(v) for v in r["vista"].split(","))
         escala = 256 * 2**z
@@ -1194,18 +1228,18 @@ def castro_mapa(pg, nombre, cap):
     except Exception:
         problemas.append(f"{nombre}: no se pudo abrir un popup del mapa de la urbanización para mirar su X")
 
-    # La consulta del costado de la ficha en la tablet y en 1024, con la ficha de dos precios (la más larga): entra, con
+    # La consulta del recuadro de la ficha en la tablet y en 1024, con la ficha de dos precios (la más larga): entra, con
     # WhatsApp y Llamar, y la página no se corre de costado
     if not tactil:
         dos = next(x.stem for x in sorted(fichas.glob("*.json")) if len(json.loads(x.read_text()).get("operaciones") or []) > 1)
         for ancho in (768, 1024):
             pg.set_viewport_size({"width": ancho, "height": 900})
             pg.goto(f"{raiz}?p={dos}", wait_until="networkidle")
-            r = pg.evaluate("""() => { const a = document.querySelector('article aside'), w = a?.querySelector('[data-consultar]'), tel = a?.querySelector('a[href^="tel:"]');
+            r = pg.evaluate("""() => { const a = document.querySelector('[data-recuadro]'), w = a?.querySelector('[data-consultar]'), tel = a?.querySelector('a[href^="tel:"]');
               return { pagina: document.documentElement.scrollWidth, costado: !!a && a.offsetWidth > 0,
                        sale: !!w && w.getBoundingClientRect().right > a.getBoundingClientRect().right, llamar: !!tel && tel.offsetWidth > 0 } }""")
             if r["pagina"] > ancho or not r["costado"] or r["sale"] or not r["llamar"]:
-                problemas.append(f"{nombre}: a {ancho} px la consulta del costado de la ficha {dos} no entra: {r}")
+                problemas.append(f"{nombre}: a {ancho} px la consulta del recuadro de la ficha {dos} no entra: {r}")
             if ancho == 1024:
                 cap("ficha-1024")
         pg.set_viewport_size({"width": 1440, "height": 900})

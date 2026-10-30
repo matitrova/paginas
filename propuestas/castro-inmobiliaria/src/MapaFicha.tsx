@@ -188,7 +188,7 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
 
   return (
     <section id="mapa" className="scroll-mt-28">
-      <h2 className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">{lote ? "Ubicación: el lote y su entorno" : "Ubicación"}</h2>
+      <h2 className="text-[15px] font-bold tracking-wide text-terracota uppercase">{lote ? "Ubicación: el lote y su entorno" : "Ubicación"}</h2>
       <p className="mt-1 text-[15px] text-suave">{lugar(p)}</p>
       {/* En pantalla completa, diálogo sin aria-modal: lo de atrás ya queda inerte, salvo la cinta, que sigue andando */}
       <div

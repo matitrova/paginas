@@ -2,15 +2,14 @@
 // Los formularios no tienen botón de enviar a un servidor: arman el mensaje y abren el WhatsApp de la inmobiliaria
 // (lo eligió Matías el 30/10). El botón es un link que se va armando con lo que se completa.
 import { useEffect, useState } from "react";
-import { IconoWhatsApp, ir, linkWhatsApp, LLAMAR, MapaUrbanizaciones, Tarjeta, Titulo } from "./componentes";
+import { BOTON, IconoWhatsApp, ir, linkWhatsApp, LLAMAR, MapaUrbanizaciones, Tarjeta, Titulo } from "./componentes";
 import MapaGeneral from "./MapaGeneral";
 import { porId, SITIO, URBANIZACIONES } from "./datos";
 import { Descripcion, nombreLindo } from "./Ficha";
 
 const disponibles = (ids: string[]) => ids.map((id) => porId.get(id)).filter((p) => p !== undefined);
 
-const BOTON = "font-display inline-flex items-center justify-center gap-2 rounded-full bg-naranja px-7 py-3 text-[14px] font-bold tracking-wide text-chocolate uppercase hover:brightness-105";
-const CAMPO = "mt-1 h-12 w-full rounded-xl border border-linea bg-white px-3.5 text-[16px]";
+const CAMPO = "mt-1 h-12 w-full rounded-md border border-chocolate/25 bg-arena px-3.5 text-[16px]";
 
 export function Urbanizaciones() {
   useEffect(() => {
@@ -28,12 +27,12 @@ export function Urbanizaciones() {
           const n = disponibles(u.propiedades).length;
           return (
             <a key={u.id} href={ir({ u: u.id })} data-urbanizacion={u.id} className="group">
-              <div className="aspect-[16/10] overflow-hidden rounded-2xl bg-piedra">
+              <div className="aspect-[16/10] overflow-hidden rounded-[3px] bg-piedra">
                 {/* La segunda foto suele ser el lugar; la primera, el logo del loteo */}
                 {u.fotos.length > 0 && <img src={u.fotos[1] ?? u.fotos[0]} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />}
               </div>
               <div className="pt-3">
-                <h2 className="font-display text-[1.15rem] leading-tight font-bold">{nombreLindo(u.nombre)}</h2>
+                <h2 className="font-display text-[1.35rem] leading-tight font-medium">{nombreLindo(u.nombre)}</h2>
                 <p className="mt-1 text-[13.5px] text-suave">{u.acceso.replace(/^Acceso:\s*/, "")}</p>
                 <p className="mt-2 text-[14px] font-semibold text-terracota">{n ? `${n} ${n === 1 ? "propiedad" : "propiedades"}` : "Sin propiedades publicadas"}</p>
               </div>
@@ -57,11 +56,11 @@ export function Urbanizacion({ id }: { id: string }) {
       <a href={ir({ ver: "urbanizaciones" })} className="text-[13.5px] text-suave hover:text-tinta">← Urbanizaciones</a>
       {/* En la compu, la foto y el mapa a la izquierda y los datos a la derecha; en el celular, el mapa al final */}
       <div className="mt-4 grid items-start gap-8 md:grid-cols-2 md:grid-rows-[auto_1fr] md:gap-y-5">
-        {(u.fotos[1] ?? u.fotos[0]) && <img src={u.fotos[1] ?? u.fotos[0]} alt={nombreLindo(u.nombre)} className="w-full rounded-2xl object-cover md:col-start-1 md:row-start-1" />}
+        {(u.fotos[1] ?? u.fotos[0]) && <img src={u.fotos[1] ?? u.fotos[0]} alt={nombreLindo(u.nombre)} className="w-full rounded-[3px] object-cover md:col-start-1 md:row-start-1" />}
         <div className="md:col-start-2 md:row-span-2 md:row-start-1">
           <div className="flex items-center gap-4">
-            {u.fotos.length > 1 && <img src={u.fotos[0]} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />}
-            <h1 className="font-display text-[1.8rem] leading-tight font-bold">{nombreLindo(u.nombre)}</h1>
+            {u.fotos.length > 1 && <img src={u.fotos[0]} alt="" className="h-16 w-16 shrink-0 rounded-[3px] object-cover" />}
+            <h1 className="font-display text-[2.1rem] leading-tight font-medium sm:text-[2.5rem]">{nombreLindo(u.nombre)}</h1>
           </div>
           <p className="mt-2 text-[15px] text-suave">{u.acceso.replace(/^Acceso:\s*/, "Acceso: ")}</p>
           <div className="mt-5">
@@ -70,7 +69,7 @@ export function Urbanizacion({ id }: { id: string }) {
           {u.servicios.length + u.adicionales.length > 0 && (
             <ul className="mt-6 flex flex-wrap gap-2" data-adicionales>
               {[...new Set([...u.servicios, ...u.adicionales])].map((s) => (
-                <li key={s} className="rounded-full bg-naranja/15 px-3.5 py-1.5 text-[14px] font-medium">{s}</li>
+                <li key={s} className="rounded-[3px] border border-chocolate/20 px-3 py-1 text-[14px]">{s}</li>
               ))}
             </ul>
           )}
@@ -80,7 +79,7 @@ export function Urbanizacion({ id }: { id: string }) {
         </div>
         {u.lat && (
           <div className="md:col-start-1">
-            <h2 className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">Ubicación</h2>
+            <h2 className="text-[15px] font-bold tracking-wide text-terracota uppercase">Ubicación</h2>
             <MapaGeneral props={props} lugarVacio={{ lat: Number(u.lat), lng: Number(u.lng), texto: "Ubicación de la urbanización" }} className="mt-3 h-80" />
           </div>
         )}
@@ -106,24 +105,19 @@ export function Nosotros() {
   return (
     <>
       <section className="mx-auto max-w-6xl px-5 pt-8 sm:px-6">
-        <img src="./fotos/fondonos.webp" alt="El equipo de Castro Inmobiliaria" className="w-full rounded-2xl object-cover" />
+        <img src="./fotos/fondonos.webp" alt="El equipo de Castro Inmobiliaria" className="w-full rounded-[3px] object-cover" />
         <div className="mx-auto mt-10 max-w-3xl text-center">
           {/* En su sitio dice "QUIENES SOMOS": va con la tilde */}
           <Titulo h1 centrado>Quiénes somos</Titulo>
           <p className="mt-5 text-[17px] leading-relaxed text-suave">{nosotros.texto}</p>
-          <div className="mt-8 grid gap-4 text-left sm:grid-cols-2" data-mision>
-            {[["Misión", nosotros.mision], ["Visión", nosotros.vision]].map(([titulo, texto]) => (
-              <div key={titulo} className="rounded-2xl bg-piedra p-5">
-                <h2 className="font-display text-[14px] font-bold tracking-wide text-terracota uppercase">{titulo}</h2>
-                <p className="mt-2 text-[15px] leading-relaxed text-suave">{texto}</p>
+          <dl className="mt-10 text-left" data-mision>
+            {[["Misión", nosotros.mision], ["Visión", nosotros.vision], ["Valores", nosotros.valores.join(" · ")]].map(([titulo, texto]) => (
+              <div key={titulo} className="grid gap-1 border-t border-chocolate/20 py-4 sm:grid-cols-[8rem_1fr] sm:gap-6">
+                <dt className="text-[12.5px] font-semibold tracking-[0.16em] text-terracota uppercase sm:pt-1">{titulo}</dt>
+                <dd className="text-[16px] leading-relaxed">{texto}</dd>
               </div>
             ))}
-          </div>
-          <ul className="mt-6 flex flex-wrap justify-center gap-2">
-            {nosotros.valores.map((v) => (
-              <li key={v} className="font-display rounded-full bg-piedra px-4 py-2 text-[13px] font-semibold tracking-wide uppercase">{v}</li>
-            ))}
-          </ul>
+          </dl>
         </div>
       </section>
 
@@ -131,10 +125,10 @@ export function Nosotros() {
         <Titulo centrado>{nosotros.equipo_titulo}</Titulo>
         <ul className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-equipo>
           {equipo.map((e) => (
-            <li key={e.nombre} className="flex gap-4 rounded-2xl border border-linea bg-white p-4">
-              <img src={e.foto} alt={e.nombre} loading="lazy" className="h-24 w-24 shrink-0 rounded-xl object-cover object-top" />
+            <li key={e.nombre} className="flex gap-4 border-t border-chocolate/20 pt-5">
+              <img src={e.foto} alt={e.nombre} loading="lazy" className="h-24 w-24 shrink-0 rounded-[3px] object-cover object-top" />
               <div className="min-w-0">
-                <p className="font-display font-bold">{e.nombre}</p>
+                <p className="font-display text-[19px] font-medium">{e.nombre}</p>
                 {e.cargo.replace(/\.$/, "").split("|").map((c) => (
                   <p key={c} className="text-[13.5px] leading-snug text-suave">{c.trim()}</p>
                 ))}
@@ -160,7 +154,7 @@ export function Nosotros() {
           </div>
           <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4" data-museo>
             {museo.fotos.slice(0, 8).map((f) => (
-              <img key={f} src={f} alt="Museo de La Firma" loading="lazy" className="aspect-[4/3] w-full rounded-xl object-cover" />
+              <img key={f} src={f} alt="Museo de La Firma" loading="lazy" className="aspect-[4/3] w-full rounded-[3px] object-cover" />
             ))}
           </div>
           <p className="mt-6 text-[14px] text-suave">{SITIO.contacto.direccion}.</p>
@@ -199,7 +193,7 @@ export function Contacto() {
             <dd className="mt-0.5 font-medium"><a href={`mailto:${c.email}`}>{c.email}</a></dd>
           </div>
         </dl>
-        <img src="./fotos/imagcontact.webp" alt="La oficina de Castro Inmobiliaria" loading="lazy" className="mt-8 w-full rounded-2xl object-cover" />
+        <img src="./fotos/imagcontact.webp" alt="La oficina de Castro Inmobiliaria" loading="lazy" className="mt-8 w-full rounded-[3px] object-cover" />
       </div>
       <Formulario titulo={SITIO.formulario.titulo} mensaje={mensaje} listo={!!form.nombre.trim()} dato="data-formulario">
         <label className="mt-5 block text-[14px] font-medium">
@@ -225,7 +219,7 @@ export function Contacto() {
         </label>
         <label className="mt-4 block text-[14px] font-medium">
           Mensaje
-          <textarea value={form.mensaje} onChange={cambiar("mensaje")} rows={4} className="mt-1 w-full rounded-xl border border-linea bg-white p-3.5 text-[16px]" name="mensaje" />
+          <textarea value={form.mensaje} onChange={cambiar("mensaje")} rows={4} className="mt-1 w-full rounded-md border border-chocolate/25 bg-arena p-3.5 text-[16px]" name="mensaje" />
         </label>
       </Formulario>
     </section>
@@ -236,8 +230,8 @@ export function Contacto() {
  *  vez de abrirlo marca el campo, como haría un formulario común. */
 function Formulario({ titulo, mensaje, listo, dato, boton = "Enviar por WhatsApp", children }: { titulo: string; mensaje: string; listo: boolean; dato: string; boton?: string; children: React.ReactNode }) {
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="h-fit rounded-2xl border border-linea bg-white p-6" {...{ [dato]: "" }}>
-      <h2 className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">{titulo}</h2>
+    <form onSubmit={(e) => e.preventDefault()} className="h-fit rounded-md bg-piedra p-6 sm:p-8" {...{ [dato]: "" }}>
+      <h2 className="text-[15px] font-bold tracking-wide text-terracota uppercase">{titulo}</h2>
       {children}
       <a
         href={linkWhatsApp(mensaje)}
@@ -277,12 +271,12 @@ export function Vender() {
       <section className="mx-auto grid max-w-6xl gap-10 px-5 pt-8 sm:px-6 md:grid-cols-2">
         <div>
           <Titulo h1 chico="Vender o tasar">{vender.titular}</Titulo>
-          <h2 className="font-display mt-10 text-[1.25rem] font-bold">{vender.pasos_titulo}</h2>
+          <h2 className="font-display mt-10 text-[1.5rem] font-medium">{vender.pasos_titulo}</h2>
           <p className="mt-1 text-suave">{vender.pasos_bajada}</p>
           <ol className="mt-5 space-y-3" data-pasos>
             {vender.pasos.map((paso, i) => (
               <li key={paso} className="flex items-center gap-4 text-[16px]">
-                <span className="font-display grid h-9 w-9 shrink-0 place-items-center rounded-full bg-naranja font-bold text-chocolate">{i + 1}</span>
+                <span className="font-display w-7 shrink-0 text-[1.6rem] leading-none text-terracota">{i + 1}</span>
                 {paso}
               </li>
             ))}
@@ -319,7 +313,7 @@ export function Vender() {
           </label>
           <label className="mt-4 block text-[14px] font-medium">
             Comentarios
-            <textarea value={form.mensaje} onChange={cambiar("mensaje")} rows={3} className="mt-1 w-full rounded-xl border border-linea bg-white p-3.5 text-[16px]" name="mensaje" />
+            <textarea value={form.mensaje} onChange={cambiar("mensaje")} rows={3} className="mt-1 w-full rounded-md border border-chocolate/25 bg-arena p-3.5 text-[16px]" name="mensaje" />
           </label>
         </Formulario>
       </section>
@@ -328,8 +322,8 @@ export function Vender() {
           <Titulo centrado>{vender.distingue_titulo}</Titulo>
           <div className="mt-8 grid gap-5 sm:grid-cols-2">
             {vender.distingue.map((d) => (
-              <div key={d.titulo} className="rounded-2xl bg-white p-6">
-                <h3 className="font-display text-[14px] font-bold tracking-wide text-terracota uppercase">{d.titulo}</h3>
+              <div key={d.titulo} className="border-t border-chocolate/20 pt-5">
+                <h3 className="text-[14px] font-bold tracking-wide text-terracota uppercase">{d.titulo}</h3>
                 <p className="mt-2 text-[15px] leading-relaxed text-suave">{d.texto}</p>
               </div>
             ))}

@@ -41,21 +41,22 @@ const ICONOS_REDES: Record<string, React.ReactNode> = {
   youtube: <path fill="currentColor" fillRule="evenodd" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z" />,
 };
 
-/** Como el de ellos: el logo, el teléfono a mano y el menú; en el celular, un menú que se despliega. */
+/** El logo con "Castro" en la serif, el menú en mayúsculas chicas, sus redes y el teléfono; en el celular, un menú
+ *  que se despliega. */
 export function Encabezado({ actual }: { actual: string }) {
   return (
-    <header className="sticky top-8 z-40 border-b border-linea bg-white/95 backdrop-blur">
+    <header className="sticky top-8 z-40 border-b border-linea bg-arena/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
         <a href="./" className="flex shrink-0 items-center gap-2.5" aria-label="Castro Inmobiliaria, inicio">
           <img src="./fotos/logo.png" alt="" className="h-11 w-auto self-start" />
-          <span className="font-display text-[15px] leading-tight font-bold tracking-wide uppercase">
-            Castro<span className="block text-[11px] font-semibold tracking-[0.2em] text-suave">Inmobiliaria</span>
+          <span className="font-display text-[23px] leading-none font-medium">
+            Castro<span className="mt-1 block font-sans text-[10px] font-semibold tracking-[0.26em] text-suave uppercase">Inmobiliaria</span>
           </span>
         </a>
         {/* En la compu el logo lleva al inicio: así el menú entra entero desde 1024 px */}
         <nav className="ml-auto hidden items-center lg:flex xl:gap-1">
           {MENU.filter((m) => m.ver).map((m) => (
-            <a key={m.texto} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="font-display px-1.5 py-2 text-[13px] font-semibold tracking-wide whitespace-nowrap uppercase hover:text-terracota aria-[current=page]:text-terracota aria-[current=page]:underline aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-8 xl:px-2">
+            <a key={m.texto} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="px-1.5 py-2 text-[12.5px] font-semibold tracking-[0.12em] whitespace-nowrap uppercase hover:text-terracota aria-[current=page]:underline aria-[current=page]:decoration-naranja aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-8 xl:px-2">
               {m.texto}
             </a>
           ))}
@@ -68,19 +69,19 @@ export function Encabezado({ actual }: { actual: string }) {
             </a>
           ))}
         </div>
-        <a href={LLAMAR} aria-label={`Llamar al ${TELEFONO}`} className="font-display ml-auto flex h-10 items-center rounded-full bg-naranja px-3 text-[13px] font-bold whitespace-nowrap text-chocolate hover:brightness-105 sm:px-4 lg:ml-2">
+        <a href={LLAMAR} aria-label={`Llamar al ${TELEFONO}`} className="ml-auto flex h-10 items-center rounded-md bg-chocolate px-3 text-[13px] font-semibold tracking-wide whitespace-nowrap text-arena hover:bg-terracota sm:px-4 lg:ml-2">
           <svg viewBox="0 0 24 24" className="h-5 w-5 sm:hidden" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z" /></svg>
           <span className="hidden sm:inline"><span className="lg:hidden">Llamá </span>{TELEFONO}</span>
         </a>
         <details className="relative lg:hidden">
-          <summary className="font-display flex h-10 cursor-pointer list-none items-center rounded-full border border-linea px-4 text-[13px] font-semibold uppercase">Menú</summary>
-          <nav className="absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl border border-linea bg-white py-2 shadow-[0_24px_50px_-20px_rgb(0_0_0/0.35)]">
+          <summary className="flex h-10 cursor-pointer list-none items-center rounded-md border border-chocolate/30 px-4 text-[12.5px] font-semibold tracking-[0.12em] uppercase">Menú</summary>
+          <nav className="absolute right-0 mt-2 w-60 overflow-hidden rounded-lg border border-linea bg-arena py-2 shadow-[0_18px_40px_-24px_rgb(43_36_32/0.5)]">
             {MENU.map((m) => (
               <a key={m.texto} href={m.href} className="block px-5 py-3 text-[16px]">
                 {m.texto}
               </a>
             ))}
-            <a href={LLAMAR} className="mx-3 mt-1 block rounded-xl bg-naranja px-4 py-3 text-center font-semibold whitespace-nowrap text-chocolate">
+            <a href={LLAMAR} className="mx-3 mt-1 block rounded-md bg-chocolate px-4 py-3 text-center font-semibold whitespace-nowrap text-arena">
               Llamá {TELEFONO}
             </a>
             <p className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 px-4 pt-3 pb-1 text-[13.5px] text-suave">
@@ -95,20 +96,20 @@ export function Encabezado({ actual }: { actual: string }) {
   );
 }
 
-/** Como el de ellos, gris oscuro: su frase, servicios y empresa, la oficina y los datos legales. */
+/** En tinta cálida con letra hueso: su frase, servicios y empresa, la oficina y los datos legales. */
 export function Pie({ pegado = false }: { pegado?: boolean }) {
   const c = SITIO.contacto;
-  const rotulo = "font-display text-[12px] font-bold tracking-[0.14em] text-white uppercase";
+  const rotulo = "text-[12px] font-semibold tracking-[0.16em] text-arena uppercase";
   return (
     // Abajo queda lugar para el botón de WhatsApp (o la barra de la ficha) en el celular
-    <footer className={`${pegado ? "" : "mt-20"} bg-[#3a3a3a] pb-20 text-white/80 md:pb-0`}>
+    <footer className={`${pegado ? "" : "mt-20"} bg-chocolate pb-20 text-arena/80 md:pb-0`}>
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-10 px-5 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div className="col-span-2 md:col-span-1">
           <img src="./fotos/logofooter.png" alt="Castro Inmobiliaria" className="h-11 w-auto" />
           <p className="mt-5 max-w-xs text-[14px] leading-relaxed">{SITIO.pie.texto}</p>
           <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
             {redes().map(([red, url]) => (
-              <a key={red} href={url} target="_blank" rel="noopener" className="underline decoration-white/40 underline-offset-4 hover:decoration-white">
+              <a key={red} href={url} target="_blank" rel="noopener" className="underline decoration-arena/40 underline-offset-4 hover:decoration-arena">
                 {REDES[red] ?? red}
               </a>
             ))}
@@ -117,36 +118,36 @@ export function Pie({ pegado = false }: { pegado?: boolean }) {
         <div>
           <p className={rotulo}>Servicios</p>
           <ul className="mt-3 space-y-1.5 text-[14px]">
-            <li><a href={ir({ ver: "propiedades" })} className="hover:text-white">Comprar</a></li>
-            <li><a href={ir({ ver: "vender" })} className="hover:text-white">Vender</a></li>
-            <li><a href={ir({ ver: "propiedades", op: "alquiler" })} className="hover:text-white">Alquilar</a></li>
-            <li><a href={ir({ ver: "vender" })} className="hover:text-white">Tasación</a></li>
+            <li><a href={ir({ ver: "propiedades" })} className="hover:text-arena">Comprar</a></li>
+            <li><a href={ir({ ver: "vender" })} className="hover:text-arena">Vender</a></li>
+            <li><a href={ir({ ver: "propiedades", op: "alquiler" })} className="hover:text-arena">Alquilar</a></li>
+            <li><a href={ir({ ver: "vender" })} className="hover:text-arena">Tasación</a></li>
           </ul>
         </div>
         <div>
           <p className={rotulo}>Empresa</p>
           <ul className="mt-3 space-y-1.5 text-[14px]">
-            <li><a href={ir({ ver: "nosotros" }) + "#museo"} className="hover:text-white">Museo La Firma</a></li>
-            <li><a href={ir({ ver: "nosotros" })} className="hover:text-white">Nosotros</a></li>
-            <li><a href={ir({ ver: "urbanizaciones" })} className="hover:text-white">Urbanizaciones</a></li>
-            <li><a href={ir({ ver: "contacto" })} className="hover:text-white">Contacto</a></li>
+            <li><a href={ir({ ver: "nosotros" }) + "#museo"} className="hover:text-arena">Museo La Firma</a></li>
+            <li><a href={ir({ ver: "nosotros" })} className="hover:text-arena">Nosotros</a></li>
+            <li><a href={ir({ ver: "urbanizaciones" })} className="hover:text-arena">Urbanizaciones</a></li>
+            <li><a href={ir({ ver: "contacto" })} className="hover:text-arena">Contacto</a></li>
           </ul>
         </div>
         <div className="col-span-2 text-[14px] leading-relaxed md:col-span-1">
           <p className={rotulo}>Oficina</p>
           <p className="mt-3">{c.direccion}</p>
-          <p className="mt-1"><a href={LLAMAR} className="hover:text-white">{c.telefono}</a></p>
-          <p className="mt-1"><a href={`mailto:${c.email}`} className="hover:text-white">{c.email}</a></p>
+          <p className="mt-1"><a href={LLAMAR} className="hover:text-arena">{c.telefono}</a></p>
+          <p className="mt-1"><a href={`mailto:${c.email}`} className="hover:text-arena">{c.email}</a></p>
         </div>
       </div>
-      <div className="border-t border-white/10" data-legales>
-        <div className="mx-auto max-w-6xl px-5 py-5 text-[12.5px] leading-relaxed text-white/70 sm:px-6">
+      <div className="border-t border-arena/10" data-legales>
+        <div className="mx-auto max-w-6xl px-5 py-5 text-[12.5px] leading-relaxed text-arena/70 sm:px-6">
           <p>
             {c.razon_social} · CUIT {c.cuit} · {c.corredor_y_matricula.replace("Publico", "Público").replace("Matricula", "Matrícula")} ·{" "}
-            <a href={c.afip_data_fiscal} target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-white">Data fiscal (ARCA)</a>
+            <a href={c.afip_data_fiscal} target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-arena">Data fiscal (ARCA)</a>
           </p>
           <p className="mt-1">{SITIO.pie.legales.join(" ")}</p>
-          <p className="mt-3 text-white/60">{NOTA_DATOS} Propuesta de diseño de Matías Trovato, no es la página oficial de {NEGOCIO}.</p>
+          <p className="mt-3 text-arena/60">{NOTA_DATOS} Propuesta de diseño de Matías Trovato, no es la página oficial de {NEGOCIO}.</p>
         </div>
       </div>
     </footer>
@@ -162,67 +163,78 @@ export const lugar = (p: Propiedad) => [p.zona, p.localidad].filter((x, i, a) =>
 export function Etiquetas({ p, max = 2 }: { p: Propiedad; max?: number }) {
   if (!p.etiquetas.length) return null;
   return (
-    <span className="flex flex-wrap gap-1.5" data-etiquetas>
-      {p.etiquetas.slice(0, max).map((e) => (
-        <span key={e} className="rounded-full bg-piedra px-2.5 py-0.5 text-[12px] font-semibold text-chocolate">
-          {e}
-        </span>
-      ))}
+    <span className="block text-[11.5px] font-semibold tracking-[0.1em] text-terracota uppercase" data-etiquetas>
+      {p.etiquetas.slice(0, max).join(" · ")}
     </span>
   );
 }
 
-/** La imagen de la tarjeta: en los terrenos con forma, el lote sobre la foto satelital (scripts/castro_satelite.py);
- *  la foto real queda en la ficha. Para volver a la foto real en todas, alcanza con devolver portada(p.id). */
-export const imagenTarjeta = (p: Propiedad) => (p.mini ? `./fotos/lote-tarjeta-${p.id}.webp` : portada(p.id));
+/** Los dos botones del sitio: el principal, relleno en tinta, y el de borde fino. Mayúsculas espaciadas, sin sombra. */
+export const BOTON = "inline-flex items-center justify-center gap-2 rounded-md bg-chocolate px-6 py-3 text-[13px] font-semibold tracking-[0.12em] text-arena uppercase hover:bg-terracota";
+export const BOTON_BORDE = "inline-flex items-center justify-center gap-2 rounded-md border border-chocolate/60 px-6 py-3 text-[13px] font-semibold tracking-[0.12em] uppercase hover:bg-chocolate hover:text-arena";
 
-/** Una tarjeta para el listado, sin caja: la imagen arriba y los datos abajo. La de un terreno muestra lo que importa
- *  en un terreno: superficie y precio por m². */
+/** La forma de un lote (lng/lat del catastro) como los puntos de `mini`: x hacia el este, y hacia el sur. */
+export function siluetaDe(lote: number[][]) {
+  const k = Math.cos((lote[0][1] * Math.PI) / 180);
+  return lote.map(([lng, lat]) => `${(lng * k * 1e5).toFixed(1)},${(-lat * 1e5).toFixed(1)}`).join(" ");
+}
+
+/** El sello del lote: su silueta con la forma real del catastro, en línea naranja, y los m² publicados. La caja se
+ *  ajusta a la forma, así que sirven puntos en cualquier escala (los de `mini` van de 0 a 100). */
+export function Sello({ puntos, m2, className = "" }: { puntos: string; m2: number | null; className?: string }) {
+  const n = puntos.split(/[ ,]/).map(Number);
+  const xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2 === 1);
+  const [x0, y0] = [Math.min(...xs), Math.min(...ys)];
+  const lado = Math.max(Math.max(...xs) - x0, Math.max(...ys) - y0);
+  return (
+    <span className={`flex items-center gap-2 rounded-md bg-arena/95 py-1.5 pr-2.5 pl-1.5 text-[12.5px] font-semibold text-chocolate ${className}`} title="La forma real del lote, del catastro" data-sello>
+      <svg viewBox={`${x0 - lado * 0.08} ${y0 - lado * 0.08} ${lado * 1.16} ${lado * 1.16}`} className="h-7 w-7" aria-hidden="true">
+        <polygon points={puntos} fill="rgb(248 142 4 / 0.18)" stroke="var(--color-naranja)" strokeWidth={2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      </svg>
+      {m2 ? superficie(m2) : "Forma real"}
+    </span>
+  );
+}
+
+/** Una tarjeta para el listado, como las de una revista: la foto sin borde ni sombra y abajo dos columnas, el nombre a
+ *  la izquierda y el precio a la derecha. En los terrenos con lote, el sello con su forma real sobre la foto. */
 export function Tarjeta({ p, op }: { p: Propiedad; op?: string }) {
   const terreno = esTerreno(p);
   // Cubierta y total construido son cosas distintas (el total suma lo semicubierto): cada una con su nombre
   const construida = p.cubierta ? `${superficie(p.cubierta)} cub.` : p.construido ? `${superficie(p.construido)} construidos` : null;
   const datos = terreno
-    ? [superficie(p.terreno), precioPorSuperficie(p, op)]
+    ? [superficie(p.terreno)]
     : [p.dormitorios && `${p.dormitorios} dorm.`, p.banos && `${p.banos} ${p.banos === 1 ? "baño" : "baños"}`, construida, !construida && superficie(p.terreno) && `${superficie(p.terreno)} de terreno`];
   // El título casi siempre ya dice la zona: entonces abajo va solo el tipo
   const linea = p.zona && p.titulo.toLowerCase().includes(p.zona.toLowerCase()) ? tipoTexto(p.tipo) : `${tipoTexto(p.tipo)} · ${lugar(p)}`;
   return (
     <div data-tarjeta={p.id} data-precio={precioEn(p, op).precio ?? ""} data-tipo={p.tipo} className="tarjeta group relative flex min-w-0 flex-col">
       <a href={ir({ p: p.id })} className="flex flex-1 flex-col">
-        <div className="relative aspect-[3/2] overflow-hidden rounded-2xl bg-piedra sm:aspect-[4/3]">
-          <img src={imagenTarjeta(p)} alt="" loading="lazy" width={560} height={420} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-          <span className="absolute top-3 left-3 flex gap-1.5">
-            {p.operacion.map((o) => (
-              <span key={o} className="rounded-full bg-arena/95 px-2.5 py-1 text-[12px] font-semibold text-chocolate">
-                {ETIQUETA_OP[o] ?? o}
-              </span>
-            ))}
-          </span>
-          {p.mini && (
-            <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-chocolate/85 py-1 pr-3 pl-2 text-[12px] font-semibold text-arena" data-mini>
-              <span className="h-2.5 w-2.5 rounded-full border border-white bg-naranja" aria-hidden="true" />
-              Forma real del lote
+        <div className="relative aspect-[3/2] overflow-hidden rounded-[3px] bg-piedra sm:aspect-[4/3]">
+          <img src={portada(p.id)} alt="" loading="lazy" width={560} height={420} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
+          {p.operacion.includes("alquiler") && (
+            <span className="absolute top-3 left-3 rounded-[3px] bg-arena/95 px-2 py-0.5 text-[11px] font-semibold tracking-[0.12em] text-chocolate uppercase">
+              {p.operacion.map((o) => ETIQUETA_OP[o] ?? o).join(" y ")}
             </span>
           )}
+          {p.mini && <Sello puntos={p.mini} m2={p.terreno} className="absolute bottom-3 left-3" />}
         </div>
-        <div className="flex flex-1 flex-col pt-3">
-          <p className="text-[19px] font-semibold tracking-tight tabular-nums" data-precio-texto>{precio(precioEn(p, op)) ?? "Consultar precio"}</p>
-          <h3 className="mt-0.5 line-clamp-2 text-[16px] leading-snug font-semibold">{p.titulo}</h3>
-          <p className="mt-1 text-[13px] text-suave">
-            {linea}
-            {p.fotos > 1 && ` · ${p.fotos} fotos`}
-          </p>
-          {datos.some(Boolean) && (
-            <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[13.5px] font-medium">
-              {datos.filter(Boolean).map((d) => (
-                <span key={d as string}>{d}</span>
-              ))}
+        <div className="flex flex-1 items-start justify-between gap-4 pt-3">
+          <div className="min-w-0">
+            <h3 className="font-display line-clamp-2 text-[18px] leading-snug font-medium">{p.titulo}</h3>
+            <p className="mt-1 text-[13.5px] text-suave">
+              {linea}
+              {p.fotos > 1 && ` · ${p.fotos} fotos`}
             </p>
-          )}
-          <span className="mt-2">
-            <Etiquetas p={p} />
-          </span>
+            {datos.some(Boolean) && <p className="mt-1.5 text-[13.5px] font-medium">{datos.filter(Boolean).join(" · ")}</p>}
+            <span className="mt-2 block">
+              <Etiquetas p={p} />
+            </span>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="font-display text-[19px] leading-snug font-medium tabular-nums" data-precio-texto>{precio(precioEn(p, op)) ?? "Consultar precio"}</p>
+            {terreno && precioPorSuperficie(p, op) && <p className="mt-1 text-[13px] text-suave">{precioPorSuperficie(p, op)}</p>}
+          </div>
         </div>
       </a>
     </div>
@@ -264,7 +276,7 @@ export function MapaUrbanizaciones() {
   const { fondo, pines } = SITIO.mapa;
   return (
     <div className="sin-barra -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0" data-libre>
-      <div className="relative min-w-[820px] overflow-hidden rounded-2xl border border-linea bg-white" data-mapa-urbanizaciones>
+      <div className="relative min-w-[820px] overflow-hidden rounded-md border border-linea bg-arena" data-mapa-urbanizaciones>
         <img src={fondo} alt="Mapa de Villa de Merlo con las urbanizaciones que comercializa Castro" loading="lazy" className="block w-full" />
         {pines.map((pin) => (
           <a
@@ -284,13 +296,13 @@ export function MapaUrbanizaciones() {
   );
 }
 
-/** Título de sección como los de ellos: Montserrat en negrita, con el naranja de la marca. */
+/** Título de sección como en una revista: la serif en tinta, con un rótulo chico arriba si hace falta. */
 export function Titulo({ chico, children, h1 = false, centrado = false }: { chico?: string; children: React.ReactNode; h1?: boolean; centrado?: boolean }) {
   const H = h1 ? "h1" : "h2";
   return (
     <div className={centrado ? "text-center" : ""}>
-      {chico && <p className="font-display text-[12px] font-semibold tracking-[0.18em] text-suave uppercase">{chico}</p>}
-      <H className="font-display mt-1 text-[1.6rem] leading-tight font-bold text-terracota sm:text-[2rem]">{children}</H>
+      {chico && <p className="text-[12px] font-semibold tracking-[0.18em] text-terracota uppercase">{chico}</p>}
+      <H className="font-display mt-1 text-[1.85rem] leading-tight font-medium text-balance sm:text-[2.4rem]">{children}</H>
     </div>
   );
 }

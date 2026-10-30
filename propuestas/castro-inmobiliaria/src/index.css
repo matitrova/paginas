@@ -2,21 +2,22 @@
 @source "./";
 @source "../../../compartido";
 
-/* Su identidad, blanco y naranja, mejor hecha: el naranja de la marca (#f88e04) queda para detalles y bordes,
-   porque con letra blanca encima no se lee (2,3:1). Botones y links en un naranja más hondo: blanco sobre él 4,9:1,
-   y él sobre blanco 4,9:1. Letra casi negra (14,5:1), texto suave gris (5,7:1 sobre blanco, 5,2 sobre el gris de las
-   secciones). Pie gris oscuro, como el de ellos. Letras: Montserrat, la de su sitio, para títulos y botones; Inter
-   para leer. Los nombres viejos (arena, chocolate, terracota…) quedan apuntando a esta paleta. */
+/* "Editorial serrano" (Actualización 17): su contenido con cara propia, como una revista. Fondo hueso, bloques arena,
+   letra tinta cálida (13,7:1), texto suave (5,9:1 sobre hueso, 5:1 sobre arena) y algarrobo para links y títulos
+   chicos (7,1:1). El naranja de su logo (#f88e04) queda solo de detalle: el sello del lote, el pin y el subrayado
+   del menú; nunca en texto (2,1:1 sobre hueso). Letras: Newsreader, serif de revista, para títulos, nombres y
+   precios; Hanken Grotesk para leer, datos y botones. Los nombres viejos (arena, chocolate, terracota…) quedan
+   apuntando a esta paleta para no tocar cada clase. */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --color-arena: #ffffff;
-  --color-piedra: #f3f3f3;
-  --color-chocolate: #2b2b2b;
-  --color-suave: #666666;
-  --color-terracota: #b85400;
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Newsreader", ui-serif, Georgia, serif;
+  --color-arena: #f6f2eb;
+  --color-piedra: #e9dfd0;
+  --color-chocolate: #2b2420;
+  --color-suave: #655c54;
+  --color-terracota: #6b4a2f;
   --color-naranja: #f88e04;
-  --color-linea: rgb(0 0 0 / 0.1);
+  --color-linea: rgb(43 36 32 / 0.14);
   --color-alarma: #b23b2e;
   --color-fondo: var(--color-arena);
   --color-hondo: var(--color-piedra);
@@ -81,14 +82,15 @@ body {
   color: #fff;
   text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000;
 }
-/* Sin lote, el pin en el punto que publica la inmobiliaria (MapaFicha.tsx): terracota con borde blanco */
+/* Sin lote, el pin en el punto que publica la inmobiliaria (MapaFicha.tsx): el naranja de su logo con borde blanco,
+   que sobre la foto satelital se ve (el algarrobo no) */
 .punto svg {
   display: block;
   overflow: visible;
   filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.5));
 }
 .punto path {
-  fill: var(--color-terracota);
+  fill: var(--color-naranja);
   stroke: #fff;
   stroke-width: 2.5;
   stroke-linejoin: round;

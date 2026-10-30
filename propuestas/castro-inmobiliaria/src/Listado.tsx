@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from "react";
-import { ir, linkWhatsApp, Tarjeta } from "./componentes";
+import { BOTON_BORDE, ir, linkWhatsApp, Tarjeta } from "./componentes";
 import { contar, esTerreno, porM2, precioEn, PROPIEDADES, TIPOS, type Propiedad } from "./datos";
 
 // Rangos fijos en vez de un deslizador: con 272 propiedades se elige rápido y se entiende de un vistazo
@@ -73,11 +73,14 @@ export function filtrar(f: Filtros): Propiedad[] {
   return lista.sort((a, b) => b.alta.localeCompare(a.alta));
 }
 
+// Una pestaña de tipo: texto, y la elegida subrayada con el naranja de su logo
+const TIPO = "-mb-px shrink-0 border-b-2 border-transparent pt-1 pb-2.5 text-[15px] font-semibold whitespace-nowrap hover:border-chocolate/30 aria-pressed:border-naranja";
+
 function Selector({ nombre, etiqueta, valor, opciones, alCambiar }: { nombre: string; etiqueta: string; valor: string; opciones: { valor: string; texto: string }[]; alCambiar: (v: string) => void }) {
   return (
     <label className="flex min-w-0 flex-col gap-1 text-[12.5px] font-medium text-suave">
       {etiqueta}
-      <select name={nombre} value={valor} onChange={(e) => alCambiar(e.target.value)} className="h-11 min-w-0 rounded-xl border border-linea bg-white px-3 text-[15px] text-tinta">
+      <select name={nombre} value={valor} onChange={(e) => alCambiar(e.target.value)} className="h-11 min-w-0 rounded-md border border-chocolate/25 bg-arena px-3 text-[15px] text-tinta">
         {opciones.map((o) => (
           <option key={o.valor} value={o.valor}>
             {o.texto}
@@ -189,7 +192,7 @@ export default function Listado() {
 
   return (
     <section className="mx-auto max-w-6xl px-5 pt-5 sm:px-6 sm:pt-8">
-      <h1 className="font-display text-[1.7rem] leading-tight font-bold text-terracota sm:text-[2.2rem]">Propiedades en {op === "venta" ? "venta" : "alquiler"}</h1>
+      <h1 className="font-display text-[2rem] leading-tight font-medium sm:text-[2.6rem]">Propiedades en {op === "venta" ? "venta" : "alquiler"}</h1>
 
       <form onSubmit={(e) => e.preventDefault()} className="mt-3 sm:mt-4">
         <label className="sr-only" htmlFor="buscar">Buscar por código, zona o palabra</label>
@@ -200,35 +203,33 @@ export default function Listado() {
           onChange={(e) => cambiar({ q: e.target.value })}
           placeholder="Buscá por código, zona o palabra"
           data-buscar
-          className="h-11 w-full rounded-xl border border-linea bg-white px-4 text-[16px] placeholder:text-suave sm:h-12"
+          className="h-11 w-full rounded-md border border-chocolate/25 bg-arena px-4 text-[16px] placeholder:text-suave sm:h-12"
         />
       </form>
 
       <div className="mt-3 flex gap-2 sm:mt-4">
         <div className="flex gap-2" role="group" aria-label="Operación">
           {["venta", "alquiler"].map((o) => (
-            <button key={o} onClick={() => cambiar({ op: o === "venta" ? "" : o })} aria-pressed={op === o} className="rounded-full border border-linea px-5 py-2.5 text-[15px] font-semibold capitalize aria-pressed:border-tinta aria-pressed:bg-tinta aria-pressed:text-white">
+            <button key={o} onClick={() => cambiar({ op: o === "venta" ? "" : o })} aria-pressed={op === o} className="rounded-md border border-chocolate/25 px-5 py-2.5 text-[15px] font-semibold aria-pressed:border-chocolate aria-pressed:bg-chocolate aria-pressed:text-arena">
               {o === "venta" ? "Comprar" : "Alquilar"}
             </button>
           ))}
         </div>
-        <button onClick={() => setVerFiltros(!verFiltros)} aria-expanded={verFiltros} aria-controls="filtros" data-ver-filtros className="ml-auto rounded-full border border-linea bg-white px-4 py-2.5 text-[15px] font-semibold aria-expanded:border-tinta md:hidden">
+        <button onClick={() => setVerFiltros(!verFiltros)} aria-expanded={verFiltros} aria-controls="filtros" data-ver-filtros className="ml-auto rounded-md border border-chocolate/25 px-4 py-2.5 text-[15px] font-semibold aria-expanded:border-chocolate md:hidden">
           Filtros{desplegables > 0 && ` · ${desplegables}`}
         </button>
       </div>
 
-      {/* "Simplificá tu búsqueda", como en su página de compra: un botón por tipo, con cuántas hay. En el celular, en una
-          fila que se desliza, para que la primera propiedad se vea sin bajar */}
-      <p className="font-display mt-6 hidden text-[13px] font-bold tracking-wide text-suave uppercase sm:block">Simplificá tu búsqueda</p>
-      <div data-libre className="sin-barra -mx-5 mt-3 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:mt-2 sm:flex-wrap sm:gap-2.5 sm:overflow-visible sm:px-0" role="group" aria-label="Simplificá tu búsqueda: tipo de propiedad">
-        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-naranja aria-pressed:bg-naranja aria-pressed:text-chocolate sm:min-w-[5.5rem] sm:flex-auto sm:flex-col sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
-          <span className="font-display text-[12px] font-bold tracking-wide uppercase">Todas</span>
-          <span className="text-[13px] opacity-80">{deLaOperacion.length}</span>
+      {/* "Simplificá tu búsqueda", como en su página de compra, pero como pestañas de texto con cuántas hay de cada
+          tipo. En el celular, en una fila que se desliza, para que la primera propiedad se vea sin bajar */}
+      <p className="mt-6 hidden text-[12px] font-semibold tracking-[0.16em] text-suave uppercase sm:block">Simplificá tu búsqueda</p>
+      <div data-libre className="sin-barra -mx-5 mt-3 flex gap-6 overflow-x-auto border-b border-linea px-5 sm:mx-0 sm:mt-2 sm:flex-wrap sm:gap-x-7 sm:gap-y-1 sm:overflow-visible sm:px-0" role="group" aria-label="Simplificá tu búsqueda: tipo de propiedad">
+        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className={TIPO}>
+          <span>Todas</span> <span className="text-suave">{deLaOperacion.length}</span>
         </button>
         {tipos.map(([tipo, n]) => (
-          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-naranja aria-pressed:bg-naranja aria-pressed:text-chocolate sm:min-w-[5.5rem] sm:flex-auto sm:flex-col sm:justify-center sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
-            <span className="font-display text-[12px] leading-tight font-bold tracking-wide whitespace-nowrap uppercase">{TIPOS[tipo] ?? tipo}</span>
-            <span className="text-[13px] opacity-80">{n}</span>
+          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className={TIPO}>
+            <span>{TIPOS[tipo] ?? tipo}</span> <span className="text-suave">{n}</span>
           </button>
         ))}
       </div>
@@ -266,12 +267,12 @@ export default function Listado() {
           ))}
         </div>
       ) : (
-        <p className="mt-10 rounded-2xl bg-hondo p-8 text-center text-[16px] text-suave">No hay propiedades con esos filtros. Probá sacando alguno.</p>
+        <p className="mt-10 rounded-md bg-hondo p-8 text-center text-[16px] text-suave">No hay propiedades con esos filtros. Probá sacando alguno.</p>
       )}
       {lista.length > cuantas && (
         <div className="mt-10 text-center">
           <p className="text-[14px] text-suave">Viendo {cuantas} de {lista.length}</p>
-          <button onClick={verMas} data-ver-mas className="font-display mt-3 rounded-full border-2 border-terracota bg-white px-7 py-3 text-[14px] font-bold tracking-wide text-terracota uppercase hover:border-naranja hover:bg-naranja hover:text-chocolate">
+          <button onClick={verMas} data-ver-mas className={`${BOTON_BORDE} mt-3`}>
             Ver {Math.min(TANDA, lista.length - cuantas)} más
           </button>
         </div>
