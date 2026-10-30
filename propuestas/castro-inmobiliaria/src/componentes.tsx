@@ -28,6 +28,18 @@ const MENU = [
 
 const REDES: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", youtube: "YouTube" };
 const redes = () => Object.entries(SITIO.contacto.redes).filter(([red]) => red !== "youtube_alternativo");
+const ICONOS_REDES: Record<string, React.ReactNode> = {
+  instagram: (
+    <g fill="none" stroke="currentColor" strokeWidth={2}>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+    </g>
+  ),
+  facebook: <path fill="currentColor" d="M13.5 21v-7h2.5l.5-3.5h-3V8.4c0-1 .3-1.7 1.8-1.7H17V3.6c-.3 0-1.4-.1-2.6-.1-2.6 0-4.3 1.6-4.3 4.4v2.6H7.2V14h2.9v7z" />,
+  tiktok: <path fill="currentColor" d="M16.6 3c.4 2.2 1.8 3.6 4 3.8v3.1c-1.5 0-2.9-.4-4-1.2v6.1c0 3.4-2.5 6.2-6 6.2S4.6 18.3 4.6 15c0-3.5 3-6.2 6.6-5.8v3.2c-1.8-.4-3.4.9-3.4 2.6 0 1.5 1.2 2.7 2.8 2.7 1.7 0 2.8-1.3 2.8-3V3z" />,
+  youtube: <path fill="currentColor" fillRule="evenodd" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z" />,
+};
 
 /** Como el de ellos: el logo, el teléfono a mano y el menú; en el celular, un menú que se despliega. */
 export function Encabezado({ actual }: { actual: string }) {
@@ -48,9 +60,17 @@ export function Encabezado({ actual }: { actual: string }) {
             </a>
           ))}
         </nav>
+        {/* Sus redes, como en su encabezado: desde 1280 px, porque en 1024 el menú ya ocupa todo el ancho; para que entren, desde 1024 el botón dice solo el número */}
+        <div className="hidden items-center xl:flex" data-redes-encabezado>
+          {redes().map(([red, url]) => (
+            <a key={red} href={url} target="_blank" rel="noopener" aria-label={REDES[red] ?? red} className="grid h-8 w-8 place-items-center rounded-full text-suave hover:text-terracota">
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">{ICONOS_REDES[red]}</svg>
+            </a>
+          ))}
+        </div>
         <a href={LLAMAR} aria-label={`Llamar al ${TELEFONO}`} className="font-display ml-auto flex h-10 items-center rounded-full bg-naranja px-3 text-[13px] font-bold whitespace-nowrap text-chocolate hover:brightness-105 sm:px-4 lg:ml-2">
           <svg viewBox="0 0 24 24" className="h-5 w-5 sm:hidden" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z" /></svg>
-          <span className="hidden sm:inline"><span className="lg:hidden xl:inline">Llamá </span>{TELEFONO}</span>
+          <span className="hidden sm:inline"><span className="lg:hidden">Llamá </span>{TELEFONO}</span>
         </a>
         <details className="relative lg:hidden">
           <summary className="font-display flex h-10 cursor-pointer list-none items-center rounded-full border border-linea px-4 text-[13px] font-semibold uppercase">Menú</summary>
@@ -63,6 +83,11 @@ export function Encabezado({ actual }: { actual: string }) {
             <a href={LLAMAR} className="mx-3 mt-1 block rounded-xl bg-naranja px-4 py-3 text-center font-semibold whitespace-nowrap text-chocolate">
               Llamá {TELEFONO}
             </a>
+            <p className="flex justify-center gap-4 px-5 pt-3 pb-1 text-[13.5px] text-suave">
+              {redes().map(([red, url]) => (
+                <a key={red} href={url} target="_blank" rel="noopener" className="underline underline-offset-4">{REDES[red] ?? red}</a>
+              ))}
+            </p>
           </nav>
         </details>
       </div>
@@ -165,7 +190,7 @@ export function Tarjeta({ p, op }: { p: Propiedad; op?: string }) {
   return (
     <div data-tarjeta={p.id} data-precio={precioEn(p, op).precio ?? ""} data-tipo={p.tipo} className="tarjeta group relative flex min-w-0 flex-col">
       <a href={ir({ p: p.id })} className="flex flex-1 flex-col">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-piedra">
+        <div className="relative aspect-[3/2] overflow-hidden rounded-2xl bg-piedra sm:aspect-[4/3]">
           <img src={imagenTarjeta(p)} alt="" loading="lazy" width={560} height={420} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
           <span className="absolute top-3 left-3 flex gap-1.5">
             {p.operacion.map((o) => (

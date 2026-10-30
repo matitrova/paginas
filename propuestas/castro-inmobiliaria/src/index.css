@@ -236,18 +236,13 @@ body {
   text-align: center;
 }
 /* La esquina redondeada (24 px) de los mapas generales se comía la F de "Foto:" */
-[data-mapa-general] .leaflet-control-attribution,
-[data-mapa-urbanizaciones] .leaflet-control-attribution {
+[data-mapa-general] .leaflet-control-attribution {
   padding-left: 16px;
 }
-/* En el celular el botón flotante de WhatsApp (abajo a la derecha, unos 145 px) tapaba el final de la atribución.
-   En el panel del mapa del listado no hace falta: el panel tapa el botón */
+/* En el celular, que el final de la atribución no quede abajo del botón flotante de WhatsApp (un círculo de 52 px a
+   16 px del borde derecho) */
 @media (max-width: 767px) {
-  [data-mapa-general] .leaflet-control-attribution,
-  [data-mapa-urbanizaciones] .leaflet-control-attribution {
-    max-width: calc(100vw - 210px);
-  }
-  [data-panel-mapa] .leaflet-control-attribution {
-    max-width: none;
+  [data-mapa-general] .leaflet-control-attribution {
+    max-width: calc(100vw - 110px);
   }
 }

@@ -578,9 +578,11 @@ def castro(pg, nombre, cap):
             for q in ("?ver=propiedades", f"?ver=propiedades&tipo=Casa&zona={zona}"):
                 ir(q)
                 m = pg.evaluate("""() => { const r = s => document.querySelector(s).getBoundingClientRect();
-                  return { foto: r('[data-tarjeta]').top, flotante: r('[data-whatsapp-flotante]').top } }""")
+                  return { foto: r('[data-tarjeta]').top, precio: r('[data-tarjeta] [data-precio-texto]').bottom, flotante: r('[data-whatsapp-flotante]').top } }""")
                 if m["foto"] + 120 > m["flotante"]:
                     problemas.append(f"{nombre}: en {w}x{h} ('{q}') la primera tarjeta no se ve sin bajar: {m}")
+                if q == "?ver=propiedades" and m["precio"] > h:
+                    problemas.append(f"{nombre}: en {w}x{h} el precio de la primera tarjeta queda abajo del borde: {m}")
         pg.set_viewport_size(tam)
         if pg.locator("select[name=zona]").is_visible() or pg.locator("[data-ver-filtros]").inner_text().strip() != "Filtros · 1":
             problemas.append(f"{nombre}: en el celular los desplegables tienen que ir cerrados, con «Filtros · 1» al haber una zona elegida")
@@ -821,12 +823,14 @@ def castro(pg, nombre, cap):
     # El menú entero desde 1024 px, sin pisarse
     if not movil:
         tam = pg.viewport_size
-        pg.set_viewport_size({"width": 1024, "height": 768})
-        pg.wait_for_timeout(200)
-        r = pg.evaluate("""() => { const h = document.querySelector('header > div'), cajas = [...h.children].filter(e => e.offsetWidth).map(e => e.getBoundingClientRect());
-          return { menu: !!document.querySelector('header nav').offsetWidth, pisan: cajas.some((a, i) => i && a.left < cajas[i - 1].right - 1), sale: h.scrollWidth > h.clientWidth } }""")
-        if not r["menu"] or r["pisan"] or r["sale"]:
-            problemas.append(f"{nombre}: en 1024 px el menú no entra en el encabezado: {r}")
+        for ancho in (1280, 1024):
+            pg.set_viewport_size({"width": ancho, "height": 768})
+            pg.wait_for_timeout(200)
+            r = pg.evaluate("""() => { const h = document.querySelector('header > div'), cajas = [...h.children].filter(e => e.offsetWidth).map(e => e.getBoundingClientRect());
+              return { menu: !!document.querySelector('header nav').offsetWidth, redes: document.querySelector('[data-redes-encabezado]').offsetWidth > 0,
+                       pisan: cajas.some((a, i) => i && a.left < cajas[i - 1].right - 1), sale: h.scrollWidth > h.clientWidth } }""")
+            if not r["menu"] or r["pisan"] or r["sale"] or r["redes"] != (ancho >= 1280):
+                problemas.append(f"{nombre}: en {ancho} px el menú (y las redes desde 1280) no entra en el encabezado: {r}")
         # Y los botones de tipo del listado: "Departamentos" y "Complejos y hoteles" se cortaban
         ir("?ver=propiedades")
         cortados = pg.evaluate("[...document.querySelectorAll('[data-filtro-tipo] span:first-child')].filter(s => s.scrollWidth > s.parentElement.clientWidth - 4).map(s => s.textContent)")

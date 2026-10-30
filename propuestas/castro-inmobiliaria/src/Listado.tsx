@@ -132,8 +132,18 @@ function useVolverATarjeta() {
     history.scrollRestoration = "manual";
     const volviendo = (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined)?.type === "back_forward";
     if (!guardado || !volviendo || guardado.busqueda !== location.search) return;
-    const tarjeta = document.querySelector(`[data-tarjeta="${guardado.id}"]`);
-    if (tarjeta) scrollTo({ top: scrollY + tarjeta.getBoundingClientRect().top - guardado.arriba, behavior: "instant" });
+    const { id, arriba } = guardado;
+    const ubicar = () => {
+      const tarjeta = document.querySelector(`[data-tarjeta="${id}"]`);
+      if (tarjeta) scrollTo({ top: scrollY + tarjeta.getBoundingClientRect().top - arriba, behavior: "instant" });
+    };
+    // Al llegar, las tarjetas de alrededor se dibujan y pasan de la altura estimada a la real: se vuelve a ubicar
+    // en los dos cuadros siguientes, cuando ya midieron
+    ubicar();
+    requestAnimationFrame(() => {
+      ubicar();
+      requestAnimationFrame(ubicar);
+    });
   }, []);
 }
 
@@ -178,10 +188,10 @@ export default function Listado() {
   const desplegables = [f.zona, f.precio, f.dorm, f.sup].filter(Boolean).length;
 
   return (
-    <section className="mx-auto max-w-6xl px-5 pt-8 sm:px-6">
+    <section className="mx-auto max-w-6xl px-5 pt-5 sm:px-6 sm:pt-8">
       <h1 className="font-display text-[1.7rem] leading-tight font-bold text-terracota sm:text-[2.2rem]">Propiedades en {op === "venta" ? "venta" : "alquiler"}</h1>
 
-      <form onSubmit={(e) => e.preventDefault()} className="mt-4">
+      <form onSubmit={(e) => e.preventDefault()} className="mt-3 sm:mt-4">
         <label className="sr-only" htmlFor="buscar">Buscar por código, zona o palabra</label>
         <input
           id="buscar"
@@ -190,11 +200,11 @@ export default function Listado() {
           onChange={(e) => cambiar({ q: e.target.value })}
           placeholder="Buscá por código, zona o palabra"
           data-buscar
-          className="h-12 w-full rounded-xl border border-linea bg-white px-4 text-[16px] placeholder:text-suave"
+          className="h-11 w-full rounded-xl border border-linea bg-white px-4 text-[16px] placeholder:text-suave sm:h-12"
         />
       </form>
 
-      <div className="mt-4 flex gap-2">
+      <div className="mt-3 flex gap-2 sm:mt-4">
         <div className="flex gap-2" role="group" aria-label="Operación">
           {["venta", "alquiler"].map((o) => (
             <button key={o} onClick={() => cambiar({ op: o === "venta" ? "" : o })} aria-pressed={op === o} className="rounded-full border border-linea px-5 py-2.5 text-[15px] font-semibold capitalize aria-pressed:border-tinta aria-pressed:bg-tinta aria-pressed:text-white">
@@ -210,7 +220,7 @@ export default function Listado() {
       {/* "Simplificá tu búsqueda", como en su página de compra: un botón por tipo, con cuántas hay. En el celular, en una
           fila que se desliza, para que la primera propiedad se vea sin bajar */}
       <p className="font-display mt-6 hidden text-[13px] font-bold tracking-wide text-suave uppercase sm:block">Simplificá tu búsqueda</p>
-      <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:mt-2 sm:flex-wrap sm:gap-2.5 sm:overflow-visible sm:px-0" role="group" aria-label="Simplificá tu búsqueda: tipo de propiedad">
+      <div data-libre className="sin-barra -mx-5 mt-3 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:mt-2 sm:flex-wrap sm:gap-2.5 sm:overflow-visible sm:px-0" role="group" aria-label="Simplificá tu búsqueda: tipo de propiedad">
         <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-naranja aria-pressed:bg-naranja aria-pressed:text-chocolate sm:min-w-[5.5rem] sm:flex-auto sm:flex-col sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
           <span className="font-display text-[12px] font-bold tracking-wide uppercase">Todas</span>
           <span className="text-[13px] opacity-80">{deLaOperacion.length}</span>
@@ -233,7 +243,7 @@ export default function Listado() {
         <Selector nombre="orden" etiqueta="Ordenar" valor={f.orden} alCambiar={(orden) => cambiar({ orden })} opciones={ORDENES.filter((o) => o.valor !== "m2" || conTerreno)} />
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-4 border-b border-linea pb-3">
+      <div className="mt-4 flex items-center justify-between gap-4 border-b border-linea pb-2 sm:mt-6 sm:pb-3">
         <p className="text-[15px]" data-resultados={lista.length}>
           <b className="font-semibold">{lista.length}</b> {lista.length === 1 ? "propiedad" : "propiedades"}
         </p>
@@ -244,13 +254,13 @@ export default function Listado() {
         )}
       </div>
       {hayFiltros && (
-        <a href={linkWhatsApp(`Hola, avisenme si entra algo así: ${resumen(f)}.\nLa búsqueda: ${location.href}`)} target="_blank" rel="noopener" data-avisame className="mt-3 inline-block text-[14px] font-semibold text-tinta/80 underline underline-offset-4">
+        <a href={linkWhatsApp(`Hola, avisenme si entra algo así: ${resumen(f)}.\nLa búsqueda: ${location.href}`)} target="_blank" rel="noopener" data-avisame className="mt-2 inline-block text-[14px] font-semibold text-tinta/80 underline underline-offset-4">
           Avisame por WhatsApp si entra algo así
         </a>
       )}
 
       {lista.length ? (
-        <div onClick={recordarTarjeta} className="mt-6 grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+        <div onClick={recordarTarjeta} className="mt-4 grid sm:mt-6 gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
           {lista.slice(0, cuantas).map((p) => (
             <Tarjeta key={p.id} p={p} op={op} />
           ))}
