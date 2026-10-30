@@ -1,6 +1,5 @@
-import { useEffect, useLayoutEffect, useState } from "react";
-import { ir, Tarjeta, useConsulta } from "./componentes";
-import MapaGeneral from "./MapaGeneral";
+import { useLayoutEffect, useState } from "react";
+import { ir, linkWhatsApp, Tarjeta } from "./componentes";
 import { contar, esTerreno, porM2, precioEn, PROPIEDADES, TIPOS, type Propiedad } from "./datos";
 
 // Rangos fijos en vez de un deslizador: con 272 propiedades se elige rápido y se entiende de un vistazo
@@ -140,32 +139,6 @@ function useVolverATarjeta() {
 
 export default function Listado() {
   useVolverATarjeta();
-  const consulta = useConsulta();
-  // En la compu el mapa va fijo al costado de la lista; en el celular se abre con el botón "Mapa" a pantalla completa
-  const [esCompu, setEsCompu] = useState(() => matchMedia("(min-width: 1024px)").matches);
-  const [mapaAbierto, setMapaAbierto] = useState(() => new URLSearchParams(location.search).get("mapa") === "1");
-  const [resaltada, setResaltada] = useState<string | null>(null);
-  useEffect(() => {
-    const mq = matchMedia("(min-width: 1024px)");
-    const cambio = () => setEsCompu(mq.matches);
-    mq.addEventListener("change", cambio);
-    return () => mq.removeEventListener("change", cambio);
-  }, []);
-  // El mapa abierto queda en la dirección: al volver de una ficha abierta desde el mapa, vuelve al mapa
-  const abrirMapa = (abierto: boolean) => {
-    setMapaAbierto(abierto);
-    const q = new URLSearchParams(location.search);
-    if (abierto) q.set("mapa", "1");
-    else q.delete("mapa");
-    history.replaceState(null, "", `?${q}`);
-  };
-  useEffect(() => {
-    if (!mapaAbierto || esCompu) return;
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.documentElement.style.overflow = "";
-    };
-  }, [mapaAbierto, esCompu]);
   const [f, setF] = useState<Filtros>(filtrosDeLaDireccion);
   // En el celular los desplegables van detrás de "Filtros": si no, la primera pantalla eran solo filtros y ninguna propiedad
   const [verFiltros, setVerFiltros] = useState(false);
@@ -206,7 +179,7 @@ export default function Listado() {
 
   return (
     <section className="mx-auto max-w-6xl px-5 pt-8 sm:px-6">
-      <h1 className="font-display text-[2rem] leading-tight sm:text-[2.6rem]">Propiedades en {op === "venta" ? "venta" : "alquiler"}</h1>
+      <h1 className="font-display text-[1.7rem] leading-tight font-bold text-terracota sm:text-[2.2rem]">Propiedades en {op === "venta" ? "venta" : "alquiler"}</h1>
 
       <form onSubmit={(e) => e.preventDefault()} className="mt-4">
         <label className="sr-only" htmlFor="buscar">Buscar por código, zona o palabra</label>
@@ -215,7 +188,7 @@ export default function Listado() {
           type="search"
           value={f.q}
           onChange={(e) => cambiar({ q: e.target.value })}
-          placeholder={esCompu ? "Buscar por código (CHO…), zona o palabra" : "Código, zona o palabra"}
+          placeholder="Buscá por código, zona o palabra"
           data-buscar
           className="h-12 w-full rounded-xl border border-linea bg-white px-4 text-[16px] placeholder:text-suave"
         />
@@ -234,13 +207,18 @@ export default function Listado() {
         </button>
       </div>
 
-      <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Tipo de propiedad">
-        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="group shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
-          Todas <span className="opacity-70 group-aria-pressed:opacity-100">{deLaOperacion.length}</span>
+      {/* "Simplificá tu búsqueda", como en su página de compra: un botón por tipo, con cuántas hay. En el celular, en una
+          fila que se desliza, para que la primera propiedad se vea sin bajar */}
+      <p className="font-display mt-6 hidden text-[13px] font-bold tracking-wide text-suave uppercase sm:block">Simplificá tu búsqueda</p>
+      <div data-libre className="sin-barra -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:mt-2 sm:grid sm:grid-cols-4 sm:gap-2.5 sm:px-0 lg:grid-cols-8" role="group" aria-label="Simplificá tu búsqueda: tipo de propiedad">
+        <button onClick={() => cambiar({ tipo: "" })} aria-pressed={!f.tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-terracota aria-pressed:bg-terracota aria-pressed:text-white sm:min-w-[5.5rem] sm:flex-col sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
+          <span className="font-display text-[12px] font-bold tracking-wide uppercase">Todas</span>
+          <span className="text-[13px] opacity-80">{deLaOperacion.length}</span>
         </button>
         {tipos.map(([tipo, n]) => (
-          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="group shrink-0 rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] whitespace-nowrap aria-pressed:border-naranja-osc aria-pressed:bg-naranja-osc aria-pressed:font-semibold aria-pressed:text-white">
-            {TIPOS[tipo] ?? tipo} <span className="opacity-70 group-aria-pressed:opacity-100">{n}</span>
+          <button key={tipo} data-filtro-tipo={tipo} onClick={() => cambiar({ tipo })} aria-pressed={f.tipo === tipo} className="flex shrink-0 items-center gap-1.5 rounded-full border border-linea bg-white px-3.5 py-2 shadow-sm aria-pressed:border-terracota aria-pressed:bg-terracota aria-pressed:text-white sm:min-w-[5.5rem] sm:flex-col sm:justify-center sm:gap-0 sm:rounded-2xl sm:px-3 sm:py-2.5">
+            <span className="font-display text-[12px] leading-tight font-bold tracking-wide whitespace-nowrap uppercase sm:text-center sm:whitespace-normal">{TIPOS[tipo] ?? tipo}</span>
+            <span className="text-[13px] opacity-80">{n}</span>
           </button>
         ))}
       </div>
@@ -266,73 +244,28 @@ export default function Listado() {
         )}
       </div>
       {hayFiltros && (
-        <button onClick={() => consulta.abrir(`Hola, avisenme si entra algo así: ${resumen(f)}.\nLa búsqueda: ${location.href}`)} data-avisame className="mt-3 text-[14px] font-semibold text-tinta/80 underline underline-offset-4">
+        <a href={linkWhatsApp(`Hola, avisenme si entra algo así: ${resumen(f)}.\nLa búsqueda: ${location.href}`)} target="_blank" rel="noopener" data-avisame className="mt-3 inline-block text-[14px] font-semibold text-tinta/80 underline underline-offset-4">
           Avisame por WhatsApp si entra algo así
-        </button>
+        </a>
       )}
 
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-8">
-        <div>
-          {lista.length ? (
-            <div
-              onClick={recordarTarjeta}
-              onMouseOver={(e) => esCompu && setResaltada((e.target as Element).closest("[data-tarjeta]")?.getAttribute("data-tarjeta") ?? null)}
-              onMouseLeave={() => setResaltada(null)}
-              className="mt-6 grid gap-5 sm:grid-cols-2"
-            >
-              {lista.slice(0, cuantas).map((p) => (
-                <Tarjeta key={p.id} p={p} op={op} />
-              ))}
-            </div>
-          ) : (
-            <p className="mt-10 rounded-2xl bg-hondo p-8 text-center text-[16px] text-suave">No hay propiedades con esos filtros. Probá sacando alguno.</p>
-          )}
-          {lista.length > cuantas && (
-            <div className="mt-8 text-center">
-              <p className="text-[14px] text-suave">Viendo {cuantas} de {lista.length}</p>
-              <button onClick={verMas} data-ver-mas className="mt-3 rounded-full border border-tinta/20 bg-white px-7 py-3.5 text-[15px] font-semibold hover:bg-hondo">
-                Ver {Math.min(TANDA, lista.length - cuantas)} más
-              </button>
-            </div>
-          )}
+      {lista.length ? (
+        <div onClick={recordarTarjeta} className="mt-6 grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+          {lista.slice(0, cuantas).map((p) => (
+            <Tarjeta key={p.id} p={p} op={op} />
+          ))}
         </div>
-        {/* El mapa va después de la lista en el orden de lectura: con teclado se llega a las tarjetas primero */}
-        {esCompu && (
-          <div className="mt-6">
-            <div className="sticky top-28 h-[calc(100vh-8.5rem)]">
-              <MapaGeneral props={lista} op={op} resaltada={resaltada} className="h-full" costado />
-            </div>
-          </div>
-        )}
-      </div>
-      {!esCompu && lista.length > 0 && (
-        <button onClick={() => abrirMapa(true)} data-abrir-mapa className="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-full bg-tinta px-5 py-3 font-semibold text-white shadow-[0_12px_30px_-10px_rgb(0_0_0/0.5)]">
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" /></svg>
-          Mapa
-        </button>
+      ) : (
+        <p className="mt-10 rounded-2xl bg-hondo p-8 text-center text-[16px] text-suave">No hay propiedades con esos filtros. Probá sacando alguno.</p>
       )}
-      {/* La ventana nativa del navegador: deja inerte lo de atrás, cierra con Escape y devuelve el foco al botón "Mapa".
-          Se abre al montarse (también llegando con ?mapa=1), antes de que el mapa mida su lugar */}
-      {!esCompu && mapaAbierto && (
-        <dialog
-          ref={(d) => {
-            if (d && !d.open) d.showModal();
-          }}
-          onClose={() => abrirMapa(false)}
-          aria-label="Mapa de las propiedades"
-          data-panel-mapa
-          className="fixed inset-x-0 top-8 bottom-0 m-0 flex h-auto max-h-none w-full max-w-none flex-col border-0 bg-fondo p-0 text-tinta backdrop:bg-transparent"
-        >
-          <form method="dialog" className="flex items-center justify-between gap-3 px-4 py-3">
-            <p className="text-[15px]"><b>{lista.length}</b> {lista.length === 1 ? "propiedad" : "propiedades"}</p>
-            <button className="rounded-full border border-linea bg-white px-4 py-2 text-[14.5px] font-semibold" data-cerrar-mapa>
-              Ver la lista
-            </button>
-          </form>
-          <MapaGeneral props={lista} op={op} className="min-h-0 flex-1 rounded-none" arrastrable />
-        </dialog>
+      {lista.length > cuantas && (
+        <div className="mt-10 text-center">
+          <p className="text-[14px] text-suave">Viendo {cuantas} de {lista.length}</p>
+          <button onClick={verMas} data-ver-mas className="font-display mt-3 rounded-full border-2 border-terracota bg-white px-7 py-3 text-[14px] font-bold tracking-wide text-terracota uppercase hover:bg-terracota hover:text-white">
+            Ver {Math.min(TANDA, lista.length - cuantas)} más
+          </button>
+        </div>
       )}
-      {consulta.vista}
       {lista.some(esTerreno) && f.orden === "m2" && <p className="mt-6 text-[13px] text-suave">Las que no publican superficie van al final.</p>}
     </section>
   );

@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
-import VistaWhatsApp from "../../../compartido/VistaWhatsApp";
-import { esTerreno, NEGOCIO, portada, precio, precioEn, precioPorSuperficie, PROPIEDADES, SITIO, superficie, TELEFONO, URBANIZACIONES, type Propiedad, WHATSAPP } from "./datos";
-import { NOTA_DATOS, PIE } from "./textos";
+import { esTerreno, NEGOCIO, portada, precio, precioEn, precioPorSuperficie, SITIO, superficie, TELEFONO, type Propiedad, WHATSAPP } from "./datos";
+import { NOTA_DATOS } from "./textos";
 
 /** Arma un link a otra pantalla. Cada pantalla es una página común: "atrás" y abrir en otra pestaña andan solos. */
 export function ir(params: Record<string, string | number | undefined | null> = {}) {
@@ -13,127 +11,56 @@ export function ir(params: Record<string, string | number | undefined | null> = 
 /** El link para compartir una propiedad: una página chica que trae su foto y su precio para WhatsApp y redirige a la ficha. */
 export const linkPropiedad = (id: string) => new URL(`p/${id}/`, location.href.split("?")[0]).href;
 
-// Guardadas: se guardan en el teléfono, sin crear cuenta (su sitio pide registrarse para lo mismo)
-const CLAVE_GUARDADAS = "castro-guardadas";
-function leerGuardadas(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(CLAVE_GUARDADAS) ?? "[]");
-  } catch {
-    return [];
-  }
-}
+/** El chat de WhatsApp de la inmobiliaria con el mensaje ya escrito. Abre directo (lo eligió Matías el 30/10): quien
+ *  toque el botón en la propuesta le escribe de verdad a la inmobiliaria. */
+export const linkWhatsApp = (mensaje: string) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
 
-export function useGuardadas() {
-  const [ids, setIds] = useState(leerGuardadas);
-  useEffect(() => {
-    const actualizar = () => setIds(leerGuardadas());
-    window.addEventListener("guardadas", actualizar);
-    window.addEventListener("storage", actualizar);
-    return () => {
-      window.removeEventListener("guardadas", actualizar);
-      window.removeEventListener("storage", actualizar);
-    };
-  }, []);
-  const alternar = (id: string) => {
-    const nuevas = leerGuardadas().includes(id) ? leerGuardadas().filter((x) => x !== id) : [...leerGuardadas(), id];
-    try {
-      localStorage.setItem(CLAVE_GUARDADAS, JSON.stringify(nuevas));
-    } catch {
-      /* sin almacenamiento: el corazón se marca hasta que se cierra la página */
-    }
-    setIds(nuevas);
-    window.dispatchEvent(new Event("guardadas"));
-  };
-  const vaciar = () => {
-    try {
-      localStorage.removeItem(CLAVE_GUARDADAS);
-    } catch {
-      /* nada que borrar */
-    }
-    setIds([]);
-    window.dispatchEvent(new Event("guardadas"));
-  };
-  return { ids, alternar, vaciar };
-}
-
-const CORAZON = "M12 20.5s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8c0 5.5-7.5 10.1-7.5 10.1z";
-
-/** El corazón de las tarjetas; con texto, un botón con el corazón y la palabra (la ficha le da su forma). */
-export function BotonGuardar({ id, className = "", texto }: { id: string; className?: string; texto?: string }) {
-  const { ids, alternar } = useGuardadas();
-  const guardada = ids.includes(id);
-  return (
-    <button
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        alternar(id);
-      }}
-      aria-pressed={guardada}
-      aria-label={texto ? undefined : guardada ? "Sacar de guardadas" : "Guardar esta propiedad"}
-      data-guardar={id}
-      className={texto ? className : `grid h-10 w-10 place-items-center rounded-full bg-arena/95 shadow-sm transition hover:scale-105 ${className}`}
-    >
-      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-        <path d={CORAZON} fill={guardada ? "var(--color-terracota)" : "none"} stroke={guardada ? "var(--color-terracota)" : "var(--color-chocolate)"} strokeWidth={1.8} strokeLinejoin="round" />
-      </svg>
-      {texto}
-    </button>
-  );
-}
+export const LLAMAR = `tel:+54${TELEFONO.replace(/\D/g, "")}`;
 
 const MENU = [
+  { href: "./", texto: "Inicio", ver: "" },
   { href: ir({ ver: "propiedades" }), texto: "Propiedades", ver: "propiedades" },
   { href: ir({ ver: "urbanizaciones" }), texto: "Urbanizaciones", ver: "urbanizaciones" },
-  { href: ir({ ver: "vender" }), texto: "Vender o tasar", ver: "vender" },
-  { href: ir({ ver: "nosotros" }) + "#museo", texto: "Museo", ver: "museo" },
-  { href: ir({ ver: "nosotros" }), texto: "Nosotros", ver: "nosotros" },
+  { href: ir({ ver: "vender" }), texto: "Vender", ver: "vender" },
+  { href: ir({ ver: "nosotros" }), texto: "Quiénes somos", ver: "nosotros" },
   { href: ir({ ver: "contacto" }), texto: "Contacto", ver: "contacto" },
 ];
 
-const LLAMAR = `tel:+54${TELEFONO.replace(/\D/g, "")}`;
+const REDES: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", youtube: "YouTube" };
+const redes = () => Object.entries(SITIO.contacto.redes).filter(([red]) => red !== "youtube_alternativo");
 
+/** Como el de ellos: el logo, el teléfono a mano y el menú; en el celular, un menú que se despliega. */
 export function Encabezado({ actual }: { actual: string }) {
-  const { ids } = useGuardadas();
-  const guardadas = ids.length > 0 && (
-    <a href={ir({ ver: "guardadas" })} data-link-guardadas aria-label={`Guardadas (${ids.length})`} className="flex items-center gap-1.5 rounded-full border border-linea px-3 py-2 text-[14px] font-semibold whitespace-nowrap hover:bg-piedra">
-      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-        <path d={CORAZON} fill="var(--color-terracota)" />
-      </svg>
-      <span className="hidden sm:inline lg:hidden xl:inline">Guardadas</span> {ids.length}
-    </a>
-  );
   return (
-    <header className="sticky top-8 z-40 border-b border-linea bg-arena/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
-        <a href="./" className="flex items-center gap-2.5" aria-label="Castro Inmobiliaria, inicio">
+    <header className="sticky top-8 z-40 border-b border-linea bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
+        <a href="./" className="flex shrink-0 items-center gap-2.5" aria-label="Castro Inmobiliaria, inicio">
           <img src="./fotos/logo.png" alt="" className="h-11 w-auto self-start" />
-          <span className="font-display text-[1.3rem] leading-none tracking-[-0.01em]">
-            Castro <i className="text-suave">Inmobiliaria</i>
+          <span className="font-display text-[15px] leading-tight font-bold tracking-wide uppercase">
+            Castro<span className="block text-[11px] font-semibold tracking-[0.2em] text-suave">Inmobiliaria</span>
           </span>
         </a>
-        {/* El menú entero desde 1024 px: entra con menos aire entre los links y, con guardadas, solo el corazón y el número */}
-        <nav className="ml-auto hidden items-center gap-1 lg:flex">
-          {MENU.map((m) => (
-            <a key={m.ver} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="px-1.5 py-2 text-[15px] font-medium whitespace-nowrap xl:px-2.5 text-chocolate/85 decoration-terracota decoration-2 underline-offset-[6px] hover:underline aria-[current=page]:text-chocolate aria-[current=page]:underline">
+        {/* En la compu el logo lleva al inicio: así el menú entra entero desde 1024 px */}
+        <nav className="ml-auto hidden items-center lg:flex xl:gap-1">
+          {MENU.filter((m) => m.ver).map((m) => (
+            <a key={m.texto} href={m.href} aria-current={actual === m.ver ? "page" : undefined} className="font-display px-1.5 py-2 text-[13px] font-semibold tracking-wide whitespace-nowrap uppercase hover:text-terracota aria-[current=page]:text-terracota xl:px-2">
               {m.texto}
             </a>
           ))}
         </nav>
-        <span className="ml-auto lg:ml-1">{guardadas}</span>
-        <a href={LLAMAR} className="hidden rounded-full bg-terracota px-4 py-2 text-[15px] font-semibold whitespace-nowrap text-white hover:brightness-110 lg:inline-block">
-          {TELEFONO}
+        <a href={LLAMAR} className="font-display ml-auto hidden rounded-full bg-terracota px-4 py-2 text-[13px] font-bold whitespace-nowrap text-white hover:brightness-110 sm:inline-block lg:ml-2">
+          <span className="lg:hidden xl:inline">Llamá </span>{TELEFONO}
         </a>
-        <details className="relative lg:hidden">
-          <summary className="flex h-10 cursor-pointer list-none items-center rounded-full border border-chocolate/30 px-4 text-[15px] font-medium">Menú</summary>
-          <nav className="absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl border border-linea bg-arena py-2 shadow-[0_24px_50px_-20px_rgb(64_37_28/0.45)]">
+        <details className="relative ml-auto sm:ml-0 lg:hidden">
+          <summary className="font-display flex h-10 cursor-pointer list-none items-center rounded-full border border-linea px-4 text-[13px] font-semibold uppercase">Menú</summary>
+          <nav className="absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl border border-linea bg-white py-2 shadow-[0_24px_50px_-20px_rgb(0_0_0/0.35)]">
             {MENU.map((m) => (
-              <a key={m.ver} href={m.href} className="block px-5 py-3 text-[16px]">
+              <a key={m.texto} href={m.href} className="block px-5 py-3 text-[16px]">
                 {m.texto}
               </a>
             ))}
             <a href={LLAMAR} className="mx-3 mt-1 block rounded-xl bg-terracota px-4 py-3 text-center font-semibold whitespace-nowrap text-white">
-              Llamar · {TELEFONO}
+              Llamá {TELEFONO}
             </a>
           </nav>
         </details>
@@ -142,59 +69,59 @@ export function Encabezado({ actual }: { actual: string }) {
   );
 }
 
-const REDES: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", youtube: "YouTube" };
-
-/** pegado: sin margen arriba, cuando la pantalla ya termina en oscuro (el museo). */
+/** Como el de ellos, gris oscuro: su frase, servicios y empresa, la oficina y los datos legales. */
 export function Pie({ pegado = false }: { pegado?: boolean }) {
   const c = SITIO.contacto;
-  const rotulo = "text-[12px] font-semibold tracking-[0.16em] text-arena/70 uppercase";
+  const rotulo = "font-display text-[12px] font-bold tracking-[0.14em] text-white uppercase";
   return (
     // Abajo queda lugar para el botón de WhatsApp (o la barra de la ficha) en el celular
-    <footer className={`${pegado ? "border-t border-arena/15" : "mt-20"} textura-clara bg-chocolate pb-20 text-arena md:pb-0`}>
-      <div className="mx-auto max-w-6xl px-5 py-14 sm:px-6">
-        <div className="grid gap-10 md:grid-cols-[1.3fr_1fr]">
-          <div>
-            <img src="./fotos/logofooter.png" alt="Castro Inmobiliaria" className="h-11 w-auto" />
-            <p className="font-display mt-6 max-w-md text-[1.55rem] leading-snug">
-              {PIE.desde} <span data-dato="publicadas">{PROPIEDADES.length}</span> propiedades publicadas y{" "}
-              <span data-dato="urbanizaciones">{URBANIZACIONES.length}</span> urbanizaciones.
-            </p>
-          </div>
-          <dl className="grid content-start gap-6 text-[15px] sm:grid-cols-2">
-            <div>
-              <dt className={rotulo}>Oficina y museo</dt>
-              <dd className="mt-1.5">{c.direccion}</dd>
-            </div>
-            <div>
-              <dt className={rotulo}>Teléfono y WhatsApp</dt>
-              <dd className="mt-1.5"><a href={LLAMAR} className="underline-offset-4 hover:underline">{c.telefono}</a></dd>
-            </div>
-            <div>
-              <dt className={rotulo}>Mail</dt>
-              <dd className="mt-1.5"><a href={`mailto:${c.email}`} className="underline-offset-4 hover:underline">{c.email}</a></dd>
-            </div>
-            <div>
-              <dt className={rotulo}>Redes</dt>
-              <dd className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-                {Object.entries(c.redes).filter(([red]) => red !== "youtube_alternativo").map(([red, url]) => (
-                  <a key={red} href={url} target="_blank" rel="noopener" className="underline underline-offset-4 decoration-arena/40 hover:decoration-arena">
-                    {REDES[red] ?? red}
-                  </a>
-                ))}
-              </dd>
-            </div>
-          </dl>
-        </div>
-        <div className="mt-12 border-t border-arena/15 pt-6 text-[12.5px] leading-relaxed text-arena/75" data-legales>
-          <p>
-            {c.corredor_y_matricula.replace("Publico", "Público").replace("Matricula", "Matrícula")} · {c.razon_social} · CUIT {c.cuit} ·{" "}
-            <a href={c.afip_data_fiscal} target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-arena">Data fiscal (ARCA)</a>
+    <footer className={`${pegado ? "" : "mt-20"} bg-[#3a3a3a] pb-20 text-white/80 md:pb-0`}>
+      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+        <div>
+          <img src="./fotos/logofooter.png" alt="Castro Inmobiliaria" className="h-11 w-auto" />
+          <p className="mt-5 max-w-xs text-[14px] leading-relaxed">{SITIO.pie.texto}</p>
+          <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
+            {redes().map(([red, url]) => (
+              <a key={red} href={url} target="_blank" rel="noopener" className="underline decoration-white/40 underline-offset-4 hover:decoration-white">
+                {REDES[red] ?? red}
+              </a>
+            ))}
           </p>
-          <p className="mt-2">{SITIO.pie.legales.join(" ")}</p>
+        </div>
+        <div>
+          <p className={rotulo}>Servicios</p>
+          <ul className="mt-3 space-y-1.5 text-[14px]">
+            <li><a href={ir({ ver: "propiedades" })} className="hover:text-white">Comprar</a></li>
+            <li><a href={ir({ ver: "vender" })} className="hover:text-white">Vender</a></li>
+            <li><a href={ir({ ver: "propiedades", op: "alquiler" })} className="hover:text-white">Alquilar</a></li>
+            <li><a href={ir({ ver: "vender" })} className="hover:text-white">Tasación</a></li>
+          </ul>
+        </div>
+        <div>
+          <p className={rotulo}>Empresa</p>
+          <ul className="mt-3 space-y-1.5 text-[14px]">
+            <li><a href={ir({ ver: "nosotros" }) + "#museo"} className="hover:text-white">Museo La Firma</a></li>
+            <li><a href={ir({ ver: "nosotros" })} className="hover:text-white">Nosotros</a></li>
+            <li><a href={ir({ ver: "urbanizaciones" })} className="hover:text-white">Urbanizaciones</a></li>
+            <li><a href={ir({ ver: "contacto" })} className="hover:text-white">Contacto</a></li>
+          </ul>
+        </div>
+        <div className="text-[14px] leading-relaxed">
+          <p className={rotulo}>Oficina</p>
+          <p className="mt-3">{c.direccion}</p>
+          <p className="mt-1"><a href={LLAMAR} className="hover:text-white">{c.telefono}</a></p>
+          <p className="mt-1"><a href={`mailto:${c.email}`} className="hover:text-white">{c.email}</a></p>
         </div>
       </div>
-      <div className="border-t border-arena/15 px-5 py-5 text-center text-[12.5px] text-arena/75">
-        {NOTA_DATOS} Propuesta de diseño de Matías Trovato, no es la página oficial de {NEGOCIO}.
+      <div className="border-t border-white/10" data-legales>
+        <div className="mx-auto max-w-6xl px-5 py-5 text-[12.5px] leading-relaxed text-white/70 sm:px-6">
+          <p>
+            {c.razon_social} · CUIT {c.cuit} · {c.corredor_y_matricula.replace("Publico", "Público").replace("Matricula", "Matrícula")} ·{" "}
+            <a href={c.afip_data_fiscal} target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-white">Data fiscal (ARCA)</a>
+          </p>
+          <p className="mt-1">{SITIO.pie.legales.join(" ")}</p>
+          <p className="mt-3 text-white/60">{NOTA_DATOS} Propuesta de diseño de Matías Trovato, no es la página oficial de {NEGOCIO}.</p>
+        </div>
       </div>
     </footer>
   );
@@ -255,7 +182,7 @@ export function Tarjeta({ p, op }: { p: Propiedad; op?: string }) {
         </div>
         <div className="flex flex-1 flex-col pt-3">
           <p className="text-[19px] font-semibold tracking-tight tabular-nums" data-precio-texto>{precio(precioEn(p, op)) ?? "Consultar precio"}</p>
-          <h3 className="font-display mt-0.5 line-clamp-2 text-[18px] leading-snug">{p.titulo}</h3>
+          <h3 className="mt-0.5 line-clamp-2 text-[16px] leading-snug font-semibold">{p.titulo}</h3>
           <p className="mt-1 text-[13px] text-suave">
             {linea}
             {p.fotos > 1 && ` · ${p.fotos} fotos`}
@@ -272,46 +199,72 @@ export function Tarjeta({ p, op }: { p: Propiedad; op?: string }) {
           </span>
         </div>
       </a>
-      <BotonGuardar id={p.id} className="absolute top-2.5 right-2.5" />
     </div>
   );
 }
 
-/** El botón de consulta de las propuestas: no le escribe a nadie, muestra cómo le llegaría el mensaje a la inmobiliaria. */
-export function useConsulta() {
-  const [mensaje, setMensaje] = useState<string | null>(null);
-  const vista = <VistaWhatsApp mensaje={mensaje} negocio={NEGOCIO} pagina="castro-inmobiliaria" tipo="propuesta" que="la consulta" enviarA={WHATSAPP} alCerrar={() => setMensaje(null)} />;
-  return { abrir: setMensaje, vista };
-}
+const ICONO_WHATSAPP = "M16 3C8.8 3 3 8.7 3 15.8c0 2.5.7 4.9 2 7L3 29l6.4-2c2 1.1 4.3 1.7 6.6 1.7 7.2 0 13-5.7 13-12.8S23.2 3 16 3zm0 23.4c-2.1 0-4.1-.6-5.9-1.6l-.4-.3-3.8 1.2 1.2-3.7-.3-.4c-1.2-1.8-1.8-3.8-1.8-5.9C5 10 9.9 5.2 16 5.2S27 10 27 15.9 22.1 26.4 16 26.4zm6-7.8c-.3-.2-1.9-1-2.2-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.3-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.8 5 .8.3 1.4.5 1.9.7.8.3 1.5.2 2.1.1.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.3.2-1.5-.1-.2-.3-.3-.6-.5z";
 
-/** WhatsApp a mano en todas las pantallas (en la ficha ya está la barra de abajo). El mensaje dice qué se está mirando:
- *  el de ellos abre un chat vacío. */
-export function WhatsAppFlotante({ mensaje }: { mensaje: () => string }) {
-  const consulta = useConsulta();
+export function IconoWhatsApp({ className = "h-6 w-6" }: { className?: string }) {
   return (
-    <>
-      <button
-        onClick={() => consulta.abrir(mensaje())}
-        data-whatsapp-flotante
-        aria-label="Escribir por WhatsApp"
-        className="fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full bg-[#25d366] py-3 pr-5 pl-3.5 font-semibold text-black shadow-[0_12px_30px_-10px_rgb(0_0_0/0.45)] hover:brightness-95"
-      >
-        <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" className="h-6 w-6">
-          <path d="M16 3C8.8 3 3 8.7 3 15.8c0 2.5.7 4.9 2 7L3 29l6.4-2c2 1.1 4.3 1.7 6.6 1.7 7.2 0 13-5.7 13-12.8S23.2 3 16 3zm0 23.4c-2.1 0-4.1-.6-5.9-1.6l-.4-.3-3.8 1.2 1.2-3.7-.3-.4c-1.2-1.8-1.8-3.8-1.8-5.9C5 10 9.9 5.2 16 5.2S27 10 27 15.9 22.1 26.4 16 26.4zm6-7.8c-.3-.2-1.9-1-2.2-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.3-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.6.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.2 1.4 3.5c.2.2 2.4 3.6 5.8 5 .8.3 1.4.5 1.9.7.8.3 1.5.2 2.1.1.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.3.2-1.5-.1-.2-.3-.3-.6-.5z" />
-        </svg>
-        <span>WhatsApp</span>
-      </button>
-      {consulta.vista}
-    </>
+    <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" className={className}>
+      <path d={ICONO_WHATSAPP} />
+    </svg>
   );
 }
 
-export function Titulo({ chico, children, h1 = false }: { chico?: string; children: React.ReactNode; h1?: boolean }) {
+/** WhatsApp a mano en todas las pantallas (en la ficha ya está la barra de abajo). Abre el chat con un mensaje que dice
+ *  qué se estaba mirando: el de ellos abre un chat vacío. Se arma al tocarlo, porque el listado cambia la dirección. */
+export function WhatsAppFlotante({ mensaje }: { mensaje: () => string }) {
+  return (
+    <a
+      href={linkWhatsApp(mensaje())}
+      onClick={(e) => (e.currentTarget.href = linkWhatsApp(mensaje()))}
+      target="_blank"
+      rel="noopener"
+      data-whatsapp-flotante
+      aria-label="Escribir por WhatsApp"
+      className="fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full bg-[#25d366] py-3 pr-5 pl-3.5 font-semibold text-black shadow-[0_12px_30px_-10px_rgb(0_0_0/0.45)] hover:brightness-95"
+    >
+      <IconoWhatsApp />
+      <span>WhatsApp</span>
+    </a>
+  );
+}
+
+/** Su mapa dibujado de Merlo con los 22 loteos, tal cual lo tienen en su portada. En el celular ellos lo ocultan;
+ *  acá se desliza de costado para que los logos se vean y se puedan tocar. */
+export function MapaUrbanizaciones() {
+  const { fondo, pines } = SITIO.mapa;
+  return (
+    <div className="sin-barra -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0" data-libre>
+      <div className="relative min-w-[820px] overflow-hidden rounded-2xl border border-linea bg-white" data-mapa-urbanizaciones>
+        <img src={fondo} alt="Mapa de Villa de Merlo con las urbanizaciones que comercializa Castro" loading="lazy" className="block w-full" />
+        {pines.map((pin) => (
+          <a
+            key={pin.id}
+            href={ir({ u: pin.id })}
+            title={pin.nombre}
+            data-pin={pin.id}
+            className="absolute w-[8.3%] -translate-x-1/2 -translate-y-1/2 transition hover:-translate-y-[58%]"
+            style={{ top: `${pin.top}%`, left: `${pin.left}%` }}
+          >
+            <img src={pin.img} alt={pin.nombre} loading="lazy" className="w-full drop-shadow" />
+          </a>
+        ))}
+      </div>
+      <p className="mt-2 text-[13px] text-suave sm:hidden">Deslizá el mapa para ver todas.</p>
+    </div>
+  );
+}
+
+/** Título de sección como los de ellos: Montserrat en negrita, con el naranja de la marca. */
+export function Titulo({ chico, children, h1 = false, centrado = false }: { chico?: string; children: React.ReactNode; h1?: boolean; centrado?: boolean }) {
   const H = h1 ? "h1" : "h2";
   return (
-    <div>
-      {chico && <p className="text-[12px] font-semibold tracking-[0.18em] text-terracota uppercase">{chico}</p>}
-      <H className="font-display mt-1.5 text-[1.85rem] leading-[1.1] tracking-[-0.01em] text-balance sm:text-[2.5rem]">{children}</H>
+    <div className={centrado ? "text-center" : ""}>
+      {chico && <p className="font-display text-[12px] font-semibold tracking-[0.18em] text-suave uppercase">{chico}</p>}
+      <H className="font-display mt-1 text-[1.6rem] leading-tight font-bold text-terracota sm:text-[2rem]">{children}</H>
     </div>
   );
 }

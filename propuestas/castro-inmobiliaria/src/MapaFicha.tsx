@@ -4,11 +4,10 @@
 import type * as Leaflet from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import { lugar } from "./componentes";
-import { miles, superficie, type Ficha, type Forma as DatosForma, type Propiedad } from "./datos";
-import { aLatLng, cargarLeaflet, centroDe, crearMapa, ESTILO_LOTE, ESTILO_VECINA, seguirElCalce, type Altura, type Cercano, type Fondo, type MapaDatos } from "./mapa";
-import Mapa3D from "./Mapa3D";
+import { superficie, type Ficha, type Forma as DatosForma, type Propiedad } from "./datos";
+import { aLatLng, cargarLeaflet, centroDe, crearMapa, ESTILO_LOTE, ESTILO_VECINA, seguirElCalce, type Fondo, type MapaDatos } from "./mapa";
 
-export type FichaConMapa = Ficha & { mapa?: MapaDatos; cercanos?: Cercano[]; altura?: Altura | null };
+export type FichaConMapa = Ficha & { mapa?: MapaDatos };
 
 /** Una ficha sin datos de mapa se muestra como una propiedad sin forma: el pin en el punto publicado y sin trama. */
 const SIN_MAPA: MapaDatos = { calce: null, celda: "", zmax: 17, lote: null, lados: null, zona: null, alrededor: [] };
@@ -21,8 +20,6 @@ function datosDelMapa(p: Propiedad, mapa?: MapaDatos) {
 
 /** El pin del punto publicado: la punta (abajo al medio del ícono) cae justo en el punto. Colores en index.css (.punto) */
 const PIN = '<svg viewBox="0 0 30 40" width="30" height="40" aria-hidden="true"><path d="M15 40C15 40 2.5 25 2.5 14a12.5 12.5 0 0 1 25 0C27.5 25 15 40 15 40Z"/><circle cx="15" cy="14" r="4.5"/></svg>';
-
-const coma = (n: number) => String(n).replace(".", ",");
 
 /** Rótulos de lados que se pisan (lados cortos y juntos): se esconde el del lado más corto, que igual está escrito
  *  debajo del mapa. Se vuelve a mirar en cada zoom, porque al acercarse se separan. */
@@ -66,12 +63,10 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
   const [listo, setListo] = useState(false);
   const [fondo, setFondo] = useState<Fondo>("satelital");
   const [grande, setGrande] = useState(false);
-  const [ver3d, setVer3d] = useState(false);
   // No hay mapa que mostrar: no bajó Leaflet (Chrome guarda el import fallido hasta recargar, así que lo único que sirve
   // es recargar la página) o no bajó ninguna imagen de la foto y queda la imagen fija. Sin Satelital/Calles, que no andarían
   const [error, setError] = useState(false);
   const botonGrande = useRef<HTMLButtonElement>(null);
-  const boton3d = useRef<HTMLButtonElement>(null);
   // En el celular el mapa no se arrastra con un dedo (no se roba el scroll de la página); en pantalla completa, sí
   const tactil = matchMedia("(pointer: coarse)").matches;
 
@@ -172,41 +167,28 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
     // listo: si se tocó pantalla completa antes de que bajara el mapa, recién ahora se le puede habilitar el arrastre
   }, [grande, tactil, listo]);
 
-  // Al cerrar el 3D el foco vuelve al botón que lo abrió (en pantalla completa ese queda tapado: va a "Cerrar")
-  const cerrar3d = () => {
-    setVer3d(false);
-    (grande ? botonGrande : boton3d).current?.focus();
-  };
-  // Escape cierra primero el 3D y después la pantalla completa
+  // Escape cierra la pantalla completa (el de otro diálogo, como la galería, lo cierra a él)
   useEffect(() => {
-    if (!grande && !ver3d) return;
+    if (!grande) return;
     const tecla = (e: KeyboardEvent) => {
-      // El Escape de otro diálogo (la galería, la consulta) lo cierra a él y no al 3D
       if (e.key !== "Escape" || (e.target as Element).closest?.("dialog")) return;
-      if (ver3d) cerrar3d();
-      else {
-        setGrande(false);
-        botonGrande.current?.focus();
-      }
+      setGrande(false);
+      botonGrande.current?.focus();
     };
     addEventListener("keydown", tecla);
     return () => removeEventListener("keydown", tecla);
-  }, [grande, ver3d]); // cerrar3d solo depende de grande
+  }, [grande]);
 
   const d = ficha || fallo ? datosDelMapa(p, ficha?.mapa) : null;
   const lote = d?.lote ?? null;
   const lados = d?.m.lados ?? [];
-  const cercanos = ficha?.cercanos ?? [];
-  const altura = ficha?.altura;
   const [lat, lng] = d?.centro ?? [p.lat, p.lng];
   // zona trae {radio, compartido} o solo {compartido}: del radio ya no se usa nada
   const compartido = lote ? 0 : (d?.m.zona?.compartido ?? 0);
-  // Sin lote el 3D marca el punto publicado y no dice "este terreno"
-  const etiqueta3d = !lote ? "Ubicación publicada" : p.tipo === "Terreno" || p.tipo === "Campo" ? "Este terreno" : "Esta propiedad";
 
   return (
-    <section id="mapa" className="mt-9 scroll-mt-28 md:scroll-mt-44">
-      <h2 className="font-display text-2xl">{lote ? "El lote y su entorno" : "Ubicación"}</h2>
+    <section id="mapa" className="scroll-mt-28">
+      <h2 className="font-display text-[15px] font-bold tracking-wide text-terracota uppercase">{lote ? "Ubicación: el lote y su entorno" : "Ubicación"}</h2>
       <p className="mt-1 text-[15px] text-suave">{lugar(p)}</p>
       {/* En pantalla completa, diálogo sin aria-modal: lo de atrás ya queda inerte, salvo la cinta, que sigue andando */}
       <div
@@ -263,14 +245,9 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
             <text y={12} textAnchor="middle" fontSize={8} fontWeight={700} fill="#fff">N</text>
           </svg>
         </span>
-        {ver3d && <Mapa3D centro={[lat, lng]} lote={lote} zmax={d?.m.zmax ?? 17} etiqueta={etiqueta3d} alCerrar={cerrar3d} />}
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <button ref={boton3d} onClick={() => setVer3d(true)} disabled={!d} data-ver-3d className="rounded-2xl border border-linea bg-white px-4 py-1.5 text-left hover:bg-hondo">
-          <span className="block text-[14.5px] font-semibold">Ver en 3D</span>
-          <span className="block text-[12px] text-suave">Usa unos 3 MB de datos</span>
-        </button>
+      <div className="mt-3 flex items-center justify-end gap-3">
         <a href={`https://www.google.com/maps/dir/?api=1&destination=${lat.toFixed(6)},${lng.toFixed(6)}`} target="_blank" rel="noopener" data-mapa className="font-semibold whitespace-nowrap text-naranja-osc">
           Cómo llegar →
         </a>
@@ -283,7 +260,7 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
             : "Ubicación que publica la inmobiliaria."}
       </p>
 
-      {ficha && (lados.length > 0 || cercanos.length > 0 || altura || lote) && (
+      {ficha && (lados.length > 0 || lote) && (
         <dl className="mt-5 grid gap-x-8 gap-y-5 text-[15px] sm:grid-cols-2">
           {lados.length > 0 && (
             <div>
@@ -297,32 +274,6 @@ export default function MapaFicha({ p, ficha, fallo }: { p: Propiedad; ficha: Fi
               <dd className="mt-1" data-superficie>{superficie(p.terreno)}, la que publica la inmobiliaria</dd>
             </div>
           ) : null}
-          {cercanos.length > 0 && (
-            <div>
-              <dt className="text-[13px] font-semibold text-suave">A cuánto queda</dt>
-              <dd className="mt-1">
-                <ul className="space-y-0.5">
-                  {cercanos.map((c) => (
-                    <li key={c.lugar} data-cercano>
-                      {c.min ? `${c.lugar}: ${coma(c.km)} km · ${c.min} min en auto` : `A ${coma(c.km)} km de ${c.lugar}`}
-                    </li>
-                  ))}
-                </ul>
-                <span className="mt-1 block text-[12.5px] text-suave">Aproximado, en auto, según OpenStreetMap.</span>
-              </dd>
-            </div>
-          )}
-          {altura && (
-            <div>
-              <dt className="text-[13px] font-semibold text-suave">Altura y pendiente</dt>
-              <dd className="mt-1">
-                <span data-altura>
-                  ≈ {miles(altura.m)} m sobre el nivel del mar · {altura.pendiente === "plana" ? "zona plana" : `zona de pendiente ${altura.pendiente}${altura.hacia ? ` hacia el ${altura.hacia}` : ""}`}
-                </span>
-                <span className="mt-1 block text-[12.5px] text-suave">Aproximado: habla de la zona y no del lote, porque los datos de relieve son de unos 30 m (SRTM).</span>
-              </dd>
-            </div>
-          )}
         </dl>
       )}
     </section>

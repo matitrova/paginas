@@ -13,8 +13,7 @@ Sale:
     calles ni datos de las parcelas (catastro/<id>-alrededor.geojson guarda lo que devolvió el catastro);
   ~/castro-datos/calces.json, los CALCES de abajo para el navegador;
   fotos/lote-tarjeta-<id>.webp (560x420), el lote pintado sobre la foto, para la tarjeta del listado;
-  fotos/portada-mapa-800.webp y -1600.webp (16:10) y fotos/og.jpg (1200x630): el barrio con más terrenos con forma,
-    con esos lotes pintados, para la portada y para la vista previa del link.
+  (la portada y fotos/og.jpg ya no salen de acá: las arma castro_datos.py con su foto de Merlo)
 
 Uso:
   ../Test1_Inmo/.venv/bin/python scripts/castro_satelite.py                      todos los terrenos que entran
@@ -406,19 +405,6 @@ def pintar(img, anillos_px, borde=2, fino=3, alfa=115):
     return Image.alpha_composite(img.convert("RGBA"), capa.resize(img.size, Image.LANCZOS)).convert("RGB")
 
 
-def atribucion(img, texto="Esri, Maxar, Earthstar Geographics"):
-    """La atribución de la foto, chica, abajo a la derecha."""
-    from PIL import ImageFont
-    letra = ImageFont.load_default(size=max(10, round(img.width / 110)))
-    d = ImageDraw.Draw(img, "RGBA")
-    x0, y0, x1, y1 = d.textbbox((0, 0), texto, font=letra)
-    aire = round(letra.size * 0.4)
-    izq, arriba = img.width - (x1 - x0) - 2 * aire, img.height - (y1 - y0) - 2 * aire
-    d.rectangle((izq, arriba, img.width, img.height), fill=(0, 0, 0, 120))
-    d.text((izq + aire - x0, arriba + aire - y0), texto, font=letra, fill=(255, 255, 255, 235))
-    return img
-
-
 def tarjeta(t):
     """fotos/lote-tarjeta-<id>.webp: el lote pintado sobre la foto calzada, un poco más cerca que en la ficha. No más:
     la foto z18 tiene ~0,5 m por píxel y 150 m en 560 px ya la estiran 1,9 veces (con 120 m, 2,4, y se ve borrosa)."""
@@ -426,54 +412,6 @@ def tarjeta(t):
     img, a_pixel = foto_que_haya(t["lat"], t["lng"], ancho_m, z, CALCES[t["celda"]], (560, 420))
     assert img is not None, f"sin foto para la tarjeta de {t['id']}"
     pintar(img, [[a_pixel(p[1], p[0]) for p in t["puntos"]]]).save(SALIDA / f"lote-tarjeta-{t['id']}.webp", "WEBP", quality=68, method=6)
-
-
-def portada(dibujados):
-    """La foto de la primera pantalla y de la vista previa del link: la ventana de 800 x 500 m que junta más terrenos
-    con forma de una misma celda, para que un solo calce sirva para toda la foto, y después ajustada a esos terrenos
-    (con aire alrededor) para que se vean grandes y repartidos. Se pintan los lotes de esa celda que entran enteros."""
-    ancho_m, alto_m, margen, aire = 800, 500, 15, 35
-    kx = lambda lat: 111320 * math.cos(math.radians(lat))
-
-    def sin_salirse(celda, lat, lng, alto=alto_m, ancho=ancho_m):
-        """Corre el centro para que la ventana no se salga de la celda (la de al lado tiene otro calce)."""
-        fila, col = (int(v) for v in celda[1:].split("_"))
-        m_lat, m_lng = alto / 2 / 110540, ancho / 2 / kx(lat)
-        return (min(max(lat, fila * GRADOS_POR_CELDA + m_lat), (fila + 1) * GRADOS_POR_CELDA - m_lat),
-                min(max(lng, col * GRADOS_POR_CELDA + m_lng), (col + 1) * GRADOS_POR_CELDA - m_lng))
-
-    def enteros(celda, lat, lng):
-        """Los lotes de la celda que entran enteros en la ventana."""
-        return [t for t in dibujados if t["celda"] == celda and all(
-            abs(q[0] - lng) * kx(lat) <= ancho_m / 2 - margen and abs(q[1] - lat) * 110540 <= alto_m / 2 - margen for q in t["puntos"])]
-
-    centro = max(dibujados, key=lambda c: len(enteros(c["celda"], *sin_salirse(c["celda"], c["lat"], c["lng"]))))
-    grupo = enteros(centro["celda"], *sin_salirse(centro["celda"], centro["lat"], centro["lng"]))
-    pts = [q for t in grupo for q in t["puntos"]]
-    medio = ((min(q[1] for q in pts) + max(q[1] for q in pts)) / 2, (min(q[0] for q in pts) + max(q[0] for q in pts)) / 2)
-    caja_w = (max(q[0] for q in pts) - min(q[0] for q in pts)) * kx(medio[0]) + 2 * aire
-    caja_h = (max(q[1] for q in pts) - min(q[1] for q in pts)) * 110540 + 2 * aire
-    de_la_celda = [t for t in dibujados if t["celda"] == centro["celda"]]
-    calce = CALCES[centro["celda"]]
-    pintados = {}
-    for tam, og in [((1600, 1000), False), ((1200, 630), True)]:
-        ancho = max(caja_w, caja_h * tam[0] / tam[1])
-        lat, lng = sin_salirse(centro["celda"], *medio, ancho * tam[1] / tam[0], ancho)
-        img, a_pixel = foto_que_haya(lat, lng, ancho, 18, calce, tam)
-        assert img is not None, "sin foto para la portada"
-        # Solo los que entran enteros: un lote cortado contra el borde no se entiende
-        lotes = [px for px in ([a_pixel(p[1], p[0]) for p in t["puntos"]] for t in de_la_celda)
-                 if all(0 <= x <= tam[0] and 0 <= y <= tam[1] for x, y in px)]
-        assert len(lotes) >= len(grupo), (len(lotes), len(grupo))
-        pintados["og" if og else "portada"] = (len(lotes), round(ancho))
-        img = pintar(img, lotes, borde=2 if tam[0] < 1600 else 3, alfa=148)  # 58 %: al 45 % se ve marrón sobre el monte
-        if og:
-            atribucion(img).save(SALIDA / "og.jpg", "JPEG", quality=82, optimize=True)
-            continue
-        for ancho in (1600, 800):
-            chica = img.resize((ancho, ancho * 10 // 16), Image.LANCZOS) if ancho != img.width else img.copy()
-            atribucion(chica).save(SALIDA / f"portada-mapa-{ancho}.webp", "WEBP", quality=70, method=6)
-    print(f"portada: celda {centro['celda']}, centro {medio[0]:.6f},{medio[1]:.6f}; lotes pintados y ancho en m: {pintados}")
 
 
 def hoja(celda, salida, pruebas):
@@ -545,7 +483,7 @@ def todos():
         por_tipo[t["tipo"]] = por_tipo.get(t["tipo"], 0) + 1
     print(len(formas), "lotes dibujados", por_tipo, "(", sum(t["confianza"] == "punto" for t in dibujados.values()), "por el punto);",
           len(sin_calce), "sin calce todavía:", sin_calce[:12], ";", len(sin_foto), "sin foto:", sin_foto)
-    portada(list(dibujados.values()))
+    # La portada ya no es la foto satelital (30/10, versión básica): la arma castro_datos.py con su foto de Merlo
 
     # El mapa que se mueve de cada ficha: el lote solo en los mismos terrenos de formas.json, y la trama solo donde la
     # foto está calzada (en el resto va una zona aproximada, que arma castro_datos.py)

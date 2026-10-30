@@ -8,7 +8,7 @@ import { NEGOCIO, URBANIZACIONES } from "./datos";
 import Ficha, { nombreLindo } from "./Ficha";
 import Listado, { filtrosDeLaDireccion, resumen } from "./Listado";
 import Portada from "./Portada";
-import { Contacto, Guardadas, Nosotros, Urbanizacion, Urbanizaciones, Vender } from "./Secciones";
+import { Contacto, Nosotros, Urbanizacion, Urbanizaciones, Vender } from "./Secciones";
 
 const TITULOS: Record<string, string> = {
   propiedades: "Propiedades en Merlo y la zona",
@@ -40,11 +40,10 @@ export default function App() {
     : ver === "nosotros" ? <Nosotros />
     : ver === "contacto" ? <Contacto />
     : ver === "vender" ? <Vender />
-    : ver === "guardadas" ? <Guardadas />
     : <Portada />;
 
   return (
-    // Al menos el alto de la pantalla: en una página corta (Guardadas vacía) el pie llega hasta abajo
+    // Al menos el alto de la pantalla: en una página corta el pie llega hasta abajo
     <div className="flex min-h-dvh flex-col pt-8">
       <CintaPropuesta negocio={NEGOCIO} />
       <Encabezado actual={ver} />

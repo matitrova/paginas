@@ -22,8 +22,6 @@ export interface MapaDatos {
   zona: { radio?: number; compartido: number } | null;
   alrededor: [number, number][][];
 }
-export type Cercano = { lugar: string; km: number; min?: number };
-export type Altura = { m: number; pendiente: string; hacia?: string | null };
 
 let leaflet: Promise<L> | null = null;
 export function cargarLeaflet() {

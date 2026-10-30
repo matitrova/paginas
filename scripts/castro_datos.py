@@ -5,14 +5,11 @@ No va al repo: son 1,3 GB. Sale:
   propuestas/castro-inmobiliaria/src/datos/indice.json      lo que necesitan la portada y el listado
   propuestas/castro-inmobiliaria/src/datos/sitio.json       urbanizaciones, equipo, museo y contacto
   public/propuestas/castro-inmobiliaria/fichas/<id>.json    la ficha completa, se pide al abrirla; con su mapa
-                                                            (de ~/castro-datos/mapas.json, que arma castro_satelite.py),
-                                                            a cuánto queda de la plaza, la terminal y el hospital, y la
-                                                            altura y la pendiente de la zona
+                                                            (de ~/castro-datos/mapas.json, que arma castro_satelite.py)
   public/propuestas/castro-inmobiliaria/mapa.json           los lotes simplificados y los calces, para el mapa general
   public/propuestas/castro-inmobiliaria/fotos/p-<id>.webp   una foto chica por propiedad, recortada a 4:3
   public/propuestas/castro-inmobiliaria/fotos/*.webp         equipo, museo, urbanizaciones y el logo
   ~/castro-datos/errores_de_carga.md                         lo que no cierra en sus datos, para Mauro
-Guarda lo que pide afuera: ~/castro-datos/rutas.json (OSRM) y ~/castro-datos/terrarium/ (relieve).
 Antes hay que correr castro_satelite.py.
 Las galerías completas no se copian: se ven desde el servicio de fotos de ellos (static.tokkobroker.com).
 
@@ -30,7 +27,6 @@ import sys
 import time
 import urllib.request
 from collections import Counter
-from functools import lru_cache
 from pathlib import Path
 
 from PIL import Image, ImageOps
@@ -102,97 +98,8 @@ ALIAS_ZONA = {"rincon de este": "rincon del este", "santa rosa de conlara": "san
 A_CONFIRMAR = [("Ruta 1", "Ruta Provincial 1"), ("Chumamaya", "Country Club Chumamaya"), ("Las Cascadas", "Country Las Cascadas", "Las Cascadas Golf"),
                ("Santa Rosa", "Santa Rosa del Conlara"), ("Solares", "Solares del Valle")]
 
-UA = "castro-propuesta/1.0 (matitrova13 at gmail)"
-# A cuánto queda: los lugares salen de OpenStreetMap (buscados en Nominatim el 26/10/2026; centro del área o el nodo):
-#   Plaza de Merlo: way 145821661, "Plaza Márquez de Sobremonte", -32.342700, -65.013678
-#   Terminal: node 505820708, "Terminal Omnibus Merlo", Ruta Provincial 1, -32.350158, -65.016442. La "Terminal de
-#     Ómnibus locales" de al lado de la plaza (node 2726154850) es la vieja: sus paradas dicen "Vieja Terminal de Merlo".
-#   Hospital: way 731766514, "Hospital Madre Catalina Rodríguez", El Ceibo y Ruta 1, -32.352941, -65.016397. En OSM
-#     figura como landuse=residential (con emergency=yes); hay además un amenity=hospital sin nombre (node 2725909561)
-#     en Las Magdalenas, que no se usa.
-LUGARES = [("Plaza de Merlo", -32.342700, -65.013678), ("Terminal de ómnibus", -32.350158, -65.016442),
-           ("Hospital de Merlo", -32.352941, -65.016397)]
-
-
 def metros_entre(lat1, lng1, lat2, lng2):
     return math.hypot((lng2 - lng1) * 111320 * math.cos(math.radians(lat1)), (lat2 - lat1) * 110540)
-
-
-def rutas(puntos):
-    """Metros y segundos en auto de cada punto a los LUGARES, con el servicio table del OSRM de demostración: pocos
-    pedidos (90 puntos cada uno), uno por segundo. Se guardan en rutas.json y no se vuelven a pedir."""
-    archivo = FUENTE / "rutas.json"
-    guardadas = json.loads(archivo.read_text()) if archivo.exists() else {}
-    faltan = [pt for pt in dict.fromkeys(puntos) if f"{pt[0]},{pt[1]}" not in guardadas]
-    for i in range(0, len(faltan), 90):
-        tanda = faltan[i:i + 90]
-        coords = ";".join(f"{lng},{lat}" for lat, lng in tanda + [(la, ln) for _, la, ln in LUGARES])
-        n = len(tanda)
-        url = (f"https://router.project-osrm.org/table/v1/driving/{coords}?sources={';'.join(map(str, range(n)))}"
-               f"&destinations={';'.join(str(n + k) for k in range(len(LUGARES)))}&annotations=duration,distance")
-        r = json.loads(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=90).read())
-        assert r["code"] == "Ok", r.get("message")
-        for k, (lat, lng) in enumerate(tanda):
-            guardadas[f"{lat},{lng}"] = [[d, s] if d is not None else None for d, s in zip(r["distances"][k], r["durations"][k])]
-        archivo.write_text(json.dumps(guardadas))
-        time.sleep(1.1)
-    return guardadas
-
-
-def cercanos(lat, lng, viajes):
-    """En auto, aproximado. Lejos de Merlo (a más de 20 km de la plaza por ruta, o en línea recta si OSRM no encontró
-    camino), solo cuánto queda Merlo: con la línea recta, un campo de Santa Rosa del Conlara a 23 km por ruta salía con
-    "Hospital de Merlo 22,9 km"."""
-    viaje = viajes[f"{lat},{lng}"]
-    if (viaje[0][0] if viaje[0] else metros_entre(lat, lng, LUGARES[0][1], LUGARES[0][2])) > 20000:
-        return [{"lugar": "Villa de Merlo", "km": round(viaje[0][0] / 1000)}] if viaje[0] else []
-    return [{"lugar": nombre, "km": round(v[0] / 1000, 1), "min": max(1, round(v[1] / 60))} for (nombre, _, _), v in zip(LUGARES, viaje) if v]
-
-
-@lru_cache(maxsize=None)
-def terrarium(x, y):
-    """Un pedacito del relieve (Terrarium, z14: ~8 m por píxel, de datos SRTM de ~30 m)."""
-    archivo = FUENTE / f"terrarium/14/{x}/{y}.png"
-    if not archivo.exists():
-        archivo.parent.mkdir(parents=True, exist_ok=True)
-        url = f"https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/{x}/{y}.png"
-        archivo.write_bytes(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=60).read())
-        time.sleep(0.05)
-    return Image.open(archivo).convert("RGB")
-
-
-def elevacion(lat, lng):
-    """Metros sobre el nivel del mar: (R*256 + G + B/256) - 32768, interpolado entre los cuatro píxeles de alrededor."""
-    px, py = (v - 0.5 for v in mundo(lat, lng, 14))
-    x0, y0 = math.floor(px), math.floor(py)
-    fx, fy = px - x0, py - y0
-
-    def h(x, y):
-        r, g, b = terrarium(x // 256, y // 256).getpixel((x % 256, y % 256))
-        return r * 256 + g + b / 256 - 32768
-    return (h(x0, y0) * (1 - fx) + h(x0 + 1, y0) * fx) * (1 - fy) + (h(x0, y0 + 1) * (1 - fx) + h(x0 + 1, y0 + 1) * fx) * fy
-
-
-RUMBOS = ["norte", "noreste", "este", "sureste", "sur", "suroeste", "oeste", "noroeste"]
-
-
-def hacia(sube_este, sube_norte):
-    """Para dónde baja el terreno (al revés de para dónde sube), en 8 rumbos."""
-    return RUMBOS[round(math.degrees(math.atan2(-sube_este, -sube_norte)) / 45) % 8]
-
-
-assert hacia(1, 0) == "oeste" and hacia(0, -1) == "norte" and hacia(-1, -1) == "noreste" and hacia(0.2, 1) == "sur"
-
-
-def altura(lat, lng):
-    """La altura en el punto y la pendiente de la zona, con muestras a 50 m al norte, sur, este y oeste (~100 m): se
-    habla de la zona y no del lote, porque el relieve es de ~30 m."""
-    d_lat, d_lng = 50 / 110540, 50 / (111320 * math.cos(math.radians(lat)))
-    sube_este = (elevacion(lat, lng + d_lng) - elevacion(lat, lng - d_lng)) / 100
-    sube_norte = (elevacion(lat + d_lat, lng) - elevacion(lat - d_lat, lng)) / 100
-    pendiente = math.hypot(sube_este, sube_norte) * 100
-    tipo = "plana" if pendiente < 3 else "suave" if pendiente < 8 else "marcada" if pendiente <= 15 else "fuerte"
-    return {"m": int(round(elevacion(lat, lng), -1)), "pendiente": tipo, "hacia": None if tipo == "plana" else hacia(sube_este, sube_norte)}
 
 
 def simplificar(anillo, tolerancia_m=1.0):
@@ -305,6 +212,7 @@ assert superficie("600.00M2") == 600 and superficie("0.00M2") is None and superf
 assert antiguedad("0 años") is None and antiguedad("-1 años") is None and antiguedad("7 años") == "7 años"
 
 propiedades = json.load(open(FUENTE / "propiedades.json"))
+PINES = json.load(open(FUENTE / "pines.json"))
 # Las zonas salen del título de cada aviso, escritas de varias formas: se agrupan y se muestra la grafía que más usan.
 # Es solo para el filtro y la tarjeta; los títulos quedan tal cual los publican.
 _grafias = {}
@@ -341,10 +249,6 @@ MAPAS = json.load(open(FUENTE / "mapas.json"))
 CALCES = json.load(open(FUENTE / "calces.json"))
 # Cuántas propiedades publican exactamente el mismo punto (suele ser el del barrio, no el de la propiedad)
 PUNTOS = Counter((p["lat"], p["lng"]) for p in propiedades)
-# A cuánto queda y la altura se miden en el centro del lote cuando lo hay (el punto publicado puede estar a 140 m)
-DONDE = {p["id"]: tuple(round(v, 6) for v in centro(MAPAS[p["id"]]["lote"])) if MAPAS[p["id"]]["lote"] else (p["lat"], p["lng"])
-         for p in propiedades}
-VIAJES = rutas(list(DONDE.values()))
 _muestra = {x["id"]: x for x in propiedades if x["id"] in ("633017", "8147479")}
 assert [es_volante(FUENTE / f) for f in _muestra["633017"]["fotos_locales"][:3]] == [True, True, False]
 assert [es_volante(FUENTE / f) for f in _muestra["8147479"]["fotos_locales"][:2]] == [True, False]
@@ -405,8 +309,6 @@ for p in propiedades:
     ficha["mapa"] = {"calce": m["calce"], "celda": m["celda"], "zmax": m["zmax"], "lote": m["lote"], "lados": m["lados"],
                      "zona": None if m["lote"] else {"compartido": compartido},
                      "alrededor": m["alrededor"]}
-    ficha["cercanos"] = cercanos(*DONDE[ident], VIAJES)
-    ficha["altura"] = altura(*DONDE[ident])
     FICHAS[ident] = ficha
     foto(FUENTE / p["fotos_locales"][orden[0]], PUB / "fotos" / f"p-{ident}.webp", 560, 62, (560, 420))
     if p.get("inconsistencias"):
@@ -424,8 +326,6 @@ for x in indice:
     i, f = x["id"], FICHAS[x["id"]]
     mapa = f["mapa"]
     sin_catastro(f"ficha {i}", f)
-    assert f["altura"] and 400 <= f["altura"]["m"] <= 2200, f"{i}: altura {f['altura']}"
-    assert f["cercanos"], f"{i}: sin a cuánto queda"
     # La celda, de nuevo desde el lote o el punto publicado, y su calce desde calces.json
     assert mapa["celda"] == celda_de(*(centro(mapa["lote"]) if mapa["lote"] else (x["lat"], x["lng"]))), f"{i}: celda {mapa['celda']}"
     assert mapa["calce"] == CALCES.get(mapa["celda"]), f"{i}: calce {mapa['calce']} en {mapa['celda']}"
@@ -476,9 +376,19 @@ for archivo in ("museoentera.jpg", "camisetasmuseo.jpg", "articulos.jpg", "fondo
         destino = f"fotos/museo-{origen.stem}.webp"
         foto(origen, PUB / destino, 1200)
         museo.append(destino)
-# La imagen que aparece al compartir el link (fotos/og.jpg) la arma castro_satelite.py: la foto satelital con los lotes
 for archivo in ("fondonos.jpg", "imagcontact.jpg"):
     foto(FUENTE / "fotos/sitio" / archivo, PUB / "fotos" / f"{Path(archivo).stem}.webp", 1600)
+# Arriba de la portada, su foto aérea de Merlo con las sierras (images/fondocontacto.jpg de su sitio), en dos tamaños;
+# y la imagen que aparece al compartir el link, recortada de la misma foto
+for ancho in (800, 1600):
+    foto(FUENTE / "fotos/sitio/fondocontacto.jpg", PUB / "fotos" / f"portada-merlo-{ancho}.webp", ancho, 70)
+ImageOps.fit(Image.open(FUENTE / "fotos/sitio/fondocontacto.jpg").convert("RGB"), (1200, 630), Image.LANCZOS).save(PUB / "fotos/og.jpg", "JPEG", quality=82, optimize=True)
+# Su mapa dibujado y sus pines
+foto(FUENTE / "fotos/sitio/mapfondo.jpg", PUB / "fotos" / "mapa-merlo.webp", 1600, 70)
+for i, pin in enumerate(PINES):
+    destino = PUB / "fotos" / f"pin-{i + 1:02d}.webp"
+    if not destino.exists():
+        Image.open(FUENTE / "fotos/sitio/pines" / pin["img"].rsplit("/", 1)[-1]).convert("RGBA").resize((180, 180), Image.LANCZOS).save(destino, "WEBP", quality=85)
 for archivo in ("logo.png", "logofooter.png", "favicon.png"):
     destino = PUB / "fotos" / archivo
     destino.parent.mkdir(parents=True, exist_ok=True)
@@ -493,6 +403,8 @@ sitio = {
     "vender": inst["vender"],
     "pie": inst["pie"],
     "contacto": {k: inst[k] for k in ("direccion", "telefono", "whatsapp", "email", "redes", "corredor_y_matricula", "colegio", "oficina_lat", "oficina_lng", "razon_social", "cuit", "afip_data_fiscal")},
+    # Su mapa dibujado de Merlo con los 22 loteos, tal cual lo tienen en su portada (pines en % del ancho y del alto)
+    "mapa": {"fondo": "fotos/mapa-merlo.webp", "pines": [{**pin, "img": f"fotos/pin-{i + 1:02d}.webp"} for i, pin in enumerate(PINES)]},
 }
 # Errores de tipeo de sus textos, corregidos: el resto va tal cual lo escribieron
 _texto = json.dumps(sitio, ensure_ascii=False, indent=1)
@@ -561,13 +473,11 @@ for (lat, lng), ps in sorted(grupos.items(), key=lambda g: -len(g[1])):
 assert {f.stem for f in (PUB / "fichas").glob("*.json")} == set(FICHAS), "hay fichas de más en public/"
 fichas = FICHAS
 pesos = sorted((f.stat().st_size, f.stem) for f in (PUB / "fichas").glob("*.json"))
-alturas = [f["altura"]["m"] for f in fichas.values()]
 print(f"fichas: promedio {sum(p for p, _ in pesos) / len(pesos) / 1024:.1f} KB, la más pesada {pesos[-1][0] / 1024:.1f} KB ({pesos[-1][1]});"
       f" mapa.json {(PUB / 'mapa.json').stat().st_size / 1024:.1f} KB")
 print(sum(1 for f in fichas.values() if f["mapa"]["lote"]), "con lote;", sum(1 for f in fichas.values() if f["mapa"]["zona"]), "con zona;",
       sum(1 for f in fichas.values() if f["mapa"]["alrededor"]), "con trama;", sum(1 for f in fichas.values() if f["mapa"]["calce"] is None), "sin calce;",
-      sum(n for n in PUNTOS.values() if n > 1), "comparten punto en", len(compartidos), "grupos; alturas de", min(alturas), "a", max(alturas), "m;",
-      Counter(f["altura"]["pendiente"] for f in fichas.values()), ";", sum(1 for f in fichas.values() if f["cercanos"][0]["lugar"] == "Villa de Merlo"), "lejos de Merlo")
+      sum(n for n in PUNTOS.values() if n > 1), "comparten punto en", len(compartidos), "grupos")
 print(con_volante, "con volante (la portada es la primera foto de verdad);", len(indice), "propiedades,", len(urbanizaciones), "urbanizaciones,", len(equipo), "personas,", len(museo), "fotos del museo,", len(errores), "con errores de carga")
 
 # La vista previa del link (og:description de la propuesta) dice cuántos terrenos tienen su forma: sale de los datos
