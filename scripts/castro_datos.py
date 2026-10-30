@@ -399,10 +399,14 @@ for archivo in ("museoentera.jpg", "camisetasmuseo.jpg", "articulos.jpg", "fondo
         museo.append(destino)
 for archivo in ("fondonos.jpg", "imagcontact.jpg"):
     foto(FUENTE / "fotos/sitio" / archivo, PUB / "fotos" / f"{Path(archivo).stem}.webp", 1600)
-# Arriba de la portada, su foto aérea de Merlo con las sierras (images/fondocontacto.jpg de su sitio), en dos tamaños;
-# y la imagen que aparece al compartir el link, recortada de la misma foto
-for ancho in (800, 1600):
-    foto(FUENTE / "fotos/sitio/fondocontacto.jpg", PUB / "fotos" / f"portada-merlo-{ancho}.webp", ancho, 70)
+# Arriba de la portada, la fachada de su oficina y Museo de La Firma (images/imagcontact.jpg de su sitio): es solo de
+# Castro, y su portada usa la foto aérea de Merlo. La foto trae las esquinas redondeadas sobre blanco: se recortan
+_fachada = Image.open(FUENTE / "fotos/sitio/imagcontact.jpg").convert("RGB")
+_fachada = _fachada.crop((28, 28, _fachada.width - 28, _fachada.height - 28))
+assert min(_fachada.getpixel((0, 0))) < 250, "la fachada sigue con la esquina blanca"
+for ancho in (800, 1388):
+    _fachada.resize((ancho, round(_fachada.height * ancho / _fachada.width)), Image.LANCZOS).save(PUB / "fotos" / f"portada-oficina-{ancho}.webp", "WEBP", quality=74, method=6)
+# La imagen que aparece al compartir el link sigue siendo su foto aérea de Merlo con las sierras
 ImageOps.fit(Image.open(FUENTE / "fotos/sitio/fondocontacto.jpg").convert("RGB"), (1200, 630), Image.LANCZOS).save(PUB / "fotos/og.jpg", "JPEG", quality=82, optimize=True)
 # Su mapa dibujado y sus pines. Arriba trae una franja gris con "Urbanizaciones que comercializamos", que repetía el
 # título de la sección: se recorta, y la altura de cada pin (en % del alto) se recalcula sobre la imagen recortada

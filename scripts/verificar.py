@@ -585,7 +585,7 @@ def castro(pg, nombre, cap):
         if numero != "5492665024444" or any(d not in texto for d in deben):
             problemas.append(f"{nombre}: el WhatsApp de {donde} no abre el chat de la inmobiliaria con {deben}: {numero} «{texto[:90]}»")
 
-    # Portada: su foto de Merlo sin velo con su frase al costado o abajo (no encima, como en su sitio), el buscador, sus
+    # Portada: la fachada de su oficina sin velo con su frase al costado o abajo (no encima, como en su sitio), el buscador, sus
     # destacadas, los terrenos con su forma real, los 40 años, el museo y las urbanizaciones en fotos
     texto = ir("", 1000)
     cap("01-portada")
@@ -601,9 +601,9 @@ def castro(pg, nombre, cap):
     if "Newsreader" not in pg.evaluate("getComputedStyle(document.querySelector('h1')).fontFamily"):
         problemas.append(f"{nombre}: el titular de la portada no va en Newsreader")
     arriba = pg.evaluate("""(() => { const i = document.querySelector('[data-portada] img'), h = document.querySelector('h1').getBoundingClientRect(), r = i?.getBoundingClientRect();
-      return { foto: !!i && i.complete && i.naturalWidth > 0 && i.currentSrc.includes('portada-merlo'), encima: !!r && h.left < r.right && r.left < h.right && h.top < r.bottom && r.top < h.bottom } })()""")
+      return { foto: !!i && i.complete && i.naturalWidth > 0 && i.currentSrc.includes('portada-oficina'), encima: !!r && h.left < r.right && r.left < h.right && h.top < r.bottom && r.top < h.bottom } })()""")
     if not arriba["foto"] or arriba["encima"] or pg.locator("[data-botones-portada]").count():
-        problemas.append(f"{nombre}: arriba de la portada tiene que estar su foto de Merlo con la frase al costado, no encima ni con los tres botones: {arriba}")
+        problemas.append(f"{nombre}: arriba de la portada tiene que estar la fachada de su oficina con la frase al costado, no encima ni con los tres botones: {arriba}")
     destacadas = sorted((x for x in indice if x["destacada"]), key=lambda x: x["alta"], reverse=True)[:6]
     if pg.locator("[data-destacadas] [data-tarjeta]").evaluate_all("es => es.map(e => e.dataset.tarjeta)") != [x["id"] for x in destacadas]:
         problemas.append(f"{nombre}: las destacadas de la portada no son sus 6 destacadas más nuevas")

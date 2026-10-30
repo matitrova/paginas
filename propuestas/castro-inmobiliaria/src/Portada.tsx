@@ -1,4 +1,4 @@
-// La portada como una revista (Actualización 17): su foto de Merlo sin velo con su frase al lado y un buscador, sus
+// La portada como una revista (Actualización 17): la fachada de su oficina sin velo, su frase al lado y un buscador, sus
 // destacadas, los terrenos con su forma real (lo que no tiene ningún portal), los 40 años, el museo y las
 // urbanizaciones en fotos. Los textos son los suyos (sitio.json, con las erratas corregidas por scripts/castro_datos.py).
 import { BOTON, BOTON_BORDE, ir, Tarjeta, Titulo } from "./componentes";
@@ -20,13 +20,13 @@ export default function Portada() {
   const fotoMuseo = museo.fotos.find((f) => f.includes("museoentera")) ?? museo.fotos[0];
   return (
     <>
-      {/* Su foto aérea de Merlo, sin velo, y al lado su frase y el buscador */}
+      {/* La fachada de su oficina y museo (su portada usa la foto aérea de Merlo), sin velo, y al lado su frase y el buscador */}
       <section className="mx-auto grid max-w-6xl sm:px-6 md:mt-8 md:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] md:items-center md:gap-12" data-portada>
         <img
-          src="./fotos/portada-merlo-800.webp"
-          srcSet="./fotos/portada-merlo-800.webp 800w, ./fotos/portada-merlo-1600.webp 1600w"
+          src="./fotos/portada-oficina-800.webp"
+          srcSet="./fotos/portada-oficina-800.webp 800w, ./fotos/portada-oficina-1388.webp 1388w"
           sizes="(min-width: 768px) 66vw, 100vw"
-          alt="Villa de Merlo desde el aire, con las sierras de los Comechingones atrás"
+          alt="La oficina de Castro Inmobiliaria y el Museo de La Firma, en Villa de Merlo, con las sierras atrás"
           fetchPriority="high"
           className="aspect-[4/3] w-full object-cover sm:rounded-[3px] md:aspect-[5/4] lg:aspect-[4/3]"
         />
