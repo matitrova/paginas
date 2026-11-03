@@ -2,7 +2,8 @@
 Salen a public/inicio/<sitio>-movil.webp (600 px). Después arma og.jpg desde dist/.
 
 Uso:  ../Test1_Inmo/.venv/bin/python scripts/capturas_inicio.py
-      (con --og solo rehace og.jpg; Sumapuntos y MojonApp no salen de acá: piden usuario, son las del flyer)
+      (con --og solo rehace og.jpg; gestion y agente no salen de acá: son las pantallas ilustrativas de
+      ~/flyer-servicios/pantallas, que las genera con generar.py <public/inicio>)
 """
 import io
 import mimetypes

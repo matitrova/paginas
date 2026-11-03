@@ -9,14 +9,15 @@ export const MENSAJE_OTRO_RUBRO = "Hola Matías! Mi rubro no está en tu página
 
 export const PORTADA = {
   titulo: ["Tu negocio,", "en el celular", "de tus clientes."],
-  bajada: "Páginas web y apps a medida para comercios, emprendedores y profesionales de todo el país. Trabajo a distancia.",
+  bajada: "Páginas web, sistemas de gestión y agentes de IA a medida para comercios, emprendedores y profesionales de todo el país. Trabajo a distancia.",
   garantia: "Pagás la mitad para arrancar y el resto cuando tu página ya está publicada.",
   extras: ["Dominio a tu nombre", "Sin permanencia", "Presupuesto sin compromiso"],
-  // Los tres celulares de la portada, como en el flyer
+  // Los tres celulares de la portada, como en el flyer. Gestión y agente son pantallas ilustrativas (negocios inventados):
+  // las apps propias no se muestran hasta que estén para salir (pedido del 02/11)
   muestras: [
     { id: "autoshine", titulo: "Páginas web", alt: "Captura de la página de AutoShine", color: "bg-acento text-[#1d0c04]" },
-    { id: "sumapuntos", titulo: "Puntos", alt: "Captura de Sumapuntos, el programa de puntos", color: "bg-verde text-[#f1f6ef]" },
-    { id: "mojonapp", titulo: "Sistemas", alt: "Captura de MojonApp con lotes sobre el mapa", color: "bg-azul text-[#eef4f6]" },
+    { id: "gestion", titulo: "Gestión", alt: "Pantalla ilustrativa de un sistema de gestión con ventas, stock y pedidos", color: "bg-verde text-[#f1f6ef]" },
+    { id: "agente", titulo: "Agentes de IA", alt: "Pantalla ilustrativa: un agente de IA anota en la agenda un turno acordado por WhatsApp", color: "bg-azul text-[#eef4f6]" },
   ],
 };
 
@@ -40,15 +41,14 @@ export const RUBROS: { id: string; titulo: string; texto: string; color: string;
     titulo: "Inmobiliarias",
     texto: "Tus propiedades y lotes sobre el mapa, y un sistema para seguir clientes y ventas.",
     color: "bg-azul text-[#eef4f6]",
-    ejemplos: [{ nombre: "MojonApp", tipo: "app", href: "#apps" }],
+    ejemplos: [],
   },
   {
     id: "locales",
-    titulo: "Locales con clientes que vuelven",
-    texto: "Un programa de puntos para que vuelvan, y la carta o los precios siempre al día en el celular.",
+    titulo: "Locales y comercios",
+    texto: "Stock, ventas y clientes en un solo lugar, y la carta o los precios siempre al día en el celular.",
     color: "bg-verde text-[#f1f6ef]",
     ejemplos: [
-      { nombre: "Sumapuntos", tipo: "app", href: "#apps" },
       { nombre: "Casa Tala", tipo: "ejemplo", href: "./casa-tala/" },
     ],
   },
@@ -133,30 +133,8 @@ export const SECCIONES: Seccion[] = [
         id: "autoshine",
         nombre: "AutoShine",
         rubro: "Lavadero y estética de autos · Merlo",
-        texto: "Los clientes piden turno en la página y el pedido le llega directo al WhatsApp.",
+        texto: "Los servicios, fotos del taller y el pedido de turno por WhatsApp.",
         href: "https://autoshine.com.ar",
-      },
-    ],
-  },
-  {
-    id: "apps",
-    titulo: "Apps y sistemas",
-    tipo: "app",
-    etiqueta: "App propia",
-    detalle: "Desarrollada por mí",
-    nota: "Se usan con usuario y contraseña, por eso no tienen link. Si querés verlas andando, escribime y te las muestro.",
-    trabajos: [
-      {
-        id: "sumapuntos",
-        nombre: "Sumapuntos",
-        rubro: "Programa de puntos para locales",
-        texto: "Los clientes suman puntos en cada compra y vuelven por el premio. El local los carga en segundos desde la caja.",
-      },
-      {
-        id: "mojonapp",
-        nombre: "MojonApp",
-        rubro: "Sistema para inmobiliarias",
-        texto: "Clientes, ventas y los lotes dibujados sobre el mapa satelital.",
       },
     ],
   },

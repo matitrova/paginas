@@ -108,14 +108,14 @@ function Rubros() {
           <li key={r.id} data-rubro={r.id} className={`flex flex-col rounded-3xl p-6 md:p-8 ${r.color}`}>
             <h3 className="font-display text-2xl leading-tight font-bold md:text-3xl">{r.titulo}</h3>
             <p className="mt-2 leading-relaxed opacity-90">{r.texto}</p>
-            <p className="mt-auto flex flex-wrap items-center gap-2 pt-6 text-sm">
+            {r.ejemplos.length > 0 && <p className="mt-auto flex flex-wrap items-center gap-2 pt-6 text-sm">
               <span className="opacity-80">Mirá:</span>
               {r.ejemplos.map((e) => (
                 <a key={e.nombre} href={e.href} {...afuera(e.href)} data-ejemplo={e.tipo} className="rounded-full px-3.5 py-1.5 font-semibold ring-1 ring-current/35 transition hover:bg-white/15">
                   {e.nombre} <span className="font-normal opacity-75">· {NOMBRE_TIPO[e.tipo]}</span>
                 </a>
               ))}
-            </p>
+            </p>}
           </li>
         ))}
         <li data-rubro="otro" className="rounded-3xl border-2 border-dashed border-tinta/20 p-6 md:col-span-2 md:flex md:items-center md:justify-between md:gap-8 md:p-8">
@@ -190,16 +190,14 @@ function Incluye() {
 }
 
 // Cada trabajo en una tarjeta grande: el celular asoma desde un fondo de color y abajo va qué es.
-// Si la sección tiene una sola página (el cliente), en pantallas grandes la tarjeta va a lo ancho.
 // Las apps no tienen link: piden usuario para entrar.
 function Tarjetas({ seccion }: { seccion: Seccion }) {
-  const sola = seccion.trabajos.length === 1;
   const tono = TONOS[seccion.tipo];
   return (
     <section id={seccion.id} className="mt-12 scroll-mt-20 md:mt-16">
       <h3 className="font-display text-2xl font-bold md:text-3xl">{seccion.titulo}</h3>
       {seccion.nota && <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-suave md:text-base">{seccion.nota}</p>}
-      <ul className={`mt-6 grid gap-5 ${sola ? "" : seccion.trabajos.length === 2 ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"}`}>
+      <ul className={`mt-6 grid gap-5 ${seccion.trabajos.length <= 2 ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"}`}>
         {seccion.trabajos.map((t) => {
           const Caja = t.href ? "a" : "div";
           return (
@@ -208,19 +206,19 @@ function Tarjetas({ seccion }: { seccion: Seccion }) {
                 {...(t.href ? { href: t.href, ...afuera(t.href) } : {})}
                 data-trabajo={t.id}
                 data-tipo={seccion.tipo}
-                className={`group grid h-full overflow-hidden rounded-3xl bg-panel ring-1 ring-linea transition ${t.href ? "hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgba(23,23,27,0.5)]" : ""} ${sola ? "md:grid-cols-[0.9fr_1.1fr]" : ""}`}
+                className={`group grid h-full overflow-hidden rounded-3xl bg-panel ring-1 ring-linea transition ${t.href ? "hover:-translate-y-1 hover:shadow-[0_24px_50px_-28px_rgba(23,23,27,0.5)]" : ""}`}
               >
-                <div className={`flex h-80 items-start justify-center overflow-hidden pt-8 ${tono.fondo} ${sola ? "md:h-auto md:min-h-96" : ""}`}>
+                <div className={`flex h-80 items-start justify-center overflow-hidden pt-8 ${tono.fondo}`}>
                   <div className="telefono w-44 shrink-0 text-[8px] transition duration-500 group-hover:-translate-y-2 md:w-48">
                     <img src={captura(`${t.id}-movil`)} alt={ALT[seccion.tipo](t.nombre)} loading="lazy" />
                   </div>
                 </div>
-                <div className={`flex flex-col p-6 ${sola ? "md:justify-center md:p-10" : ""}`}>
+                <div className="flex flex-col p-6">
                   <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className={`rounded-full px-3 py-1 text-sm font-bold ${tono.etiqueta}`}>{seccion.etiqueta}</span>
                     <span className="text-sm text-suave">{seccion.detalle}</span>
                   </p>
-                  <h4 className={`font-display mt-3 leading-tight font-bold ${sola ? "text-3xl md:text-4xl" : "text-2xl"}`}>{t.nombre}</h4>
+                  <h4 className={`font-display mt-3 leading-tight font-bold text-2xl`}>{t.nombre}</h4>
                   <p className="mt-1 text-sm text-suave">{t.rubro}</p>
                   <p className="mt-3 text-[15px] leading-relaxed">{t.texto}</p>
                   {t.href && (
@@ -292,7 +290,7 @@ export default function App() {
         </section>
 
         <footer className="mt-10 text-center text-xs text-suave">
-          Matías Trovato · Páginas web y apps ·{" "}
+          Matías Trovato · Páginas web, sistemas y agentes de IA ·{" "}
           <a href="https://matitrova.github.io" className="underline underline-offset-2">matitrova.github.io</a>
         </footer>
       </main>

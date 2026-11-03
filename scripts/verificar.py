@@ -232,6 +232,14 @@ def inicio(pg, nombre, cap):
         if m := re.search(patron, todo):
             problemas.append(f"{nombre}: aparece {que}: «{m.group(0)}»")
 
+    # Las apps propias no se nombran hasta que estén para salir (pedido del 02/11), y arriba van los tres servicios
+    for malo in ("Sumapuntos", "MojonApp"):
+        if malo in todo or malo.lower() in pg.content().lower():
+            problemas.append(f"{nombre}: aparece {malo}")
+    arriba = [" ".join(t.split()) for t in pg.locator("#arriba figcaption").all_inner_texts()]
+    if arriba != ["Páginas web", "Gestión", "Agentes de IA"]:
+        problemas.append(f"{nombre}: los celulares de arriba son {arriba}")
+
     # Rubros: los cuatro y el de cualquier rubro; cada ejemplo dice qué es y lleva a algo que existe
     rubros = pg.evaluate("""[...document.querySelectorAll('[data-rubro]')].map(li => ({ id: li.dataset.rubro,
         ejemplos: [...li.querySelectorAll('[data-ejemplo]')].map(a => ({ tipo: a.dataset.ejemplo, href: a.getAttribute('href'), texto: a.innerText })) }))""")
@@ -253,7 +261,7 @@ def inicio(pg, nombre, cap):
     tarjetas = pg.evaluate("""[...document.querySelectorAll('[data-trabajo]')].map(a => ({
         id: a.dataset.trabajo, tipo: a.dataset.tipo, href: a.href || null, texto: a.innerText }))""")
     propuestas = ("mirador-de-los-condores", "cabeza-del-indio", "hosteria-vegetariana")
-    esperado = {"autoshine": ("cliente", "https://autoshine.com.ar/"), "sumapuntos": ("app", None), "mojonapp": ("app", None),
+    esperado = {"autoshine": ("cliente", "https://autoshine.com.ar/"),
                 "cabanas": ("ejemplo", BASE + "cabanas/"), "casa-tala": ("ejemplo", BASE + "casa-tala/"),
                 **{p: ("propuesta", BASE + f"propuestas/{p}/") for p in propuestas}}
     vistos = {t["id"]: (t["tipo"], t["href"]) for t in tarjetas}
@@ -267,7 +275,7 @@ def inicio(pg, nombre, cap):
             problemas.append(f"{nombre}: la tarjeta {t['id']} parece de un cliente")
         if t["href"] and t["href"].startswith(BASE) and not (DIST / t["href"][len(BASE):] / "index.html").is_file():
             problemas.append(f"{nombre}: {t['id']} apunta a una página que no está en dist/")
-    for seccion, frase in [("#propuestas", "No las encargaron"), ("#ejemplos", "no existen"), ("#apps", "usuario"), ("#incluye", "Consultas a tu WhatsApp"),
+    for seccion, frase in [("#propuestas", "No las encargaron"), ("#ejemplos", "no existen"), ("#incluye", "Consultas a tu WhatsApp"),
                            ("#abono", "Hasta 5 cambios por mes"), ("#abono", "sin permanencia"), ("#pasos", "Te paso el presupuesto"), ("#preguntas", "¿Cuánto sale?")]:
         if frase not in pg.locator(seccion).inner_text():
             problemas.append(f"{nombre}: a {seccion} le falta «{frase}»")
@@ -286,7 +294,7 @@ def inicio(pg, nombre, cap):
     if len(wsp) < 5 or not all(h.startswith("https://wa.me/5492656445537?text=") for h in wsp) or not any(c == "mail" and h.startswith("mailto:matitrova13@gmail.com") for c, h in botones):
         problemas.append(f"{nombre}: botones de contacto {botones}")
 
-    for sel, n in [("#rubros", "2-rubros"), ("#pasos", "3-pasos"), ("#abono", "4-abono"), ("#trabajos", "5-trabajos"), ("#apps", "6-apps"), ("#propuestas", "7-propuestas"), ("#preguntas", "8-preguntas")]:
+    for sel, n in [("#rubros", "2-rubros"), ("#pasos", "3-pasos"), ("#abono", "4-abono"), ("#trabajos", "5-trabajos"), ("#propuestas", "7-propuestas"), ("#preguntas", "8-preguntas")]:
         pg.evaluate(f"document.querySelector('{sel}').scrollIntoView()")
         pg.wait_for_timeout(700)
         cap(n)
